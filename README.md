@@ -1,18 +1,38 @@
-# Embeddr Frontend
+<div align="center"><a name="readme-top"></a>
 
-Embeddr Local's Frontend.
+<img height="120" src="https://embeddr.net/embeddr_logo_transparent.png">
 
-- React
-- ThreeJS
-- Tailwind
-- ShadCN [embeddr-components](https://github.com/embeddr-net/embeddr-components)
+<h1>Embeddr Frontend </h1>
+</div>
 
-## Description
-
-> [!WARNING] You Probably Don't Need This!
+> [!WARNING]
 >
-> You do not need this if you just want to use Embeddr
+> You do not need this if you want to use Embeddr
 >
-> This repo is for the frontend only.
+> This repo is for development only.
 >
-> Please use [embeddr-net/embeddr-local](https://github.com/embeddr-net/embeddr-local)
+> Please use [embeddr-cli](https://github.com/embeddr-net/embeddr-cli)
+
+
+## Development
+
+> Requires [embeddr-cli](https://github.com/embeddr-net/embeddr-cli) to be running.
+
+To get a frontend development server working.
+
+```sh
+git clone https://github.com/embeddr-net/embeddr-frontend
+cd embeddr-frontend
+pnpm install
+
+# The frontend uses VITE_BACKEND_URL
+# During buildtime this is set to `/api/v1`
+VITE_BACKEND_URL="http://127.0.0.1:8003/api/v1" pnpm dev
+```
+Once running, open [http://localhost:5173](http://localhost:5173) to view
+
+## Components
+
+Some components are moved to [embeddr-react-ui](https://github.com/embeddr-net/embeddr-react-ui).
+
+This is so things like the Lightbox and Visualizers can be reused across different integrations.
