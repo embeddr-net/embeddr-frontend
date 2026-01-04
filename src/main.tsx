@@ -1,11 +1,20 @@
-import { StrictMode } from 'react'
-import ReactDOM from 'react-dom/client'
+import React, { StrictMode } from 'react'
+import ReactDOMClient from 'react-dom/client'
+import ReactDOM from 'react-dom'
+import * as EmbeddrUI from '@embeddr/react-ui'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 
 import './styles.css'
+
+// Expose React and ReactDOM for external plugins
+;
+
+(window as any).React = React
+;(window as any).ReactDOM = ReactDOM
+;(window as any).EmbeddrUI = EmbeddrUI
 
 // Create a new router instance
 const router = createRouter({
@@ -27,7 +36,7 @@ declare module '@tanstack/react-router' {
 // Render the app
 const rootElement = document.getElementById('app')
 if (rootElement && !rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement)
+  const root = ReactDOMClient.createRoot(rootElement)
   root.render(
     <StrictMode>
       <RouterProvider router={router} />

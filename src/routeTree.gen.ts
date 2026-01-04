@@ -11,8 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UmapRouteImport } from './routes/umap'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as LineageRouteImport } from './routes/lineage'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as DatasetsRouteImport } from './routes/datasets'
+import { Route as CreateRouteImport } from './routes/create'
+import { Route as ComfyRouteImport } from './routes/comfy'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ImagesImageIdRouteImport } from './routes/images.$imageId'
 
 const UmapRoute = UmapRouteImport.update({
   id: '/umap',
@@ -24,9 +30,34 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LineageRoute = LineageRouteImport.update({
+  id: '/lineage',
+  path: '/lineage',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DatasetsRoute = DatasetsRouteImport.update({
+  id: '/datasets',
+  path: '/datasets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateRoute = CreateRouteImport.update({
+  id: '/create',
+  path: '/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComfyRoute = ComfyRouteImport.update({
+  id: '/comfy',
+  path: '/comfy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -34,39 +65,99 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ImagesImageIdRoute = ImagesImageIdRouteImport.update({
+  id: '/images/$imageId',
+  path: '/images/$imageId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/comfy': typeof ComfyRoute
+  '/create': typeof CreateRoute
+  '/datasets': typeof DatasetsRoute
   '/docs': typeof DocsRoute
+  '/help': typeof HelpRoute
+  '/lineage': typeof LineageRoute
   '/settings': typeof SettingsRoute
   '/umap': typeof UmapRoute
+  '/images/$imageId': typeof ImagesImageIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/comfy': typeof ComfyRoute
+  '/create': typeof CreateRoute
+  '/datasets': typeof DatasetsRoute
   '/docs': typeof DocsRoute
+  '/help': typeof HelpRoute
+  '/lineage': typeof LineageRoute
   '/settings': typeof SettingsRoute
   '/umap': typeof UmapRoute
+  '/images/$imageId': typeof ImagesImageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/comfy': typeof ComfyRoute
+  '/create': typeof CreateRoute
+  '/datasets': typeof DatasetsRoute
   '/docs': typeof DocsRoute
+  '/help': typeof HelpRoute
+  '/lineage': typeof LineageRoute
   '/settings': typeof SettingsRoute
   '/umap': typeof UmapRoute
+  '/images/$imageId': typeof ImagesImageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/docs' | '/settings' | '/umap'
+  fullPaths:
+    | '/'
+    | '/comfy'
+    | '/create'
+    | '/datasets'
+    | '/docs'
+    | '/help'
+    | '/lineage'
+    | '/settings'
+    | '/umap'
+    | '/images/$imageId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/docs' | '/settings' | '/umap'
-  id: '__root__' | '/' | '/docs' | '/settings' | '/umap'
+  to:
+    | '/'
+    | '/comfy'
+    | '/create'
+    | '/datasets'
+    | '/docs'
+    | '/help'
+    | '/lineage'
+    | '/settings'
+    | '/umap'
+    | '/images/$imageId'
+  id:
+    | '__root__'
+    | '/'
+    | '/comfy'
+    | '/create'
+    | '/datasets'
+    | '/docs'
+    | '/help'
+    | '/lineage'
+    | '/settings'
+    | '/umap'
+    | '/images/$imageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ComfyRoute: typeof ComfyRoute
+  CreateRoute: typeof CreateRoute
+  DatasetsRoute: typeof DatasetsRoute
   DocsRoute: typeof DocsRoute
+  HelpRoute: typeof HelpRoute
+  LineageRoute: typeof LineageRoute
   SettingsRoute: typeof SettingsRoute
   UmapRoute: typeof UmapRoute
+  ImagesImageIdRoute: typeof ImagesImageIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -85,11 +176,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lineage': {
+      id: '/lineage'
+      path: '/lineage'
+      fullPath: '/lineage'
+      preLoaderRoute: typeof LineageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/docs': {
       id: '/docs'
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/datasets': {
+      id: '/datasets'
+      path: '/datasets'
+      fullPath: '/datasets'
+      preLoaderRoute: typeof DatasetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/create': {
+      id: '/create'
+      path: '/create'
+      fullPath: '/create'
+      preLoaderRoute: typeof CreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/comfy': {
+      id: '/comfy'
+      path: '/comfy'
+      fullPath: '/comfy'
+      preLoaderRoute: typeof ComfyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -99,14 +225,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/images/$imageId': {
+      id: '/images/$imageId'
+      path: '/images/$imageId'
+      fullPath: '/images/$imageId'
+      preLoaderRoute: typeof ImagesImageIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ComfyRoute: ComfyRoute,
+  CreateRoute: CreateRoute,
+  DatasetsRoute: DatasetsRoute,
   DocsRoute: DocsRoute,
+  HelpRoute: HelpRoute,
+  LineageRoute: LineageRoute,
   SettingsRoute: SettingsRoute,
   UmapRoute: UmapRoute,
+  ImagesImageIdRoute: ImagesImageIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
