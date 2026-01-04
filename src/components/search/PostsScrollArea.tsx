@@ -1,9 +1,9 @@
 import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
 import { useEffect, useRef } from 'react'
 import { Spinner } from '@embeddr/react-ui/components/spinner'
-import { cn } from '@embeddr/react-ui/lib/utils'
 import PostCard from './PostCard'
 import type { PromptImage } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
 interface PostsScrollAreaProps {
   posts: Array<PromptImage>
@@ -13,10 +13,12 @@ interface PostsScrollAreaProps {
   queryKey?: Array<any>
   onSelect?: (post: PromptImage) => void
   onSearchByImage?: (post: PromptImage) => void
+  onOpenDetails?: (post: PromptImage) => void
   selectedId?: number | null
   gridCols?: number | null
   imageFit?: 'cover' | 'contain'
   useOriginalImages?: boolean
+  onArchive?: (post: PromptImage) => void
 }
 
 const PostsScrollArea = ({
@@ -26,10 +28,12 @@ const PostsScrollArea = ({
   isFetchingNextPage,
   onSelect,
   onSearchByImage,
+  onOpenDetails,
   selectedId,
   gridCols = null,
   imageFit = 'contain',
   useOriginalImages = false,
+  onArchive,
 }: PostsScrollAreaProps) => {
   const scrollViewportRef = useRef<HTMLDivElement>(null)
   const observerTarget = useRef<HTMLDivElement>(null)
@@ -70,18 +74,12 @@ const PostsScrollArea = ({
       viewportRef={scrollViewportRef}
     >
       <div
-        className={cn(
-          'grid gap-1 pb-1',
-          !gridCols &&
-            'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
-        )}
-        style={
-          gridCols
-            ? {
-                gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
-              }
-            : undefined
-        }
+        className={cn('grid gap-1 pb-1')}
+        style={{
+          gridTemplateColumns: gridCols
+            ? `repeat(${gridCols}, minmax(0, 1fr))`
+            : 'repeat(auto-fill, minmax(250px, 1fr))',
+        }}
       >
         {posts.map((post) => (
           <PostCard
@@ -89,6 +87,8 @@ const PostsScrollArea = ({
             post={post}
             onSelect={onSelect}
             onSearchByImage={onSearchByImage}
+            onOpenDetails={onOpenDetails}
+            onArchive={onArchive}
             isSelected={selectedId === post.id}
             imageFit={imageFit}
             useOriginalImages={useOriginalImages}

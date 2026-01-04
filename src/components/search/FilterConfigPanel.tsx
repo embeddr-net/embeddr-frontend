@@ -19,6 +19,10 @@ interface FilterConfigPanelProps {
   setAutoGrid: (auto: boolean) => void
   useOriginalImages: boolean
   setUseOriginalImages: (useOriginal: boolean) => void
+  mediaType: 'image' | 'video' | 'all'
+  setMediaType: (type: 'image' | 'video' | 'all') => void
+  showArchived: boolean | null
+  setShowArchived: (show: boolean | null) => void
 }
 
 export function FilterConfigPanel({
@@ -30,6 +34,10 @@ export function FilterConfigPanel({
   setAutoGrid,
   useOriginalImages,
   setUseOriginalImages,
+  mediaType,
+  setMediaType,
+  showArchived,
+  setShowArchived,
 }: FilterConfigPanelProps) {
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -41,6 +49,54 @@ export function FilterConfigPanel({
       </div>
       <Separator />
       <div className="grid gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="media-type">Media Type</Label>
+          <Select
+            value={mediaType}
+            onValueChange={(value: 'image' | 'video' | 'all') =>
+              setMediaType(value)
+            }
+          >
+            <SelectTrigger id="media-type">
+              <SelectValue placeholder="Select media type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Media</SelectItem>
+              <SelectItem value="image">Images Only</SelectItem>
+              <SelectItem value="video">Videos Only</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="archive-status">Archive Status</Label>
+          <Select
+            value={
+              showArchived === null
+                ? 'all'
+                : showArchived
+                  ? 'archived'
+                  : 'active'
+            }
+            onValueChange={(value) => {
+              if (value === 'all') setShowArchived(null)
+              else if (value === 'archived') setShowArchived(true)
+              else setShowArchived(false)
+            }}
+          >
+            <SelectTrigger id="archive-status">
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active Only</SelectItem>
+              <SelectItem value="archived">Archived Only</SelectItem>
+              <SelectItem value="all">All Items</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Separator />
+
         <div className="flex items-center justify-between">
           <Label htmlFor="auto-grid">Auto Grid Layout</Label>
           <Switch
