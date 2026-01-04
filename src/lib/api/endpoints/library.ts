@@ -16,6 +16,8 @@ export async function fetchLibraryPaths(): Promise<Array<LibraryPath>> {
   return response.json()
 }
 
+export const fetchLibraries = fetchLibraryPaths
+
 export async function getLibraryStats(): Promise<LibraryStats> {
   const response = await fetch(`${BACKEND_URL}/library/stats`)
   if (!response.ok) {

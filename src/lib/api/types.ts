@@ -1,34 +1,6 @@
-export interface PromptImage {
-  id: number
-  url: string
-  image_url: string // Added for compatibility
-  thumb_url?: string // Added for compatibility
-  file_size?: number
-  author_name?: string
-  author_username?: string
-  author_image?: string
-  prompt: string
-  negative_prompt?: string
-  width: number
-  height: number
-  seed?: number
-  steps?: number
-  cfg_scale?: number
-  sampler_name?: string
-  scheduler?: string
-  model_name?: string
-  model?: string
-  tags?: string
-  created_at: string
-  gallery_id?: string
-  is_favorite?: boolean
-  liked_by_me?: boolean
-  like_count?: number
-  embedding?: Array<number>
-  metadata?: Record<string, any>
-  origin?: string
-  local_path?: string
-}
+import type { Generation, PromptImage, Workflow } from '@embeddr/react-ui/types'
+
+export type { PromptImage, Workflow, Generation }
 
 export interface Gallery {
   id: string
@@ -69,18 +41,9 @@ export interface Collection {
 }
 
 export interface SystemStatus {
-  status: 'ok' | 'error' | 'maintenance'
-  version: string
-  features: {
-    search: boolean
-    generation: boolean
-    upload: boolean
-  }
-  stats: {
-    total_images: number
-    total_galleries: number
-    storage_used: number
-  }
+  mcp: boolean
+  comfy: boolean
+  docs: boolean
 }
 
 export interface LibraryStats {

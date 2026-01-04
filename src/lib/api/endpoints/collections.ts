@@ -102,6 +102,8 @@ export async function fetchCollectionItems(
     width: item.width,
     height: item.height,
     file_size: item.file_size,
+    phash: item.phash,
+    is_archived: item.is_archived,
   }))
 }
 

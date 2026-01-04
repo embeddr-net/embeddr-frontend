@@ -8,9 +8,20 @@ export async function fetchItems(
     sort?: 'random' | 'new'
     filter?: 'all' | 'following'
     libraryId?: number | null
+    tags?: Array<string>
+    isArchived?: boolean | null
+    mediaType?: 'image' | 'video' | 'all'
   } = {},
 ): Promise<Array<PromptImage>> {
-  const { offset = 0, limit = 100, sort = 'new', libraryId } = data
+  const {
+    offset = 0,
+    limit = 100,
+    sort = 'new',
+    libraryId,
+    tags,
+    isArchived = false,
+    mediaType,
+  } = data
 
   let url = `${BACKEND_URL}/images?skip=${offset}&limit=${limit}`
   if (libraryId) {
@@ -18,6 +29,19 @@ export async function fetchItems(
   }
   if (sort) {
     url += `&sort=${sort}`
+  }
+  if (tags && tags.length > 0) {
+    url += `&tags=${encodeURIComponent(tags.join(','))}`
+  }
+  if (isArchived !== undefined) {
+    if (isArchived === null) {
+      url += `&is_archived=null`
+    } else {
+      url += `&is_archived=${isArchived}`
+    }
+  }
+  if (mediaType && mediaType !== 'all') {
+    url += `&media_type=${mediaType}`
   }
 
   const response = await fetch(url)
@@ -38,6 +62,12 @@ export async function fetchItems(
     author_username: 'local',
     width: item.width,
     height: item.height,
+    media_type: item.media_type,
+    duration: item.duration,
+    fps: item.fps,
+    frame_count: item.frame_count,
+    phash: item.phash,
+    is_archived: item.is_archived,
   }))
 }
 
@@ -48,6 +78,8 @@ export async function searchItems(
   libraryId?: number | null,
   model?: string,
   collectionId?: number | null,
+  isArchived?: boolean | null,
+  mediaType?: 'image' | 'video' | 'all',
 ): Promise<Array<PromptImage>> {
   let url = `${BACKEND_URL}/images?q=${encodeURIComponent(
     query,
@@ -60,6 +92,16 @@ export async function searchItems(
   }
   if (model) {
     url += `&model=${encodeURIComponent(model)}`
+  }
+  if (isArchived !== undefined) {
+    if (isArchived === null) {
+      url += `&is_archived=null`
+    } else {
+      url += `&is_archived=${isArchived}`
+    }
+  }
+  if (mediaType && mediaType !== 'all') {
+    url += `&media_type=${mediaType}`
   }
 
   const response = await fetch(url)
@@ -80,6 +122,8 @@ export async function searchItems(
     width: item.width,
     height: item.height,
     file_size: item.file_size,
+    phash: item.phash,
+    is_archived: item.is_archived,
   }))
 }
 
@@ -90,6 +134,8 @@ export async function searchItemsByImageId(
   libraryId?: number | null,
   model?: string,
   collectionId?: number | null,
+  isArchived?: boolean | null,
+  mediaType?: 'image' | 'video' | 'all',
 ): Promise<Array<PromptImage>> {
   let url = `${BACKEND_URL}/images/${imageId}/similar?limit=${limit}&skip=${offset}`
   if (libraryId) {
@@ -100,6 +146,16 @@ export async function searchItemsByImageId(
   }
   if (model) {
     url += `&model=${encodeURIComponent(model)}`
+  }
+  if (isArchived !== undefined) {
+    if (isArchived === null) {
+      url += `&is_archived=null`
+    } else {
+      url += `&is_archived=${isArchived}`
+    }
+  }
+  if (mediaType && mediaType !== 'all') {
+    url += `&media_type=${mediaType}`
   }
 
   const response = await fetch(url, {
@@ -122,5 +178,7 @@ export async function searchItemsByImageId(
     width: item.width,
     height: item.height,
     file_size: item.file_size,
+    phash: item.phash,
+    is_archived: item.is_archived,
   }))
 }
