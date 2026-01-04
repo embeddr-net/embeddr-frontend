@@ -20,10 +20,10 @@ import { Button } from '@embeddr/react-ui/components/button'
 import { Badge } from '@embeddr/react-ui/components/badge'
 import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
 import { Separator } from '@embeddr/react-ui/components/separator'
-import { Input } from '@embeddr/react-ui/components/input'
 import {
   BookCopyIcon,
   ClockPlus,
+  Eye,
   FilterIcon,
   FolderPlus,
   FolderSyncIcon,
@@ -33,6 +33,7 @@ import {
   ScanEye,
   Search,
   Settings2Icon,
+  Tag,
   X,
 } from 'lucide-react'
 import {
@@ -43,12 +44,15 @@ import {
 import { toast } from 'sonner'
 
 import { Spinner } from '@embeddr/react-ui/components/spinner'
-import { cn } from '@embeddr/react-ui/lib/utils'
 import { useNavigate } from '@tanstack/react-router'
-import { useImageDialog } from '@embeddr/react-ui'
+import { useImageDialog } from '@embeddr/react-ui/hooks'
+import { Input } from '@embeddr/react-ui/components/input'
 import type { PromptImage } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { ImageDetailDialog } from '@/components/dialogs/ImageDetailDialog'
 import { Route } from '@/routes'
 import { FilterConfigPanel } from '@/components/search/FilterConfigPanel'
+import { TagsFilter } from '@/components/search/TagsFilter'
 import PostsScrollArea from '@/components/search/PostsScrollArea'
 import {
   addItemToCollection,
@@ -57,6 +61,7 @@ import {
   fetchCollections,
   fetchItems,
   fetchLibraryPaths,
+  fetchTags,
   searchItems,
   searchItemsByImageId,
 } from '@/lib/api'
@@ -74,8 +79,12 @@ const ExplorePage = () => {
   const isPending = false
   const [activeTab, setActiveTab] = useState('new')
   const [sidebarTab, setSidebarTab] = useState('folders')
-  const [showSidebar, setShowSidebar] = useState(true)
+  const [showSidebar, setShowSidebar] = useLocalStorage(
+    'explore-show-sidebar',
+    true,
+  )
   const [selectedImage, setSelectedImage] = useState<PromptImage | null>(null)
+  const [detailImageId, setDetailImageId] = useState<string | null>(null)
   const [searchImageId, setSearchImageId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeSearchQuery, setActiveSearchQuery] = useState('')
@@ -90,6 +99,9 @@ const ExplorePage = () => {
   const [dragOverCollectionId, setDragOverCollectionId] = useState<
     number | null
   >(null)
+  const [mediaType, setMediaType] = useState<'image' | 'video' | 'all'>('all')
+  const [showArchived, setShowArchived] = useState<boolean | null>(false)
+  const [selectedTags, setSelectedTags] = useState<Array<string>>([])
   const [gridCols, setGridCols] = useLocalStorage('explore-grid-cols', 5)
   const [autoGrid, setAutoGrid] = useLocalStorage('explore-auto-grid', true)
   const [useOriginalImages, setUseOriginalImages] = useLocalStorage(
@@ -112,6 +124,12 @@ const ExplorePage = () => {
   const { data: collections, refetch: refetchCollections } = useQuery({
     queryKey: ['collections'],
     queryFn: fetchCollections,
+  })
+
+  // Fetch Tags
+  const { data: tags } = useQuery({
+    queryKey: ['tags'],
+    queryFn: fetchTags,
   })
 
   useEffect(() => {
@@ -186,7 +204,15 @@ const ExplorePage = () => {
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useInfiniteQuery({
-      queryKey: ['items', activeTab, selectedLibraryId, selectedCollectionId],
+      queryKey: [
+        'items',
+        activeTab,
+        selectedLibraryId,
+        selectedCollectionId,
+        selectedTags,
+        mediaType,
+        showArchived,
+      ],
       queryFn: ({ pageParam }) => {
         if (selectedCollectionId) {
           return fetchCollectionItems(selectedCollectionId, pageParam, 50)
@@ -204,6 +230,9 @@ const ExplorePage = () => {
           sort,
           filter,
           libraryId: selectedLibraryId,
+          tags: selectedTags,
+          mediaType: mediaType === 'all' ? undefined : mediaType,
+          isArchived: showArchived,
         })
       },
       initialPageParam: 0,
@@ -271,6 +300,8 @@ const ExplorePage = () => {
       selectedLibraryId,
       selectedCollectionId,
       selectedModel,
+      mediaType,
+      showArchived,
     ],
     queryFn: ({ pageParam }) => {
       if (searchImageId) {
@@ -281,6 +312,8 @@ const ExplorePage = () => {
           selectedLibraryId,
           selectedModel,
           selectedCollectionId,
+          showArchived,
+          mediaType === 'all' ? undefined : mediaType,
         )
       }
       return searchItems(
@@ -290,6 +323,8 @@ const ExplorePage = () => {
         selectedLibraryId,
         selectedModel,
         selectedCollectionId,
+        showArchived,
+        mediaType === 'all' ? undefined : mediaType,
       )
     },
     initialPageParam: 0,
@@ -328,6 +363,9 @@ const ExplorePage = () => {
         src: p.image_url,
         title: p.prompt,
         metadata: p as any,
+        media_type: (p.media_type === 'video' ? 'video' : 'image') as
+          | 'video'
+          | 'image',
       }))
       const totalImages = currentHasNext
         ? currentPosts.length + 100
@@ -337,49 +375,30 @@ const ExplorePage = () => {
   }, [currentPosts, currentGallery?.id, setGalleryImages, currentHasNext])
 
   const handleSelectImage = (image: PromptImage) => {
+    setDetailImageId(image.id.toString())
+  }
+
+  const handleOpenLightbox = (image: PromptImage) => {
     const index = currentPosts.findIndex((p) => p.id === image.id)
-    const galleryImages = currentPosts.map((p) => ({
-      src: p.image_url,
-      title: p.prompt,
-      metadata: p as any,
-    }))
-
-    const totalImages = currentHasNext
-      ? currentPosts.length + 100
-      : currentPosts.length
-
-    openImage(
-      image.image_url,
-      {
-        id: 'virtual-gallery',
-        name: activeTab === 'search' ? 'Search Results' : 'Feed',
-        images: galleryImages,
-        totalImages,
-        fetchMore: async (_dir: any, _offset: any) => {
-          if (currentHasNext) {
-            await currentFetchNext()
-          }
-        },
-      },
-      index >= 0 ? index : 0,
-      [
+    if (index !== -1) {
+      openImage(
+        image.image_url,
         {
-          id: 'search-by-image',
-          icon: <Search className="w-4 h-4" />,
-          label: 'Search by Image',
-          onClick: (galleryImage) => {
-            const img = galleryImage?.metadata as PromptImage | undefined
-            if (img) {
-              handleSearchByImage(img)
-            } else {
-              handleSearchByImage(image)
-            }
-          },
+          id: 'virtual-gallery',
+          images: currentPosts.map((p) => ({
+            src: p.image_url,
+            title: p.prompt,
+            metadata: p as any,
+            media_type: p.media_type === 'video' ? 'video' : 'image',
+          })),
+          fetchMore: () => currentFetchNext(),
+          totalImages: currentHasNext
+            ? currentPosts.length + 100
+            : currentPosts.length,
         },
-      ],
-      image.prompt,
-    )
-    // setSidebarTab("details");
+        index,
+      )
+    }
   }
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -403,241 +422,265 @@ const ExplorePage = () => {
   }
 
   return (
-    <div className="transition-transform duration-300 p-1 w-full grid grid-cols-4 gap-1 h-full overflow-visible">
+    <div className="w-full h-full overflow-hidden flex p-1">
       {/* Left Sidebar */}
       <div
         className={cn(
-          'hidden flex-col overflow-visible h-full border-none ring-0! shadow-none bg-transparent p-0! min-h-0 gap-1',
-          showSidebar ? ' md:flex' : ' col-span-4 md:col-span-1',
+          'flex flex-col overflow-hidden h-full border-none ring-0! shadow-none bg-transparent p-0! min-h-0 transition-all duration-300 ease-in-out',
+          showSidebar
+            ? 'w-80 opacity-100 translate-x-0 mr-1'
+            : 'w-0 opacity-0 -translate-x-4 mr-0',
         )}
       >
-        {/* <div className="col-span-1 flex-col gap-1 h-full hidden md:flex"> */}
-        {/* User Profile / Auth CTA */}
-        {/* Folders Section / Image Details */}
-        <Card className="flex-1 p-0! gap-0! flex flex-col overflow-visible min-h-0">
-          <Tabs
-            value={sidebarTab}
-            onValueChange={(v) => setSidebarTab(v)}
-            className="h-full flex flex-col w-full! min-h-0 gap-1! space-y-0!"
-          >
-            <div className="flex items-center justify-between shrink-0 border-b border-foreground/10 p-1 bg-muted/35">
-              <TabsList
-                className={cn(
-                  'flex gap-1 w-full justify-start',
-                  // selectedImage ? 'grid-cols-2' : 'grid-cols-1',
-                )}
-              >
-                <TabsTrigger
-                  value="folders"
-                  className="max-w-fit items-center gap-2"
-                >
-                  <BookCopyIcon className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger
-                  value="collections"
-                  className="max-w-fit items-center gap-2"
-                >
-                  <Layers className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger
-                  value="details"
-                  className="ml-auto max-w-fit items-center gap-2"
-                  disabled={!selectedImage}
-                >
-                  <Info className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger
-                  value="config"
-                  className="max-w-fit items-center gap-2"
-                >
-                  <FilterIcon className="h-4 w-4" />
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent
-              value="collections"
-              className="flex-1 m-0 overflow-hidden flex flex-col"
+        <div className="w-80 h-full flex flex-col gap-1">
+          {/* <div className="col-span-1 flex-col gap-1 h-full hidden md:flex"> */}
+          {/* User Profile / Auth CTA */}
+          {/* Folders Section / Image Details */}
+          <Card className="flex-1 p-0! gap-0! flex flex-col overflow-visible min-h-0">
+            <Tabs
+              value={sidebarTab}
+              onValueChange={(v) => setSidebarTab(v)}
+              className="h-full flex flex-col w-full! min-h-0 gap-1! space-y-0!"
             >
-              <ScrollArea className="flex-1">
+              <div className="flex items-center justify-between shrink-0 border-b border-foreground/10 p-1 bg-muted/35">
+                <TabsList
+                  className={cn(
+                    'flex gap-1 w-full justify-start',
+                    // selectedImage ? 'grid-cols-2' : 'grid-cols-1',
+                  )}
+                >
+                  <TabsTrigger
+                    value="folders"
+                    className="max-w-fit items-center gap-2"
+                  >
+                    <BookCopyIcon className="h-4 w-4" />
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="collections"
+                    className="max-w-fit items-center gap-2"
+                  >
+                    <Layers className="h-4 w-4" />
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="details"
+                    className="ml-auto max-w-fit items-center gap-2"
+                    disabled={!selectedImage}
+                  >
+                    <Info className="h-4 w-4" />
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="config"
+                    className="max-w-fit items-center gap-2"
+                  >
+                    <FilterIcon className="h-4 w-4" />
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent
+                value="collections"
+                className="flex-1 m-0 overflow-hidden flex flex-col"
+              >
+                <ScrollArea className="flex-1">
+                  <div className="p-2 flex flex-row items-center justify-between space-y-0">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Collections
+                    </span>
+                    <Dialog
+                      open={isCreateCollectionOpen}
+                      onOpenChange={setIsCreateCollectionOpen}
+                    >
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                          <DialogTitle>Create Collection</DialogTitle>
+                          <DialogDescription>
+                            Create a new collection to organize your images.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="name" className="text-right">
+                              Name
+                            </Label>
+                            <Input
+                              id="name"
+                              autoComplete="off"
+                              value={newCollectionName}
+                              onChange={(e) =>
+                                setNewCollectionName(e.target.value)
+                              }
+                              className="col-span-3"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button onClick={handleCreateCollection}>
+                            Create
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  <Separator />
+
+                  <div className="p-2 space-y-1">
+                    {collections?.map((collection) => (
+                      <Button
+                        key={collection.id}
+                        variant={
+                          selectedCollectionId === collection.id
+                            ? 'secondary'
+                            : dragOverCollectionId === collection.id
+                              ? 'secondary'
+                              : 'ghost'
+                        }
+                        className={cn(
+                          'w-full justify-between font-normal h-9 transition-all',
+                          dragOverCollectionId === collection.id &&
+                            'ring-2 ring-primary ring-inset scale-[1.02]',
+                        )}
+                        onClick={() => {
+                          setSelectedCollectionId(collection.id)
+                          setSelectedLibraryId(null)
+                          if (
+                            activeTab === 'search' &&
+                            !activeSearchQuery &&
+                            !searchImageId
+                          ) {
+                            setActiveTab('new')
+                          }
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault()
+                          setDragOverCollectionId(collection.id)
+                        }}
+                        onDragLeave={() => setDragOverCollectionId(null)}
+                        onDrop={async (e) => {
+                          e.preventDefault()
+                          setDragOverCollectionId(null)
+                          const imageId = e.dataTransfer.getData(
+                            'application/embeddr-image-id',
+                          )
+                          if (imageId) {
+                            try {
+                              await addItemToCollection(
+                                collection.id,
+                                parseInt(imageId),
+                              )
+                              toast.success(`Added to ${collection.name}`)
+                              refetchCollections()
+                            } catch (err) {
+                              toast.error('Failed to add to collection')
+                            }
+                          }
+                        }}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <Layers className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{collection.name}</span>
+                        </div>
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] h-5 px-1.5 min-w-5 justify-center"
+                        >
+                          {collection.item_count}
+                        </Badge>
+                      </Button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent
+                value="folders"
+                className="flex-1 m-0 overflow-hidden flex flex-col"
+              >
                 <div className="p-2 flex flex-row items-center justify-between space-y-0">
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Collections
+                    Libraries
                   </span>
-                  <Dialog
-                    open={isCreateCollectionOpen}
-                    onOpenChange={setIsCreateCollectionOpen}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() =>
+                      navigate({ to: '/settings', search: { tab: 'library' } })
+                    }
                   >
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Create Collection</DialogTitle>
-                        <DialogDescription>
-                          Create a new collection to organize your images.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="name" className="text-right">
-                            Name
-                          </Label>
-                          <Input
-                            id="name"
-                            autoComplete="off"
-                            value={newCollectionName}
-                            onChange={(e) =>
-                              setNewCollectionName(e.target.value)
-                            }
-                            className="col-span-3"
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button onClick={handleCreateCollection}>Create</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
                 <Separator />
-
-                <div className="p-2 space-y-1">
-                  {collections?.map((collection) => (
+                <ScrollArea className="flex-1">
+                  <div className="p-2 space-y-1">
                     <Button
-                      key={collection.id}
                       variant={
-                        selectedCollectionId === collection.id
+                        selectedLibraryId === null &&
+                        selectedCollectionId === null
                           ? 'secondary'
-                          : dragOverCollectionId === collection.id
-                            ? 'secondary'
-                            : 'ghost'
-                      }
-                      className={cn(
-                        'w-full justify-between font-normal h-9 transition-all',
-                        dragOverCollectionId === collection.id &&
-                          'ring-2 ring-primary ring-inset scale-[1.02]',
-                      )}
-                      onClick={() => {
-                        setSelectedCollectionId(collection.id)
-                        setSelectedLibraryId(null)
-                      }}
-                      onDragOver={(e) => {
-                        e.preventDefault()
-                        setDragOverCollectionId(collection.id)
-                      }}
-                      onDragLeave={() => setDragOverCollectionId(null)}
-                      onDrop={async (e) => {
-                        e.preventDefault()
-                        setDragOverCollectionId(null)
-                        const imageId = e.dataTransfer.getData(
-                          'application/embeddr-image-id',
-                        )
-                        if (imageId) {
-                          try {
-                            await addItemToCollection(
-                              collection.id,
-                              parseInt(imageId),
-                            )
-                            toast.success(`Added to ${collection.name}`)
-                            refetchCollections()
-                          } catch (err) {
-                            toast.error('Failed to add to collection')
-                          }
-                        }
-                      }}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <Layers className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{collection.name}</span>
-                      </div>
-                      <Badge
-                        variant="secondary"
-                        className="text-[10px] h-5 px-1.5 min-w-5 justify-center"
-                      >
-                        {collection.item_count}
-                      </Badge>
-                    </Button>
-                  ))}
-                </div>
-              </ScrollArea>
-            </TabsContent>
-
-            <TabsContent
-              value="folders"
-              className="flex-1 m-0 overflow-hidden flex flex-col"
-            >
-              <div className="p-2 flex flex-row items-center justify-between space-y-0">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Libraries
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() =>
-                    navigate({ to: '/settings', search: { tab: 'library' } })
-                  }
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <Separator />
-              <ScrollArea className="flex-1">
-                <div className="p-2 space-y-1">
-                  <Button
-                    variant={
-                      selectedLibraryId === null &&
-                      selectedCollectionId === null
-                        ? 'secondary'
-                        : 'ghost'
-                    }
-                    className="w-full justify-between font-normal h-9"
-                    onClick={() => {
-                      setSelectedLibraryId(null)
-                      setSelectedCollectionId(null)
-                    }}
-                  >
-                    <span className="flex items-center gap-2 truncate">
-                      <FolderPlus className="h-4 w-4 text-muted-foreground" />
-                      All Images
-                    </span>
-                  </Button>
-                  {libraryPaths?.map((folder) => (
-                    <Button
-                      key={folder.id}
-                      variant={
-                        selectedLibraryId === folder.id ? 'secondary' : 'ghost'
+                          : 'ghost'
                       }
                       className="w-full justify-between font-normal h-9"
                       onClick={() => {
-                        setSelectedLibraryId(folder.id)
+                        setSelectedLibraryId(null)
                         setSelectedCollectionId(null)
                       }}
                     >
-                      <span
-                        className="flex items-center gap-2 truncate"
-                        title={folder.path}
-                      >
+                      <span className="flex items-center gap-2 truncate">
                         <FolderPlus className="h-4 w-4 text-muted-foreground" />
-                        {folder.name || folder.path.split('/').pop()}
+                        All Images
                       </span>
-                      <Badge variant="secondary" className="text-xs h-5 px-1.5">
-                        {folder.image_count}
-                      </Badge>
                     </Button>
-                  ))}
-                </div>
-              </ScrollArea>
-            </TabsContent>
+                    {libraryPaths?.map((folder) => (
+                      <Button
+                        key={folder.id}
+                        variant={
+                          selectedLibraryId === folder.id
+                            ? 'secondary'
+                            : 'ghost'
+                        }
+                        className="w-full justify-between font-normal h-9"
+                        onClick={() => {
+                          setSelectedLibraryId(folder.id)
+                          setSelectedCollectionId(null)
+                          if (
+                            activeTab === 'search' &&
+                            !activeSearchQuery &&
+                            !searchImageId
+                          ) {
+                            setActiveTab('new')
+                          }
+                        }}
+                      >
+                        <span
+                          className="flex items-center gap-2 truncate"
+                          title={folder.path}
+                        >
+                          <FolderPlus className="h-4 w-4 text-muted-foreground" />
+                          {folder.name || folder.path.split('/').pop()}
+                        </span>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs h-5 px-1.5"
+                        >
+                          {folder.image_count}
+                        </Badge>
+                      </Button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
 
-            <TabsContent
-              value="details"
-              className="flex-1 m-0 overflow-hidden flex flex-col"
-            >
-              {/* {selectedImage ? (
+              <TabsContent
+                value="details"
+                className="flex-1 m-0 overflow-hidden flex flex-col"
+              >
+                {/* {selectedImage ? (
                 <ImageDetailsSidebar
                   image={fullSelectedImage || selectedImage}
                   onClose={handleCloseDetails}
@@ -648,32 +691,39 @@ const ExplorePage = () => {
                   Select an image to view details
                 </div>
               )} */}
-            </TabsContent>
+              </TabsContent>
 
-            <TabsContent value="config" className="flex-1 m-0 overflow-hidden">
-              <FilterConfigPanel
-                gridCols={gridCols}
-                setGridCols={setGridCols}
-                imageFit={imageFit}
-                setImageFit={setImageFit}
-                autoGrid={autoGrid}
-                setAutoGrid={setAutoGrid}
-                useOriginalImages={useOriginalImages}
-                setUseOriginalImages={setUseOriginalImages}
-              />
-            </TabsContent>
-          </Tabs>
-        </Card>
+              <TabsContent
+                value="config"
+                className="flex-1 m-0 overflow-hidden"
+              >
+                <FilterConfigPanel
+                  gridCols={gridCols}
+                  setGridCols={setGridCols}
+                  imageFit={imageFit}
+                  setImageFit={setImageFit}
+                  autoGrid={autoGrid}
+                  setAutoGrid={setAutoGrid}
+                  useOriginalImages={useOriginalImages}
+                  setUseOriginalImages={setUseOriginalImages}
+                  mediaType={mediaType}
+                  setMediaType={setMediaType}
+                  showArchived={showArchived}
+                  setShowArchived={setShowArchived}
+                />
+              </TabsContent>
+            </Tabs>
+          </Card>
 
-        {/* Visualizer CTA - Pushed to bottom */}
-        {/* <VisualizerCTA /> */}
+          {/* Visualizer CTA - Pushed to bottom */}
+          {/* <VisualizerCTA /> */}
+        </div>
       </div>
 
       {/* Main Content Area */}
       <Card
         className={cn(
-          'col-span-4 md:col-span-3 flex flex-col overflow-visible h-full border-none ring-0! shadow-none bg-transparent p-0! min-h-0',
-          showSidebar ? 'col-span-4' : 'col-span-5 md:col-span-4',
+          'flex-1 flex flex-col overflow-visible h-full border-none ring-0! shadow-none bg-transparent p-0! min-h-0',
         )}
       >
         <Tabs
@@ -688,7 +738,7 @@ const ExplorePage = () => {
           className="h-full flex flex-col w-full! min-h-0 gap-1! space-y-0!"
         >
           {/* SEARCH BAR DIV */}
-          <div className="flex items-center shrink-0 border border-foreground/10 p-1 bg-card">
+          <div className="flex items-center shrink-0 border border-foreground/10 p-1 bg-card gap-1">
             <Button
               variant="outline"
               size="icon"
@@ -696,7 +746,7 @@ const ExplorePage = () => {
                 'border ring-0!',
                 showSidebar && 'bg-foreground/20!',
               )}
-              onClick={() => setShowSidebar(!showSidebar)}
+              onClick={() => setShowSidebar((prev) => !prev)}
             >
               <Settings2Icon />
             </Button>
@@ -718,7 +768,23 @@ const ExplorePage = () => {
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex items-center gap-2 h-full ml-auto">
+            <div className="ml-auto">
+              <TagsFilter
+                tags={tags || []}
+                selectedTags={selectedTags}
+                onToggleTag={(tag) => {
+                  if (selectedTags.includes(tag)) {
+                    setSelectedTags(selectedTags.filter((t) => t !== tag))
+                  } else {
+                    setSelectedTags([...selectedTags, tag])
+                  }
+                }}
+                onClearTags={() => setSelectedTags([])}
+                onSoloTag={(tag) => setSelectedTags([tag])}
+              />
+            </div>
+
+            <div className="flex items-center gap-2 h-full">
               <div className="relative w-50 md:w-75 h-full">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -774,7 +840,8 @@ const ExplorePage = () => {
                   fetchNextPage={fetchNextSearchPage}
                   hasNextPage={hasNextSearchPage}
                   isFetchingNextPage={isFetchingNextSearchPage}
-                  onSelect={handleSelectImage}
+                  onSelect={handleOpenLightbox}
+                  onOpenDetails={handleSelectImage}
                   onSearchByImage={handleSearchByImage}
                   selectedId={selectedImage?.id}
                   queryKey={['search', activeSearchQuery, searchImageId]}
@@ -798,7 +865,8 @@ const ExplorePage = () => {
                   fetchNextPage={fetchNextPage}
                   hasNextPage={hasNextPage}
                   isFetchingNextPage={isFetchingNextPage}
-                  onSelect={handleSelectImage}
+                  onSelect={handleOpenLightbox}
+                  onOpenDetails={handleSelectImage}
                   onSearchByImage={handleSearchByImage}
                   selectedId={selectedImage?.id}
                   queryKey={[
@@ -827,7 +895,8 @@ const ExplorePage = () => {
                   fetchNextPage={fetchNextPage}
                   hasNextPage={hasNextPage}
                   isFetchingNextPage={isFetchingNextPage}
-                  onSelect={handleSelectImage}
+                  onSelect={handleOpenLightbox}
+                  onOpenDetails={handleSelectImage}
                   onSearchByImage={handleSearchByImage}
                   selectedId={selectedImage?.id}
                   queryKey={[
@@ -856,7 +925,8 @@ const ExplorePage = () => {
                   fetchNextPage={fetchNextPage}
                   hasNextPage={hasNextPage}
                   isFetchingNextPage={isFetchingNextPage}
-                  onSelect={handleSelectImage}
+                  onSelect={handleOpenLightbox}
+                  onOpenDetails={handleSelectImage}
                   onSearchByImage={handleSearchByImage}
                   selectedId={selectedImage?.id}
                   queryKey={[
@@ -873,6 +943,12 @@ const ExplorePage = () => {
           </TabsContent>
         </Tabs>
       </Card>
+
+      <ImageDetailDialog
+        imageId={detailImageId}
+        open={!!detailImageId}
+        onOpenChange={(open) => !open && setDetailImageId(null)}
+      />
     </div>
   )
 }
