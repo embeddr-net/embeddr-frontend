@@ -26,7 +26,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@embeddr/react-ui/components/accordion'
-import { Spinner } from '@embeddr/react-ui'
+import { Spinner } from '@embeddr/react-ui/components/spinner'
 import { toast } from 'sonner'
 import { StatsPanel } from './StatsPanel'
 import { useSettings } from '@/hooks/useSettings'
@@ -151,6 +151,7 @@ function LibraryPathItem({ path }: { path: any }) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Nickname"
+                  autoComplete="off"
                 />
                 <Button
                   size="sm"
@@ -239,7 +240,7 @@ export function LibrarySettings() {
       const res = await fetch(`${BACKEND_URL}/workspace/paths`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path }),
+        body: JSON.stringify({ path, create_if_missing: true }),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -249,6 +250,7 @@ export function LibrarySettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['paths'] })
+      queryClient.invalidateQueries({ queryKey: ['library-paths'] })
       setNewPath('')
       toast.success('Path added successfully')
     },
@@ -293,6 +295,7 @@ export function LibrarySettings() {
               <Label htmlFor="path">Add Directory Path</Label>
               <div className="flex gap-2 h-full">
                 <Input
+                  autoComplete="off"
                   id="path"
                   placeholder="/home/user/images"
                   value={newPath}

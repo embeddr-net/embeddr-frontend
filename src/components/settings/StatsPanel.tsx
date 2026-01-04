@@ -10,10 +10,10 @@ import {
 import { Button } from '@embeddr/react-ui/components/button'
 import { Activity, HardDrive, Play, Power } from 'lucide-react'
 import { toast } from 'sonner'
-import { cn } from '@embeddr/react-ui/lib/utils'
 import { JobStatus } from './JobStatus'
 import { useSettings } from '@/hooks/useSettings'
 import { BACKEND_URL } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
 export function StatsPanel() {
   const { selectedModel, setSelectedModel } = useSettings()
