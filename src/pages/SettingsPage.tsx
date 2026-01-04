@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import {
   Card,
   CardContent,
@@ -6,10 +7,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@embeddr/react-ui/components/card'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Activity,
   FileText,
+  Info,
   Key,
   Library,
   Server,
@@ -17,8 +19,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@embeddr/react-ui/components/button'
 import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { toast } from 'sonner'
 
-import { cn } from '@embeddr/react-ui/lib/utils'
 import {
   Select,
   SelectContent,
@@ -28,15 +30,23 @@ import {
 } from '@embeddr/react-ui/components/select'
 import { Input } from '@embeddr/react-ui/components/input'
 import { Label } from '@embeddr/react-ui/components/label'
-import { fetchAvailableModels } from '@/lib/api'
+import { BACKEND_URL, fetchAvailableModels } from '@/lib/api'
 import { useSettings } from '@/hooks/useSettings'
 import { LibrarySettings } from '@/components/settings/LibrarySettings'
 import { LogViewer } from '@/components/settings/LogViewer'
+import { SystemInfo } from '@/components/settings/SystemInfo'
+import { UploadSettings } from '@/components/settings/UploadSettings'
 import { Route } from '@/routes/settings'
+import { cn } from '@/lib/utils'
 
 function GeneralSettings() {
   const { selectedModel, setSelectedModel, batchSize, setBatchSize } =
     useSettings()
+  const [localBatchSize, setLocalBatchSize] = useState(batchSize)
+
+  useEffect(() => {
+    setLocalBatchSize(batchSize)
+  }, [batchSize])
 
   const { data: models, isLoading: isLoadingModels } = useQuery({
     queryKey: ['available-models'],
@@ -81,8 +91,13 @@ function GeneralSettings() {
           <Label>Batch Size</Label>
           <Input
             type="number"
-            value={batchSize}
-            onChange={(e) => setBatchSize(parseInt(e.target.value, 10))}
+            value={localBatchSize}
+            onChange={(e) => setLocalBatchSize(parseInt(e.target.value, 10))}
+            onBlur={() => {
+              if (localBatchSize !== batchSize) {
+                setBatchSize(localBatchSize)
+              }
+            }}
             min={1}
             max={100}
           />
@@ -114,6 +129,16 @@ const SettingsPage = () => {
       icon: <Library className="h-4 w-4" />,
       value: 'library',
     },
+    {
+      title: 'Upload',
+      icon: <FileText className="h-4 w-4" />,
+      value: 'upload',
+    },
+    {
+      title: 'System Info',
+      icon: <Info className="h-4 w-4" />,
+      value: 'info',
+    },
   ]
 
   return (
@@ -128,24 +153,22 @@ const SettingsPage = () => {
           </div>
           <ScrollArea className="flex-1 flex-col">
             <div className="p-2 flex flex-row space-x-2 space-y-0 md:flex-col md:space-y-1 md:space-x-0">
-              <div>
-                {sidebarNavItems.map((item) => (
-                  <Button
-                    key={item.value}
-                    variant={activeTab === item.value ? 'secondary' : 'ghost'}
-                    className={cn(
-                      'w-fit md:w-full justify-start font-normal h-9',
-                      activeTab === item.value && 'bg-muted font-medium',
-                    )}
-                    onClick={() => setActiveTab(item.value)}
-                  >
-                    <span className="flex items-center gap-2 truncate">
-                      {item.icon}
-                      <span className="hidden md:inline">{item.title}</span>
-                    </span>
-                  </Button>
-                ))}
-              </div>
+              {sidebarNavItems.map((item) => (
+                <Button
+                  key={item.value}
+                  variant={activeTab === item.value ? 'secondary' : 'ghost'}
+                  className={cn(
+                    'w-fit md:w-full justify-start font-normal h-9',
+                    activeTab === item.value && 'bg-muted font-medium',
+                  )}
+                  onClick={() => setActiveTab(item.value)}
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    {item.icon}
+                    <span className="hidden md:inline">{item.title}</span>
+                  </span>
+                </Button>
+              ))}
               <div className="md:hidden flex items-center justify-between shrink-0 p-2 bg-card ml-auto ">
                 <div className="flex items-center gap-2">
                   <h2 className="text-sm font-medium">
@@ -173,6 +196,8 @@ const SettingsPage = () => {
             >
               {activeTab === 'general' && <GeneralSettings />}
               {activeTab === 'library' && <LibrarySettings />}
+              {activeTab === 'upload' && <UploadSettings />}
+              {activeTab === 'info' && <SystemInfo />}
             </ScrollArea>
           </div>
           <LogViewer />
