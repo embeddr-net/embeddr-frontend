@@ -156,17 +156,20 @@ export const useGenerationStore = create<GenerationState>()(
                     '[GenerationStore] Found generation, processing output:',
                     gen.id,
                   )
-                  const images = (data.output.images || []).map(
-                    (o: any) =>
-                      `${BACKEND_URL}/comfy/view?filename=${o.filename}&subfolder=${o.subfolder || ''}&type=${o.type || 'output'}`,
-                  )
+                  const images = (data.output.images || [])
+                    .filter((o: any) => o.type !== 'temp')
+                    .map(
+                      (o: any) =>
+                        `${BACKEND_URL}/comfy/view?filename=${o.filename}&subfolder=${o.subfolder || ''}&type=${o.type || 'output'}`,
+                    )
 
                   const embeddrImages = (data.output.embeddr_ids || []).map(
                     (id: any) => `${BACKEND_URL}/images/${id}/file`,
                   )
 
-                  // Prioritize embeddr images
-                  const allImages = [...embeddrImages, ...images]
+                  // Prioritize embeddr images, fallback to comfy images if no embeddr images
+                  const allImages =
+                    embeddrImages.length > 0 ? embeddrImages : images
 
                   // Normalize outputs to match backend storage format
                   const normalizedOutputs = [
@@ -418,7 +421,9 @@ export const useGenerationStore = create<GenerationState>()(
 
             if (images.length === 0 && outputs.length > 0) {
               images = outputs
-                .filter((o: any) => o.type === 'image')
+                .filter(
+                  (o: any) => o.type === 'image' && o.comfy_type !== 'temp',
+                )
                 .map(
                   (o: any) =>
                     `${BACKEND_URL}/comfy/view?filename=${o.filename}&subfolder=${o.subfolder || ''}&type=${o.comfy_type || 'output'}`,
@@ -428,8 +433,8 @@ export const useGenerationStore = create<GenerationState>()(
                 .filter((o: any) => o.type === 'embeddr_id')
                 .map((o: any) => `${BACKEND_URL}/images/${o.value}/file`)
 
-              // Prioritize embeddr images
-              images = [...embeddrImages, ...images]
+              // Prioritize embeddr images, fallback to comfy images if no embeddr images
+              images = embeddrImages.length > 0 ? embeddrImages : images
             }
 
             return {
