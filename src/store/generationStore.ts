@@ -204,7 +204,12 @@ export const useGenerationStore = create<GenerationState>()(
                   }))
 
                   // If followLatest is enabled, select this generation
-                  if (get().followLatest) {
+                  // Only if it is the latest generation to avoid jumping to old generations
+                  const isLatest =
+                    get().generations.length > 0 &&
+                    get().generations[0].id === gen.id
+
+                  if (get().followLatest && isLatest) {
                     console.log(
                       '[GenerationStore] Auto-selecting new generation:',
                       gen.id,
