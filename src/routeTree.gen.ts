@@ -11,13 +11,16 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UmapRouteImport } from './routes/umap'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as LineageRouteImport } from './routes/lineage'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as DebugRouteImport } from './routes/debug'
 import { Route as DatasetsRouteImport } from './routes/datasets'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as ComfyRouteImport } from './routes/comfy'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PluginsPluginIdRouteImport } from './routes/plugins.$pluginId'
 import { Route as ImagesImageIdRouteImport } from './routes/images.$imageId'
 
 const UmapRoute = UmapRouteImport.update({
@@ -28,6 +31,11 @@ const UmapRoute = UmapRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesRoute = ResourcesRouteImport.update({
+  id: '/resources',
+  path: '/resources',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LineageRoute = LineageRouteImport.update({
@@ -43,6 +51,11 @@ const HelpRoute = HelpRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugRoute = DebugRouteImport.update({
+  id: '/debug',
+  path: '/debug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DatasetsRoute = DatasetsRouteImport.update({
@@ -65,6 +78,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PluginsPluginIdRoute = PluginsPluginIdRouteImport.update({
+  id: '/plugins/$pluginId',
+  path: '/plugins/$pluginId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ImagesImageIdRoute = ImagesImageIdRouteImport.update({
   id: '/images/$imageId',
   path: '/images/$imageId',
@@ -76,24 +94,30 @@ export interface FileRoutesByFullPath {
   '/comfy': typeof ComfyRoute
   '/create': typeof CreateRoute
   '/datasets': typeof DatasetsRoute
+  '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
   '/help': typeof HelpRoute
   '/lineage': typeof LineageRoute
+  '/resources': typeof ResourcesRoute
   '/settings': typeof SettingsRoute
   '/umap': typeof UmapRoute
   '/images/$imageId': typeof ImagesImageIdRoute
+  '/plugins/$pluginId': typeof PluginsPluginIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/comfy': typeof ComfyRoute
   '/create': typeof CreateRoute
   '/datasets': typeof DatasetsRoute
+  '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
   '/help': typeof HelpRoute
   '/lineage': typeof LineageRoute
+  '/resources': typeof ResourcesRoute
   '/settings': typeof SettingsRoute
   '/umap': typeof UmapRoute
   '/images/$imageId': typeof ImagesImageIdRoute
+  '/plugins/$pluginId': typeof PluginsPluginIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -101,12 +125,15 @@ export interface FileRoutesById {
   '/comfy': typeof ComfyRoute
   '/create': typeof CreateRoute
   '/datasets': typeof DatasetsRoute
+  '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
   '/help': typeof HelpRoute
   '/lineage': typeof LineageRoute
+  '/resources': typeof ResourcesRoute
   '/settings': typeof SettingsRoute
   '/umap': typeof UmapRoute
   '/images/$imageId': typeof ImagesImageIdRoute
+  '/plugins/$pluginId': typeof PluginsPluginIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -115,36 +142,45 @@ export interface FileRouteTypes {
     | '/comfy'
     | '/create'
     | '/datasets'
+    | '/debug'
     | '/docs'
     | '/help'
     | '/lineage'
+    | '/resources'
     | '/settings'
     | '/umap'
     | '/images/$imageId'
+    | '/plugins/$pluginId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/comfy'
     | '/create'
     | '/datasets'
+    | '/debug'
     | '/docs'
     | '/help'
     | '/lineage'
+    | '/resources'
     | '/settings'
     | '/umap'
     | '/images/$imageId'
+    | '/plugins/$pluginId'
   id:
     | '__root__'
     | '/'
     | '/comfy'
     | '/create'
     | '/datasets'
+    | '/debug'
     | '/docs'
     | '/help'
     | '/lineage'
+    | '/resources'
     | '/settings'
     | '/umap'
     | '/images/$imageId'
+    | '/plugins/$pluginId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -152,12 +188,15 @@ export interface RootRouteChildren {
   ComfyRoute: typeof ComfyRoute
   CreateRoute: typeof CreateRoute
   DatasetsRoute: typeof DatasetsRoute
+  DebugRoute: typeof DebugRoute
   DocsRoute: typeof DocsRoute
   HelpRoute: typeof HelpRoute
   LineageRoute: typeof LineageRoute
+  ResourcesRoute: typeof ResourcesRoute
   SettingsRoute: typeof SettingsRoute
   UmapRoute: typeof UmapRoute
   ImagesImageIdRoute: typeof ImagesImageIdRoute
+  PluginsPluginIdRoute: typeof PluginsPluginIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -174,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources': {
+      id: '/resources'
+      path: '/resources'
+      fullPath: '/resources'
+      preLoaderRoute: typeof ResourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lineage': {
@@ -195,6 +241,13 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug': {
+      id: '/debug'
+      path: '/debug'
+      fullPath: '/debug'
+      preLoaderRoute: typeof DebugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/datasets': {
@@ -225,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/plugins/$pluginId': {
+      id: '/plugins/$pluginId'
+      path: '/plugins/$pluginId'
+      fullPath: '/plugins/$pluginId'
+      preLoaderRoute: typeof PluginsPluginIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/images/$imageId': {
       id: '/images/$imageId'
       path: '/images/$imageId'
@@ -240,12 +300,15 @@ const rootRouteChildren: RootRouteChildren = {
   ComfyRoute: ComfyRoute,
   CreateRoute: CreateRoute,
   DatasetsRoute: DatasetsRoute,
+  DebugRoute: DebugRoute,
   DocsRoute: DocsRoute,
   HelpRoute: HelpRoute,
   LineageRoute: LineageRoute,
+  ResourcesRoute: ResourcesRoute,
   SettingsRoute: SettingsRoute,
   UmapRoute: UmapRoute,
   ImagesImageIdRoute: ImagesImageIdRoute,
+  PluginsPluginIdRoute: PluginsPluginIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

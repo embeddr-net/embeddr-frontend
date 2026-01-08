@@ -15,6 +15,7 @@ interface PostsScrollAreaProps {
   onSearchByImage?: (post: PromptImage) => void
   onOpenDetails?: (post: PromptImage) => void
   selectedId?: number | null
+  selectedIds?: number[]
   gridCols?: number | null
   imageFit?: 'cover' | 'contain'
   useOriginalImages?: boolean
@@ -30,6 +31,7 @@ const PostsScrollArea = ({
   onSearchByImage,
   onOpenDetails,
   selectedId,
+  selectedIds,
   gridCols = null,
   imageFit = 'contain',
   useOriginalImages = false,
@@ -89,7 +91,9 @@ const PostsScrollArea = ({
             onSearchByImage={onSearchByImage}
             onOpenDetails={onOpenDetails}
             onArchive={onArchive}
-            isSelected={selectedId === post.id}
+            isSelected={
+              selectedId === post.id || selectedIds?.includes(post.id)
+            }
             imageFit={imageFit}
             useOriginalImages={useOriginalImages}
           />

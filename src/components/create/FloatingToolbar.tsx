@@ -19,6 +19,8 @@ import { ImageSelectorDialog } from '@/components/dialogs/ImageSelectorDialog'
 import { BACKEND_URL } from '@/lib/api/config'
 import { cn } from '@/lib/utils'
 
+import { toast } from 'sonner'
+
 interface FloatingToolbarProps {
   leftSidebarOpen: boolean
   setLeftSidebarOpen: (open: boolean) => void
@@ -43,6 +45,21 @@ export function FloatingToolbar({
     workflows,
     selectWorkflow,
   } = useGeneration()
+
+  const handleRepeat = (generation: any) => {
+    if (!generation.inputs) return
+
+    Object.entries(generation.inputs).forEach(([nodeId, inputs]) => {
+      if (typeof inputs === 'object' && inputs !== null) {
+        Object.entries(inputs).forEach(([key, value]) => {
+          setWorkflowInput(nodeId, key, value)
+        })
+      }
+    })
+
+    toast.success('Settings loaded from history')
+  }
+
   const [imageSelectorOpen, setImageSelectorOpen] = React.useState(false)
   const [queueOpen, setQueueOpen] = React.useState(false)
   const [workflowOpen, setWorkflowOpen] = React.useState(false)
@@ -240,6 +257,7 @@ export function FloatingToolbar({
                         isSelected={selectedGeneration?.id === gen.id}
                         onSelect={() => selectGeneration(gen)}
                         onOpenImage={() => {}}
+                        onRepeat={() => handleRepeat(gen)}
                       />
                     ))}
                   </div>

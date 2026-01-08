@@ -41,7 +41,6 @@ import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { useEmbeddrAPI, usePluginStore } from '@/plugins/store'
 import { cn } from '@/lib/utils'
 
-
 interface ZenSettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -95,6 +94,25 @@ export function ZenSettingsDialog({
         [key]: value,
       },
     }))
+    // Dispatch event for plugins to pick up changes
+    window.dispatchEvent(new Event('local-storage'))
+  }
+
+  const handleResetPanels = (plugin: any) => {
+    if (!plugin.components) return
+
+    let count = 0
+    plugin.components.forEach((comp: any) => {
+      localStorage.removeItem(`panel-${comp.id}-position`)
+      localStorage.removeItem(`panel-${comp.id}-size`)
+      count++
+    })
+
+    toast.success(
+      `Reset positions for ${count} panels in ${plugin.name}. You may need to reopen the panel.`,
+    )
+    window.dispatchEvent(new Event('storage'))
+    window.dispatchEvent(new Event('local-storage'))
   }
 
   const toggleWorkflowVisibility = (id: string | number) => {
@@ -178,7 +196,7 @@ export function ZenSettingsDialog({
                         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                           Generation Defaults
                         </h3>
-                        <div className="grid gap-6 p-4 border rounded-lg bg-card">
+                        <div className="grid gap-6 p-4 border bg-card">
                           <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="steps" className="text-right">
                               Default Steps
@@ -214,7 +232,7 @@ export function ZenSettingsDialog({
                         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                           Behavior
                         </h3>
-                        <div className="space-y-4 p-4 border rounded-lg bg-card">
+                        <div className="space-y-4 p-4 border bg-card">
                           <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                               <Label htmlFor="autosave">
@@ -258,14 +276,14 @@ export function ZenSettingsDialog({
                         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                           Active Workflow
                         </h3>
-                        <div className="p-4 border rounded-lg bg-primary/5 border-primary/20">
+                        <div className="p-4 border bg-primary/5 border-primary/20">
                           {selectedWorkflow ? (
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
                                 <div className="font-medium text-lg">
                                   {selectedWorkflow.name}
                                 </div>
-                                <div className="px-2 py-1 bg-primary/10 rounded text-xs font-mono text-primary">
+                                <div className="px-2 py-1 bg-primary/10 text-xs font-mono text-primary">
                                   Active
                                 </div>
                               </div>
@@ -298,7 +316,7 @@ export function ZenSettingsDialog({
                               <div
                                 key={w.id}
                                 className={cn(
-                                  'flex items-center justify-between p-3 border rounded-lg transition-all',
+                                  'flex items-center justify-between p-3 border transition-all',
                                   selectedWorkflow?.id === w.id
                                     ? 'border-primary bg-primary/5'
                                     : 'hover:bg-muted/50',
@@ -314,7 +332,7 @@ export function ZenSettingsDialog({
                                       {w.name}
                                     </span>
                                     {isHidden && (
-                                      <span className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground rounded">
+                                      <span className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground">
                                         Hidden
                                       </span>
                                     )}
@@ -379,7 +397,7 @@ export function ZenSettingsDialog({
                           return (
                             <div
                               key={plugin.id}
-                              className="p-4 border rounded-lg bg-card space-y-4"
+                              className="p-4 border  bg-card space-y-4"
                             >
                               <div className="flex items-start justify-between">
                                 <div className="space-y-1">
@@ -387,7 +405,7 @@ export function ZenSettingsDialog({
                                     <h4 className="font-medium">
                                       {plugin.name}
                                     </h4>
-                                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5">
                                       v{plugin.version}
                                     </span>
                                   </div>
@@ -408,6 +426,20 @@ export function ZenSettingsDialog({
                                   }}
                                 />
                               </div>
+
+                              {/* Reset Panels Button */}
+                              {plugin.components &&
+                                plugin.components.length > 0 && (
+                                  <div className="flex justify-end pt-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleResetPanels(plugin)}
+                                    >
+                                      Reset Panels
+                                    </Button>
+                                  </div>
+                                )}
 
                               {/* Plugin Settings */}
                               {isActive && plugin.settings ? (
@@ -490,6 +522,7 @@ export function ZenSettingsDialog({
                                             )}
                                           </div>
                                           <Select
+                                            open
                                             value={value}
                                             onValueChange={(val) =>
                                               updatePluginSetting(
@@ -502,7 +535,10 @@ export function ZenSettingsDialog({
                                             <SelectTrigger className="col-span-3">
                                               <SelectValue placeholder="Select option" />
                                             </SelectTrigger>
-                                            <SelectContent>
+                                            <SelectContent
+                                              side="top"
+                                              position="popper"
+                                            >
                                               {setting.options?.map((opt) => (
                                                 <SelectItem
                                                   key={opt.value}
@@ -569,7 +605,7 @@ export function ZenSettingsDialog({
                         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                           Generate Button
                         </h3>
-                        <div className="grid gap-6 p-4 border rounded-lg bg-card">
+                        <div className="grid gap-6 p-4 border bg-card">
                           <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="gen-text" className="text-right">
                               Button Text
@@ -622,7 +658,7 @@ export function ZenSettingsDialog({
                         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                           Layout
                         </h3>
-                        <div className="p-4 border rounded-lg bg-card text-sm text-muted-foreground">
+                        <div className="p-4 border  bg-card text-sm text-muted-foreground">
                           More layout options coming soon.
                         </div>
                       </div>

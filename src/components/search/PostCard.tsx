@@ -86,17 +86,42 @@ const PostCard = memo(
         <ContextMenuTrigger>
           <div
             className={cn(
-              'border bg-card text-card-foreground shadow-sm overflow-hidden group border-foreground/10 p-0! gap-0! cursor-pointer transition-all',
+              'border bg-card text-card-foreground shadow-sm overflow-hidden group/post border-foreground/10 p-0! gap-0! cursor-pointer transition-all',
               isSelected && 'border-foreground/40',
             )}
             onClick={() => onSelect?.(post)}
             draggable
             onDragStart={(e) => {
+              const fileUrl = `${BACKEND_URL}/images/${post.id}/file`
+
               e.dataTransfer.setData(
                 'application/embeddr-image-id',
                 post.id.toString(),
               )
-              e.dataTransfer.setData('text/plain', post.id.toString())
+              e.dataTransfer.setData(
+                'application/embeddr-image-path',
+                post.path,
+              )
+
+              // Set URL in text/plain for general compatibility (if it looks like a URL)
+              // But standard text/plain might be expected to be ID in some internal parts?
+              // Existing code set it to ID: e.dataTransfer.setData('text/plain', post.id.toString())
+              // Let's keep ID in text/plain for safety if other components rely on it,
+              // but ALSO provide the URL in specific formats.
+              e.dataTransfer.setData('text/plain', fileUrl)
+
+              if (post.media_type === 'video') {
+                e.dataTransfer.setData(
+                  'application/external-video-url',
+                  fileUrl,
+                )
+              } else {
+                e.dataTransfer.setData(
+                  'application/external-image-url',
+                  fileUrl,
+                )
+              }
+
               // Optional: Set drag image or effect
               e.dataTransfer.effectAllowed = 'copy'
             }}
@@ -118,7 +143,7 @@ const PostCard = memo(
               )}
               <div
                 className={cn(
-                  'absolute bottom-2 right-2 opacity-0 group-hover:opacity-100  flex gap-1',
+                  'absolute bottom-2 right-2 opacity-0 group-hover/post:opacity-100  flex gap-1',
                   post.liked_by_me ? 'visible opacity-100!' : '',
                 )}
               ></div>

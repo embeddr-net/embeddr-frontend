@@ -1,0 +1,207 @@
+import { createFileRoute } from '@tanstack/react-router'
+import { useState, useEffect } from 'react'
+import { useEmbeddrAPI } from '@/plugins/store'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@embeddr/react-ui/components/card'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@embeddr/react-ui/components/tabs'
+import { Input } from '@embeddr/react-ui/components/input'
+import { Badge } from '@embeddr/react-ui/components/badge'
+import { Search, Database, FileBox, Cpu } from 'lucide-react'
+
+export const Route = createFileRoute('/resources')({
+  component: ResourcesPage,
+})
+
+function ResourcesPage() {
+  const api = useEmbeddrAPI()
+  const [loras, setLoras] = useState<{
+    items: string[]
+    total: number
+    page: number
+    pages: number
+  }>({ items: [], total: 0, page: 1, pages: 0 })
+  const [checkpoints, setCheckpoints] = useState<{
+    items: string[]
+    total: number
+    page: number
+    pages: number
+  }>({ items: [], total: 0, page: 1, pages: 0 })
+  const [embeddings, setEmbeddings] = useState<{
+    items: string[]
+    total: number
+    page: number
+    pages: number
+  }>({ items: [], total: 0, page: 1, pages: 0 })
+  const [search, setSearch] = useState('')
+  const [activeTab, setActiveTab] = useState('loras')
+
+  const limit = 60
+
+  useEffect(() => {
+    loadLoras(1)
+    loadCheckpoints(1)
+    loadEmbeddings(1)
+  }, [api])
+
+  const loadLoras = (page: number) => {
+    api.comfy.getLoras(page, limit).then(setLoras)
+  }
+
+  const loadCheckpoints = (page: number) => {
+    api.comfy.getCheckpoints(page, limit).then(setCheckpoints)
+  }
+
+  const loadEmbeddings = (page: number) => {
+    api.comfy.getEmbeddings(page, limit).then(setEmbeddings)
+  }
+
+  const filterItems = (items: string[]) =>
+    items.filter((item) => item.toLowerCase().includes(search.toLowerCase()))
+
+  const renderPagination = (
+    data: { page: number; pages: number },
+    onPageChange: (page: number) => void,
+  ) => {
+    if (data.pages <= 1) return null
+    return (
+      <div className="flex justify-center gap-2 mt-6">
+        <button
+          className="px-3 py-1 border rounded disabled:opacity-50"
+          disabled={data.page === 1}
+          onClick={() => onPageChange(data.page - 1)}
+        >
+          Previous
+        </button>
+        <span className="px-3 py-1">
+          Page {data.page} of {data.pages}
+        </span>
+        <button
+          className="px-3 py-1 border rounded disabled:opacity-50"
+          disabled={data.page === data.pages}
+          onClick={() => onPageChange(data.page + 1)}
+        >
+          Next
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Resources</h1>
+        <div className="relative w-64">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search resources..."
+            className="pl-8"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <Tabs
+        defaultValue="loras"
+        className="w-full"
+        onValueChange={setActiveTab}
+      >
+        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+          <TabsTrigger value="loras">LoRAs ({loras.total})</TabsTrigger>
+          <TabsTrigger value="checkpoints">
+            Checkpoints ({checkpoints.total})
+          </TabsTrigger>
+          <TabsTrigger value="embeddings">
+            Embeddings ({embeddings.total})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="loras" className="mt-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filterItems(loras.items).map((lora) => (
+              <Card key={lora} className="overflow-hidden">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle
+                    className="text-sm font-medium truncate"
+                    title={lora}
+                  >
+                    {lora}
+                  </CardTitle>
+                  <Database className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xs text-muted-foreground truncate">
+                    LoRA Model
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {filterItems(loras.items).length === 0 && (
+              <div className="col-span-full text-center py-10 text-muted-foreground">
+                No LoRAs found matching your search.
+              </div>
+            )}
+          </div>
+          {renderPagination(loras, loadLoras)}
+        </TabsContent>
+
+        <TabsContent value="checkpoints" className="mt-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filterItems(checkpoints.items).map((ckpt) => (
+              <Card key={ckpt} className="overflow-hidden">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle
+                    className="text-sm font-medium truncate"
+                    title={ckpt}
+                  >
+                    {ckpt}
+                  </CardTitle>
+                  <FileBox className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xs text-muted-foreground truncate">
+                    Checkpoint Model
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {renderPagination(checkpoints, loadCheckpoints)}
+        </TabsContent>
+
+        <TabsContent value="embeddings" className="mt-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filterItems(embeddings.items).map((emb) => (
+              <Card key={emb} className="overflow-hidden">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle
+                    className="text-sm font-medium truncate"
+                    title={emb}
+                  >
+                    {emb}
+                  </CardTitle>
+                  <Cpu className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xs text-muted-foreground truncate">
+                    Embedding / Textual Inversion
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {renderPagination(embeddings, loadEmbeddings)}
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

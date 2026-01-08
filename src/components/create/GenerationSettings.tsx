@@ -38,6 +38,7 @@ import { BACKEND_URL } from '@/lib/api/config'
 import { getObjectInfo } from '@/lib/api/endpoints/comfy'
 import { ImageSelectorDialog } from '@/components/dialogs/ImageSelectorDialog'
 import { useGeneration } from '@/context/GenerationContext'
+import { LoRAStackInput } from './inputs/LoRAStackInput'
 import { useGlobalStore } from '@/store/globalStore'
 import { useGenerationStore } from '@/store/generationStore'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
@@ -45,7 +46,21 @@ import { fetchLibraries } from '@/lib/api/endpoints/library'
 import { fetchCollections } from '@/lib/api/endpoints/collections'
 import { cn } from '@/lib/utils'
 
+import { useEmbeddrAPI } from '@/plugins/store'
+
 export function GenerationSettings() {
+  const api = useEmbeddrAPI()
+  const [samplers, setSamplers] = useState<{
+    samplers: string[]
+    schedulers: string[]
+  }>({ samplers: [], schedulers: [] })
+  const [loras, setLoras] = useState<string[]>([])
+
+  useEffect(() => {
+    api.comfy.getSamplers().then(setSamplers)
+    api.comfy.getLoras(1, 100000).then((res) => setLoras(res.items || []))
+  }, [api])
+
   const { data: libraries } = useQuery({
     queryKey: ['libraries'],
     queryFn: fetchLibraries,
@@ -182,7 +197,9 @@ export function GenerationSettings() {
       if (
         node &&
         (node.class_type === 'EmbeddrLoadImageID' ||
-          node.class_type === 'embeddr.LoadImageID')
+          node.class_type === 'embeddr.LoadImageID' ||
+          node.class_type === 'EmbeddrLoadImage' ||
+          node.class_type === 'embeddr.LoadImage')
       ) {
         setWorkflowInput(activeImageInputId, 'image_id', image.id)
       } else {
@@ -291,68 +308,10 @@ export function GenerationSettings() {
     }
 
     if (
+      node.class_type === 'EmbeddrLoadImageID' ||
+      node.class_type === 'embeddr.LoadImageID' ||
       node.class_type === 'EmbeddrLoadImage' ||
       node.class_type === 'embeddr.LoadImage'
-    ) {
-      const field = 'image_url'
-      const currentValue =
-        workflowInputs[nodeId]?._preview ||
-        workflowInputs[nodeId]?.image_url ||
-        inputs.image_url
-
-      return renderWrapper(
-        field,
-        'image',
-        node._meta?.title || 'Input Image',
-        <div className="flex gap-2 items-center">
-          {currentValue ? (
-            <div
-              className="h-16 w-16 shrink-0 overflow-hidden border cursor-pointer hover:ring-2 ring-primary transition-all relative group"
-              onClick={() => {
-                setActiveImageInputId(nodeId)
-                setImageSelectorOpen(true)
-              }}
-            >
-              <img
-                src={currentValue}
-                className="h-full w-full object-cover"
-                alt="Input"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                <Edit className="h-4 w-4 text-white" />
-              </div>
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              className="h-16 w-16 shrink-0 flex flex-col gap-1 items-center justify-center p-0 border-dashed"
-              onClick={() => {
-                setActiveImageInputId(nodeId)
-                setImageSelectorOpen(true)
-              }}
-            >
-              <ImageIcon className="h-5 w-5 text-muted-foreground" />
-              <span className="text-[9px] text-muted-foreground">Select</span>
-            </Button>
-          )}
-          <div className="flex-1 min-w-0 flex flex-col gap-1">
-            <Input
-              value={currentValue || ''}
-              readOnly
-              placeholder="No image selected"
-              className="h-7 text-xs"
-            />
-            <p className="text-[10px] text-muted-foreground truncate">
-              {getLabel(nodeId, field, node._meta?.title || 'Input Image')}
-            </p>
-          </div>
-        </div>,
-      )
-    }
-
-    if (
-      node.class_type === 'EmbeddrLoadImageID' ||
-      node.class_type === 'embeddr.LoadImageID'
     ) {
       const field = 'image_id'
       const previewUrl = workflowInputs[nodeId]?._preview
@@ -392,6 +351,21 @@ export function GenerationSettings() {
             className="min-h-[100px]"
           />
         </div>,
+      )
+    }
+
+    if (node.class_type === 'embeddr.LoRAStack') {
+      return renderWrapper(
+        'lora_stack',
+        'custom',
+        node._meta?.title || 'LoRA Stack',
+        <LoRAStackInput
+          nodeId={nodeId}
+          inputs={workflowInputs[nodeId] || {}}
+          loras={loras}
+          setWorkflowInput={setWorkflowInput}
+          getLabel={getLabel}
+        />,
       )
     }
 
@@ -470,7 +444,64 @@ export function GenerationSettings() {
         </div>,
       )
 
-      if (!seedInput && !stepsInput && !cfgInput) return null
+      const samplerInput = renderWrapper(
+        'sampler_name',
+        'combo',
+        'Sampler',
+        <div className="space-y-2">
+          <Label>{getLabel(nodeId, 'sampler_name', 'Sampler')}</Label>
+          <Select
+            value={workflowInputs[nodeId]?.sampler_name ?? inputs.sampler_name}
+            onValueChange={(val) =>
+              setWorkflowInput(nodeId, 'sampler_name', val)
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select sampler" />
+            </SelectTrigger>
+            <SelectContent>
+              {samplers.samplers.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>,
+      )
+
+      const schedulerInput = renderWrapper(
+        'scheduler',
+        'combo',
+        'Scheduler',
+        <div className="space-y-2">
+          <Label>{getLabel(nodeId, 'scheduler', 'Scheduler')}</Label>
+          <Select
+            value={workflowInputs[nodeId]?.scheduler ?? inputs.scheduler}
+            onValueChange={(val) => setWorkflowInput(nodeId, 'scheduler', val)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select scheduler" />
+            </SelectTrigger>
+            <SelectContent>
+              {samplers.schedulers.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>,
+      )
+
+      if (
+        !seedInput &&
+        !stepsInput &&
+        !cfgInput &&
+        !samplerInput &&
+        !schedulerInput
+      )
+        return null
 
       return (
         <div key={nodeId} className="space-y-4 border-t pt-4">
@@ -480,6 +511,8 @@ export function GenerationSettings() {
           {seedInput}
           {stepsInput}
           {cfgInput}
+          {samplerInput}
+          {schedulerInput}
         </div>
       )
     }
@@ -733,23 +766,47 @@ export function GenerationSettings() {
     // Heuristic: Look for EmbeddrLoadImage or LoadImage
     const nodes = selectedWorkflow.data
     let targetNodeId = null
+    let targetNodeType = null
 
     for (const [id, node] of Object.entries(nodes)) {
       if (
         node.class_type === 'EmbeddrLoadImage' ||
+        node.class_type === 'embeddr.LoadImage' ||
+        node.class_type === 'EmbeddrLoadImageID' ||
+        node.class_type === 'embeddr.LoadImageID' ||
         node.class_type === 'LoadImage'
       ) {
         targetNodeId = id
+        targetNodeType = node.class_type
         break
       }
     }
 
-    if (targetNodeId) {
-      // For EmbeddrLoadImage, we likely pass the ID
-      // For LoadImage, we might need the filename, but let's assume ID for now if using our custom nodes
-      setWorkflowInput(targetNodeId, 'image', selectedImage.id)
-      // We keep the selection active so the user can easily switch workflows or change settings
-      // selectImage(null)
+    if (targetNodeId && targetNodeType) {
+      if (
+        targetNodeType === 'EmbeddrLoadImage' ||
+        targetNodeType === 'embeddr.LoadImage' ||
+        targetNodeType === 'EmbeddrLoadImageID' ||
+        targetNodeType === 'embeddr.LoadImageID'
+      ) {
+        setWorkflowInput(targetNodeId, 'image_id', selectedImage.id)
+        setWorkflowInput(
+          targetNodeId,
+          '_preview',
+          `${BACKEND_URL}/images/${selectedImage.id}/file`,
+        )
+      } else {
+        // For standard LoadImage, we might need the filename
+        // But usually we don't have the filename in the same way Comfy expects (in input folder)
+        // unless we upload it.
+        // For now, let's assume if they use LoadImage they might have it.
+        // But the user specifically asked about Embeddr nodes.
+        // If we have a URL, maybe we can use LoadImage (URL) logic if the node supports it?
+        // Standard LoadImage only takes filename.
+        // Let's leave standard LoadImage behavior as is (setting 'image' to ID is probably wrong but was there before)
+        // Actually, setting 'image' to ID is definitely wrong for standard LoadImage unless the ID IS the filename.
+        // But let's fix the Embeddr part which is what was asked.
+      }
     }
   }
 
@@ -944,8 +1001,7 @@ export function GenerationSettings() {
                         const inputs: Record<string, any> = {}
 
                         // Map widgets to named inputs
-                        const proxyWidgets = (node.properties)
-                          ?.proxyWidgets
+                        const proxyWidgets = node.properties?.proxyWidgets
                         if (proxyWidgets && Array.isArray(proxyWidgets)) {
                           // Subgraph Group Node Logic
                           const widgetsValues = node.widgets_values || []

@@ -69,8 +69,8 @@ export function DatasetToolbar({
           <TabsTrigger value="has_caption" className="text-xs">
             Captioned
           </TabsTrigger>
-          <TabsTrigger value="processed" className="text-xs">
-            Processed
+          <TabsTrigger value="locked" className="text-xs">
+            Locked
           </TabsTrigger>
           {dataset.type === 'image_pair' && (
             <TabsTrigger value="paired" className="text-xs">

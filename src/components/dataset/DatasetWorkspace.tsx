@@ -54,6 +54,7 @@ export function DatasetWorkspace({
             selectedItem={selectedItem}
             setSelectedItem={setSelectedItem}
             viewMode={viewMode}
+            datasetId={dataset.id}
           />
         </ResizablePanel>
 

@@ -2,6 +2,7 @@ import React from 'react'
 import { Button } from '@embeddr/react-ui/components/button'
 import {
   Box,
+  Database,
   Image as ImageIcon,
   List,
   Loader2,
@@ -28,6 +29,7 @@ interface ZenToolbarProps {
     queue: boolean
     toolbox: boolean
     images: boolean
+    datasets: boolean
   }
   togglePanel: (key: keyof ZenToolbarProps['panels']) => void
   isGenerating: boolean
@@ -159,6 +161,19 @@ export function ZenToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">Image Browser</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={panels.datasets ? 'secondary' : 'ghost'}
+              size="icon"
+              onClick={() => togglePanel('datasets')}
+            >
+              <Database className="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Datasets</TooltipContent>
         </Tooltip>
 
         <Separator className="my-1" />

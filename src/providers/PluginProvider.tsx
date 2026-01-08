@@ -1,14 +1,21 @@
-import React, { createContext, useContext, useEffect, useRef } from 'react'
+import React, { useContext, useEffect, useRef } from 'react'
+import { EmbeddrProvider, PluginContext } from '@embeddr/react-ui/context'
+import { WebSocketProvider } from '@embeddr/react-ui/providers'
 import { useEmbeddrAPI, usePluginStore } from '@/plugins/store'
 import { DEFAULT_PLUGINS } from '@/plugins/defaults'
-
-const PluginContext = createContext<null>(null)
 
 export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const api = useEmbeddrAPI()
-  const { registerPlugin, loadExternalPlugins, plugins } = usePluginStore()
+  const {
+    registerPlugin,
+    loadExternalPlugins,
+    plugins,
+    activePlugins,
+    activatePlugin,
+    deactivatePlugin,
+  } = usePluginStore()
 
   const initializedPlugins = useRef<Set<string>>(new Set())
   const cleanupFns = useRef<Record<string, () => void>>({})
@@ -62,8 +69,20 @@ export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [])
 
   return (
-    <PluginContext.Provider value={null}>{children}</PluginContext.Provider>
+    <EmbeddrProvider api={api}>
+      <WebSocketProvider>
+        <PluginContext.Provider
+          value={{
+            plugins,
+            activePlugins,
+            registerPlugin,
+            activatePlugin,
+            deactivatePlugin,
+          }}
+        >
+          {children}
+        </PluginContext.Provider>
+      </WebSocketProvider>
+    </EmbeddrProvider>
   )
 }
-
-export const usePluginContext = () => useContext(PluginContext)

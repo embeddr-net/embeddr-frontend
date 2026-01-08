@@ -15,9 +15,11 @@ import {
   List,
   Loader2,
   Terminal,
+  Repeat,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@embeddr/react-ui/components/button'
+import { toast } from 'sonner'
 import {
   Tooltip,
   TooltipContent,
@@ -36,11 +38,13 @@ export function QueueItem({
   generation,
   isSelected,
   onSelect,
+  onRepeat,
 }: {
   generation: Generation
   isSelected: boolean
   onSelect: () => void
-  onOpenImage: (id: string) => void
+  onOpenImage?: (id: string) => void
+  onRepeat: () => void
 }) {
   const { selectImage } = useGlobalStore()
 
@@ -63,7 +67,9 @@ export function QueueItem({
     return null
   }
 
-  const imageInputs = inputValues.map(getImageUrl).filter(Boolean) as Array<string>
+  const imageInputs = inputValues
+    .map(getImageUrl)
+    .filter(Boolean) as Array<string>
 
   // Text Inputs
   const textInputs = inputValues
@@ -190,6 +196,19 @@ export function QueueItem({
               )}
             </div>
           )}
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2"
+            onClick={(e) => {
+              e.stopPropagation()
+              onRepeat()
+            }}
+            title="Repeat Generation"
+          >
+            <Repeat className="h-3 w-3" />
+          </Button>
         </div>
       </div>
 
@@ -216,7 +235,22 @@ export function GenerationQueue() {
     loadMoreHistory,
     hasMoreHistory,
     isLoadingHistory,
+    setWorkflowInput,
   } = useGeneration()
+
+  const handleRepeat = (generation: Generation) => {
+    if (!generation.inputs) return
+
+    Object.entries(generation.inputs).forEach(([nodeId, inputs]) => {
+      if (typeof inputs === 'object' && inputs !== null) {
+        Object.entries(inputs).forEach(([key, value]) => {
+          setWorkflowInput(nodeId, key, value)
+        })
+      }
+    })
+
+    toast.success('Settings loaded from history')
+  }
   const { selectImage } = useGlobalStore()
   const [detailImageId, setDetailImageId] = useState<string | null>(null)
   const [activeRightTab, setActiveRightTab] = useLocalStorage(
@@ -297,6 +331,7 @@ export function GenerationQueue() {
                         isSelected={selectedGeneration?.id === gen.id}
                         onSelect={() => selectGeneration(gen)}
                         onOpenImage={setDetailImageId}
+                        onRepeat={() => handleRepeat(gen)}
                       />
                     ))}
                   </div>
@@ -342,6 +377,7 @@ export function GenerationQueue() {
                           selectImage(null)
                         }}
                         onOpenImage={setDetailImageId}
+                        onRepeat={() => handleRepeat(gen)}
                       />
                     ))}
                     {/* Sentinel for infinite scroll */}

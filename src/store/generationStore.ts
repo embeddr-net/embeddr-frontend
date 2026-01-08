@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import type { Generation, Workflow } from '@/lib/api/types'
 import { BACKEND_URL } from '@/lib/api/config'
 import { globalEventBus } from '@/lib/eventBus'
+import type { EmbeddrMessage } from '@embeddr/react-ui/types/websocket'
 
 interface GenerationState {
   // Data
@@ -25,6 +26,7 @@ interface GenerationState {
   lastWorkflowId: string | null
   quickWorkflowIds: Array<number>
   socket: WebSocket | null
+  connectionStatus: 'connected' | 'disconnected' | 'connecting'
   queueStatus: { remaining: number } | null
   currentPreview: string | null
 
@@ -71,6 +73,7 @@ export const useGenerationStore = create<GenerationState>()(
       lastWorkflowId: null,
       quickWorkflowIds: [],
       socket: null,
+      connectionStatus: 'disconnected',
       queueStatus: null,
       currentPreview: null,
 
@@ -92,31 +95,163 @@ export const useGenerationStore = create<GenerationState>()(
         }
 
         console.log('[GenerationStore] Creating new WebSocket connection')
+        set({ connectionStatus: 'connecting' })
         const wsUrl = BACKEND_URL.replace('http', 'ws') + '/ws'
         const ws = new WebSocket(wsUrl)
 
         ws.onopen = () => {
           console.log('Connected to Embeddr WebSocket')
+          set({ connectionStatus: 'connected' })
+          // Request initial status sync
+          ws.send(JSON.stringify({ type: 'request_status' }))
+        }
+
+        ws.onclose = () => {
+          console.log('Disconnected from Embeddr WebSocket')
+          set({ connectionStatus: 'disconnected', socket: null })
+          // Try to reconnect after 5 seconds
+          setTimeout(() => {
+            get().connectWebSocket()
+          }, 5000)
+        }
+
+        ws.onerror = (error) => {
+          console.error('WebSocket error:', error)
+          set({ connectionStatus: 'disconnected' })
         }
 
         ws.onmessage = (event) => {
           try {
-            const msg = JSON.parse(event.data)
+            const msg = JSON.parse(event.data) as EmbeddrMessage
+
+            // Emit raw message for debugging/plugins
+            globalEventBus.emit('websocket:message', msg)
+
+            // Also emit specific event type if available
+            if (msg.type) {
+              globalEventBus.emit(msg.type, msg.data)
+            }
+
             // msg structure: { source: 'comfyui' | 'embeddr', type: string, data: any }
             if (msg.source === 'embeddr') {
               if (msg.type === 'generation_submitted') {
-                // data: { id: string, prompt_id: string, status: string }
-                set((state) => ({
-                  generations: state.generations.map((g) =>
-                    g.id === msg.data.id
-                      ? {
-                          ...g,
-                          prompt_id: msg.data.prompt_id,
-                          status: msg.data.status,
+                // data: Full Generation object
+                // Cast to any because TS might complain that GenerationSubmittedMsg data is 'any' while state expects Generation
+                const genData = msg.data as Generation
+
+                set((state) => {
+                  const exists = state.generations.some(
+                    (g) => g.id === genData.id,
+                  )
+                  if (exists) {
+                    return {
+                      generations: state.generations.map((g) =>
+                        g.id === genData.id ? { ...g, ...genData } : g,
+                      ),
+                    }
+                  } else {
+                    // New generation from another client
+                    // It won't have 'images' computed yet as it is just submitted
+                    const newGen = { ...genData, images: [] }
+                    // Ensure created_at is a Date or string as expected?
+                    // msg.data is JSON, so string. Types match.
+                    return {
+                      generations: [newGen, ...state.generations],
+                    }
+                  }
+                })
+              } else if (msg.type === 'status_response') {
+                // data: { queue_status: { remaining: number }, running_generations: Generation[] }
+                const { queue_status, running_generations } = msg.data
+
+                // Update Queue Status
+                if (queue_status) {
+                  set({ queueStatus: queue_status })
+                }
+
+                // Update Running Generations
+                if (running_generations && Array.isArray(running_generations)) {
+                  set((state) => {
+                    const currentIds = new Set(
+                      state.generations.map((g) => g.id),
+                    )
+                    const newGenerations = [...state.generations]
+                    let hasRunning = false
+
+                    running_generations.forEach((gen: any) => {
+                      // Normalize generation data
+                      let images = gen.images || []
+                      let outputs = gen.outputs
+                      if (typeof outputs === 'string') {
+                        try {
+                          outputs = JSON.parse(outputs)
+                        } catch (e) {
+                          outputs = []
                         }
-                      : g,
-                  ),
-                }))
+                      }
+                      if (!Array.isArray(outputs)) outputs = []
+
+                      if (images.length === 0 && outputs.length > 0) {
+                        images = outputs
+                          .filter(
+                            (o: any) =>
+                              o.type === 'image' && o.comfy_type !== 'temp',
+                          )
+                          .map(
+                            (o: any) =>
+                              `${BACKEND_URL}/comfy/view?filename=${o.filename}&subfolder=${o.subfolder || ''}&type=${o.comfy_type || 'output'}`,
+                          )
+                        const embeddrImages = outputs
+                          .filter((o: any) => o.type === 'embeddr_id')
+                          .map(
+                            (o: any) => `${BACKEND_URL}/images/${o.value}/file`,
+                          )
+                        images =
+                          embeddrImages.length > 0 ? embeddrImages : images
+                      }
+
+                      const normalizedGen = {
+                        ...gen,
+                        outputs,
+                        images,
+                      }
+
+                      if (
+                        ['pending', 'processing'].includes(normalizedGen.status)
+                      ) {
+                        hasRunning = true
+                      }
+
+                      if (currentIds.has(gen.id)) {
+                        // Update existing
+                        const index = newGenerations.findIndex(
+                          (g) => g.id === gen.id,
+                        )
+                        if (index !== -1) {
+                          newGenerations[index] = {
+                            ...newGenerations[index],
+                            ...normalizedGen,
+                          }
+                        }
+                      } else {
+                        // Add new (prepend)
+                        newGenerations.unshift(normalizedGen)
+                      }
+                    })
+
+                    // Sort by created_at desc to be safe
+                    newGenerations.sort(
+                      (a, b) =>
+                        new Date(b.created_at).getTime() -
+                        new Date(a.created_at).getTime(),
+                    )
+
+                    return {
+                      generations: newGenerations,
+                      isGenerating: hasRunning,
+                    }
+                  })
+                }
               }
             } else if (msg.source === 'comfyui') {
               const { type, data } = msg
@@ -163,7 +298,16 @@ export const useGenerationStore = create<GenerationState>()(
                         `${BACKEND_URL}/comfy/view?filename=${o.filename}&subfolder=${o.subfolder || ''}&type=${o.type || 'output'}`,
                     )
 
-                  const embeddrImages = (data.output.embeddr_ids || []).map(
+                  let embeddrIds = data.output.embeddr_ids || []
+                  if (data.output.embeddr_id) {
+                    if (Array.isArray(data.output.embeddr_id)) {
+                      embeddrIds = [...embeddrIds, ...data.output.embeddr_id]
+                    } else {
+                      embeddrIds = [...embeddrIds, data.output.embeddr_id]
+                    }
+                  }
+
+                  const embeddrImages = embeddrIds.map(
                     (id: any) => `${BACKEND_URL}/images/${id}/file`,
                   )
 
@@ -179,7 +323,7 @@ export const useGenerationStore = create<GenerationState>()(
                       subfolder: img.subfolder || '',
                       comfy_type: img.type || 'output',
                     })),
-                    ...(data.output.embeddr_ids || []).map((id: any) => ({
+                    ...embeddrIds.map((id: any) => ({
                       type: 'embeddr_id',
                       value: id,
                     })),
@@ -238,6 +382,12 @@ export const useGenerationStore = create<GenerationState>()(
                     '[GenerationStore] Generation not found for prompt:',
                     data.prompt_id,
                   )
+                  // Even if we don't have the generation locally, we should notify the app
+                  // that a generation has completed (e.g. to refresh the gallery)
+                  globalEventBus.emit('generation:complete', {
+                    id: null,
+                    prompt_id: data.prompt_id,
+                  })
                 }
               } else if (type === 'preview') {
                 // data: "data:image/jpeg;base64,..."
@@ -581,6 +731,7 @@ export const useGenerationStore = create<GenerationState>()(
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              id: generationId,
               workflow_id: selectedWorkflow.id,
               inputs: cleanInputs,
             }),

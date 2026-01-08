@@ -1,12 +1,15 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { DraggablePanel } from '@/components/ui/DraggablePanel'
 import { ImageBrowser } from '@/components/search/ImageBrowser'
+import { Switch } from '@embeddr/react-ui/components/switch'
+import { Label } from '@embeddr/react-ui/components/label'
 
 interface ZenImageBrowserProps {
   isOpen: boolean
   onClose: () => void
   activeImageInput: { nodeId: string; field: string } | null
   onSelect: (image: any) => void
+  onMultiSelect?: (images: any[]) => void
 }
 
 export function ZenImageBrowser({
@@ -14,7 +17,10 @@ export function ZenImageBrowser({
   onClose,
   activeImageInput,
   onSelect,
+  onMultiSelect,
 }: ZenImageBrowserProps) {
+  const [isMultiSelect, setIsMultiSelect] = useState(false)
+
   return (
     <DraggablePanel
       id="zen-images"
@@ -37,6 +43,20 @@ export function ZenImageBrowser({
                   Selecting for: {activeImageInput.field}
                 </span>
               </div>
+              <div className="flex items-center gap-2">
+                <Label
+                  htmlFor="multi-select"
+                  className="text-xs cursor-pointer"
+                >
+                  Multi-select
+                </Label>
+                <Switch
+                  id="multi-select"
+                  checked={isMultiSelect}
+                  onCheckedChange={setIsMultiSelect}
+                  className="scale-75 origin-right"
+                />
+              </div>
             </div>
           )}
           <div className="flex-1 min-h-0 p-2.5">
@@ -44,6 +64,8 @@ export function ZenImageBrowser({
               onSelect={onSelect}
               defaultGridCols={3}
               storageKey="zen-grid-cols"
+              multiSelectMode={isMultiSelect}
+              onMultiSelect={onMultiSelect}
             />
           </div>
         </div>

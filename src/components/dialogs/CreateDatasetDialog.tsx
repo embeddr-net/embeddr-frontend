@@ -38,14 +38,17 @@ export function CreateDatasetDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name || !collectionId) return
+    if (!name) return
 
     try {
       await createDataset.mutateAsync({
         name,
         description,
         type,
-        collection_id: parseInt(collectionId),
+        collection_id:
+          collectionId && collectionId !== 'none'
+            ? parseInt(collectionId)
+            : undefined,
       })
       toast.success('Dataset created successfully')
       onOpenChange(false)
@@ -102,16 +105,13 @@ export function CreateDatasetDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="collection">Source Collection</Label>
-            <Select
-              value={collectionId}
-              onValueChange={setCollectionId}
-              required
-            >
+            <Label htmlFor="collection">Source Collection (Optional)</Label>
+            <Select value={collectionId} onValueChange={setCollectionId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a collection" />
+                <SelectValue placeholder="Select a collection (optional)" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="none">None (Empty Dataset)</SelectItem>
                 {collections?.map((col) => (
                   <SelectItem key={col.id} value={col.id.toString()}>
                     {col.name} ({col.item_count} items)

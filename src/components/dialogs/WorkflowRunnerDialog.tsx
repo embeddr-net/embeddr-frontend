@@ -52,7 +52,17 @@ export function WorkflowRunnerDialog({
       // Determine input type based on exposed inputs or node type
       // We check if the selected node expects an image_id or an image file
       const exposedInputs = workflow?.meta?.exposed_inputs?.[nodeId]
-      const useImageId = exposedInputs && 'image_id' in exposedInputs
+
+      const node = workflow?.data?.[nodeId]
+      const isEmbeddrNode =
+        node &&
+        (node.class_type === 'EmbeddrLoadImage' ||
+          node.class_type === 'embeddr.LoadImage' ||
+          node.class_type === 'EmbeddrLoadImageID' ||
+          node.class_type === 'embeddr.LoadImageID')
+
+      const useImageId =
+        (exposedInputs && 'image_id' in exposedInputs) || isEmbeddrNode
 
       if (useImageId) {
         if (!imageId) {

@@ -4,7 +4,10 @@ import { Input } from '@embeddr/react-ui/components/input'
 import {
   CatIcon,
   Check,
+  EyeOff,
   Layers,
+  Pin,
+  PinOff,
   PlugZapIcon,
   Search,
   WorkflowIcon,
@@ -25,6 +28,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@embeddr/react-ui/components/accordion'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@embeddr/react-ui/components/context-menu'
 import type { EmbeddrAPI } from '@embeddr/react-ui/types'
 import { cn } from '@/lib/utils'
 import { DraggablePanel } from '@/components/ui/DraggablePanel'
@@ -44,6 +54,9 @@ interface ZenToolboxProps {
   openPlugins: Record<string, boolean>
   setOpenPlugins: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
   hiddenWorkflows: Array<string>
+  setHiddenWorkflows: (hidden: Array<string>) => void
+  pinnedWorkflows: Array<string>
+  setPinnedWorkflows: (pinned: Array<string>) => void
 }
 
 export function ZenToolbox({
@@ -60,7 +73,37 @@ export function ZenToolbox({
   openPlugins,
   setOpenPlugins,
   hiddenWorkflows,
+  setHiddenWorkflows,
+  pinnedWorkflows,
+  setPinnedWorkflows,
 }: ZenToolboxProps) {
+  const filteredAndSortedWorkflows = React.useMemo(() => {
+    return workflows
+      .filter((w) =>
+        w.name.toLowerCase().includes(workflowSearch.toLowerCase()),
+      )
+      .filter((w) => !hiddenWorkflows.includes(String(w.id)))
+      .sort((a, b) => {
+        const aPinned = pinnedWorkflows.includes(String(a.id))
+        const bPinned = pinnedWorkflows.includes(String(b.id))
+        if (aPinned && !bPinned) return -1
+        if (!aPinned && bPinned) return 1
+        return a.name.localeCompare(b.name)
+      })
+  }, [workflows, workflowSearch, hiddenWorkflows, pinnedWorkflows])
+
+  const togglePin = (id: string) => {
+    if (pinnedWorkflows.includes(id)) {
+      setPinnedWorkflows(pinnedWorkflows.filter((p) => p !== id))
+    } else {
+      setPinnedWorkflows([...pinnedWorkflows, id])
+    }
+  }
+
+  const hideWorkflow = (id: string) => {
+    setHiddenWorkflows([...hiddenWorkflows, id])
+  }
+
   return (
     <DraggablePanel
       id="zen-toolbox"
@@ -89,7 +132,7 @@ export function ZenToolbox({
 
         <TabsContent
           value="workflows"
-          className="flex-1 p-2 pl-2 min-h-0 mt-0 flex flex-col gap-2"
+          className="flex-1 p-2 pl-2 min-h-0 mt-0 flex flex-col gap-2 overflow-hidden"
         >
           <div className="relative gap-2">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground " />
@@ -100,31 +143,61 @@ export function ZenToolbox({
               className="pl-9! h-9 bg-background"
             />
           </div>
-          <ScrollArea className="h-full pr-3" type="always">
+          <ScrollArea className="flex-1 min-h-0 pr-3" type="always">
             <div className="space-y-1">
-              {workflows
-                .filter((w) =>
-                  w.name.toLowerCase().includes(workflowSearch.toLowerCase()),
+              {filteredAndSortedWorkflows.map((w) => {
+                const isPinned = pinnedWorkflows.includes(String(w.id))
+                return (
+                  <ContextMenu key={w.id}>
+                    <ContextMenuTrigger>
+                      <Button
+                        size="sm"
+                        className={cn(
+                          'w-full justify-start text-xs font-normal bg-card text-foreground group relative',
+                          selectedWorkflow?.id === w.id &&
+                            'bg-muted font-medium',
+                        )}
+                        onClick={() => {
+                          selectWorkflow(w)
+                        }}
+                      >
+                        <span className="truncate flex-1 text-left">
+                          {w.name}
+                        </span>
+                        {isPinned && (
+                          <Pin className="h-3 w-3 text-muted-foreground rotate-45 mr-1" />
+                        )}
+                        {selectedWorkflow?.id === w.id && (
+                          <Check className="h-3 w-3 opacity-50" />
+                        )}
+                      </Button>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem
+                        onClick={() => togglePin(String(w.id))}
+                        className="gap-2"
+                      >
+                        {isPinned ? (
+                          <>
+                            <PinOff className="h-4 w-4" /> Unpin
+                          </>
+                        ) : (
+                          <>
+                            <Pin className="h-4 w-4" /> Pin to top
+                          </>
+                        )}
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem
+                        onClick={() => hideWorkflow(String(w.id))}
+                        className="gap-2 text-destructive focus:text-destructive"
+                      >
+                        <EyeOff className="h-4 w-4" /> Hide
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 )
-                .filter((w) => !hiddenWorkflows.includes(String(w.id)))
-                .map((w) => (
-                  <Button
-                    key={w.id}
-                    size="sm"
-                    className={cn(
-                      'w-full justify-start text-xs font-normal bg-card text-foreground',
-                      selectedWorkflow?.id === w.id && 'bg-muted font-medium',
-                    )}
-                    onClick={() => {
-                      selectWorkflow(w)
-                    }}
-                  >
-                    <span className="truncate">{w.name}</span>
-                    {selectedWorkflow?.id === w.id && (
-                      <Check className="ml-auto h-3 w-3 opacity-50" />
-                    )}
-                  </Button>
-                ))}
+              })}
             </div>
           </ScrollArea>
         </TabsContent>
@@ -132,9 +205,9 @@ export function ZenToolbox({
         <TabsContent
           value="plugins"
           forceMount
-          className="flex-1 min-h-0 p-2 mt-0 data-[state=inactive]:hidden"
+          className="flex-1 min-h-0 p-2 mt-0 flex flex-col data-[state=inactive]:hidden overflow-hidden"
         >
-          <ScrollArea className="h-full" type="always">
+          <ScrollArea className="flex-1 min-h-0" type="always">
             <div className="space-y-4 pr-3">
               {/* Overlay Plugins Toggles */}
               {getComponents('zen-overlay').length > 0 && (
@@ -197,8 +270,11 @@ export function ZenToolbox({
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="actions" className="flex-1 min-h-0 p-2 mt-0">
-          <ScrollArea className="h-full pr-3" type="always">
+        <TabsContent
+          value="actions"
+          className="flex-1 min-h-0 p-2 mt-0 flex flex-col overflow-hidden"
+        >
+          <ScrollArea className="flex-1 min-h-0 pr-3" type="always">
             <div className="flex flex-col gap-2">
               {getActions('zen-toolbox-action').length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm">

@@ -151,7 +151,7 @@ export function ImagePreview({ children }: { children?: React.ReactNode }) {
       draggable={false}
     >
       <div className="h-full flex flex-col w-full! min-h-0 gap-1! space-y-0!">
-        <div className="flex-1 m-0 overflow-hidden bg-card flex items-center justify-center bg-muted/20 relative group">
+        <div className="flex-1 m-0 overflow-hidden bg-card flex items-center justify-center bg-muted/20 relative group/image-preview">
           {selectedGeneration ? (
             selectedGeneration.status === 'completed' && currentImage ? (
               <MediaCanvas
@@ -163,13 +163,13 @@ export function ImagePreview({ children }: { children?: React.ReactNode }) {
               >
                 {/* Version Indicator */}
                 {viewMode === 'single' && hasParent && (
-                  <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 pointer-events-none opacity-0 group-hover/image-preview:opacity-100 transition-opacity z-10">
                     {activeVersion === 'parent' ? 'Original' : 'Generated'}
                   </div>
                 )}
 
                 {/* Controls Overlay */}
-                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity items-center z-10">
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover/image-preview:opacity-100 transition-opacity items-center z-10">
                   <div className="flex bg-background/80 backdrop-blur-sm border shadow-sm p-0.5">
                     <Button
                       variant={viewMode === 'single' ? 'secondary' : 'ghost'}

@@ -9,6 +9,7 @@ interface ZenQueueProps {
   generations: Array<any>
   selectedGenerationId: string | null
   selectGeneration: (gen: any) => void
+  onRepeat: (gen: any) => void
 }
 
 export function ZenQueue({
@@ -17,6 +18,7 @@ export function ZenQueue({
   generations,
   selectedGenerationId,
   selectGeneration,
+  onRepeat,
 }: ZenQueueProps) {
   return (
     <DraggablePanel
@@ -38,6 +40,7 @@ export function ZenQueue({
                 isSelected={selectedGenerationId === gen.id}
                 onSelect={() => selectGeneration(gen)}
                 onOpenImage={() => {}}
+                onRepeat={() => onRepeat(gen)}
               />
             ))}
           </div>

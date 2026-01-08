@@ -256,6 +256,58 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
     [],
   )
 
+  const comfy = useMemo(
+    () => ({
+      getLoras: async (page = 1, limit = 60) => {
+        try {
+          const res = await fetch(
+            `${BACKEND_URL}/comfy/loras?page=${page}&limit=${limit}`,
+          )
+          if (!res.ok) return { items: [], total: 0, page, limit, pages: 0 }
+          return await res.json()
+        } catch (e) {
+          console.error('Failed to fetch LoRAs', e)
+          return { items: [], total: 0, page, limit, pages: 0 }
+        }
+      },
+      getCheckpoints: async (page = 1, limit = 60) => {
+        try {
+          const res = await fetch(
+            `${BACKEND_URL}/comfy/checkpoints?page=${page}&limit=${limit}`,
+          )
+          if (!res.ok) return { items: [], total: 0, page, limit, pages: 0 }
+          return await res.json()
+        } catch (e) {
+          console.error('Failed to fetch Checkpoints', e)
+          return { items: [], total: 0, page, limit, pages: 0 }
+        }
+      },
+      getEmbeddings: async (page = 1, limit = 60) => {
+        try {
+          const res = await fetch(
+            `${BACKEND_URL}/comfy/embeddings?page=${page}&limit=${limit}`,
+          )
+          if (!res.ok) return { items: [], total: 0, page, limit, pages: 0 }
+          return await res.json()
+        } catch (e) {
+          console.error('Failed to fetch Embeddings', e)
+          return { items: [], total: 0, page, limit, pages: 0 }
+        }
+      },
+      getSamplers: async () => {
+        try {
+          const res = await fetch(`${BACKEND_URL}/comfy/samplers`)
+          if (!res.ok) return { samplers: [], schedulers: [] }
+          return await res.json()
+        } catch (e) {
+          console.error('Failed to fetch Samplers', e)
+          return { samplers: [], schedulers: [] }
+        }
+      },
+    }),
+    [],
+  )
+
   return useMemo(
     () => ({
       stores: {
@@ -281,6 +333,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       toast: toastApi,
       utils: utils,
       events: events,
+      comfy: comfy,
     }),
     [
       globalStore.selectedImage,
@@ -296,6 +349,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       events,
       toastApi,
       utils,
+      comfy,
     ],
   )
 }

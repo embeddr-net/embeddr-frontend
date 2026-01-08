@@ -8,6 +8,7 @@ import {
   ZenSettingsDialog,
   ZenToolbar,
   ZenToolbox,
+  ZenDatasetPanel,
 } from './zen'
 import { useGeneration } from '@/context/GenerationContext'
 import { useGlobalStore } from '@/store/globalStore'
@@ -73,6 +74,7 @@ export function ZenInterface({
     queue: false,
     toolbox: false,
     images: false,
+    datasets: false,
   })
 
   const [seedModes, setSeedModes] = useLocalStorage<
@@ -95,6 +97,11 @@ export function ZenInterface({
     [],
   )
 
+  const [pinnedWorkflows, setPinnedWorkflows] = useLocalStorage<Array<string>>(
+    'zen-pinned-workflows',
+    [],
+  )
+
   const [notifications] = useLocalStorage('zen-notifications', true)
   const wasGenerating = React.useRef(isGenerating)
   const lastToastTime = React.useRef(0)
@@ -113,21 +120,17 @@ export function ZenInterface({
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
 
   const togglePanel = (key: string) => {
-    if (Object.keys(panels).includes(key)) {
-      setPanels((prev) => ({
-        ...prev,
-        [key]: !prev[key as keyof typeof panels],
-      }))
-    }
+    setPanels((prev) => ({
+      ...prev,
+      [key]: !prev[key as keyof typeof panels],
+    }))
   }
 
   const setPanel = (key: string, value: boolean) => {
-    if (Object.keys(panels).includes(key)) {
-      setPanels((prev) => ({
-        ...prev,
-        [key]: value,
-      }))
-    }
+    setPanels((prev) => ({
+      ...prev,
+      [key]: value,
+    }))
   }
 
   const handleImageSelect = (image: any) => {
@@ -165,6 +168,39 @@ export function ZenInterface({
     }
   }
 
+  const handleMultiSelect = async (images: any[]) => {
+    if (!activeImageInput) return
+
+    toast.info(`Queueing ${images.length} generations...`)
+
+    for (const image of images) {
+      if (activeImageInput.field === 'image_id') {
+        setWorkflowInput(
+          activeImageInput.nodeId,
+          activeImageInput.field,
+          image.id,
+        )
+      } else {
+        setWorkflowInput(
+          activeImageInput.nodeId,
+          activeImageInput.field,
+          `${BACKEND_URL}/images/${image.id}/file`,
+        )
+      }
+      // Also set preview
+      setWorkflowInput(
+        activeImageInput.nodeId,
+        '_preview',
+        `${BACKEND_URL}/images/${image.id}/file`,
+      )
+
+      // Trigger generation
+      // We pass specific inputs to generate to ensure it uses the correct values
+      // even if state update is batched (though zustand is usually sync)
+      await generate()
+    }
+  }
+
   // Filter zen inputs
   const zenInputs = React.useMemo(() => {
     if (!selectedWorkflow?.meta?.exposed_inputs) return []
@@ -173,6 +209,18 @@ export function ZenInterface({
       : []
     return inputs.filter((i: any) => i.zen_enabled && i.enabled)
   }, [selectedWorkflow])
+
+  const handleRepeat = (gen: any) => {
+    if (!gen.inputs) return
+    Object.entries(gen.inputs).forEach(([nodeId, inputs]) => {
+      if (typeof inputs === 'object' && inputs !== null) {
+        Object.entries(inputs).forEach(([key, value]) => {
+          setWorkflowInput(nodeId, key, value)
+        })
+      }
+    })
+    toast.success('Restored inputs from generation')
+  }
 
   const handleGenerate = async () => {
     // Process seeds
@@ -303,6 +351,9 @@ export function ZenInterface({
         openPlugins={openPlugins}
         setOpenPlugins={setOpenPlugins}
         hiddenWorkflows={hiddenWorkflows}
+        setHiddenWorkflows={setHiddenWorkflows}
+        pinnedWorkflows={pinnedWorkflows}
+        setPinnedWorkflows={setPinnedWorkflows}
       />
 
       <ZenSettings
@@ -328,6 +379,7 @@ export function ZenInterface({
         generations={generations}
         selectedGenerationId={selectedGeneration?.id || null}
         selectGeneration={selectGeneration}
+        onRepeat={handleRepeat}
       />
 
       <ZenImageBrowser
@@ -335,6 +387,12 @@ export function ZenInterface({
         onClose={() => togglePanel('images')}
         activeImageInput={activeImageInput}
         onSelect={handleImageSelect}
+        onMultiSelect={handleMultiSelect}
+      />
+
+      <ZenDatasetPanel
+        isOpen={!!panels.datasets}
+        onClose={() => togglePanel('datasets')}
       />
 
       {/* Overlay Plugins (e.g. Generate Button) */}

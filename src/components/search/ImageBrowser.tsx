@@ -29,7 +29,8 @@ import {
   ScanEye,
   Search,
   SlidersHorizontal,
-  Video, X 
+  Video,
+  X,
 } from 'lucide-react'
 import {
   useInfiniteQuery,
@@ -55,12 +56,16 @@ interface ImageBrowserProps {
   onSelect: (image: PromptImage) => void
   defaultGridCols?: number
   storageKey?: string
+  multiSelectMode?: boolean
+  onMultiSelect?: (images: PromptImage[]) => void
 }
 
 export function ImageBrowser({
   onSelect,
   defaultGridCols = 5,
   storageKey = 'explore-grid-cols',
+  multiSelectMode = false,
+  onMultiSelect,
 }: ImageBrowserProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeSearchQuery, setActiveSearchQuery] = useState('')
@@ -79,6 +84,7 @@ export function ImageBrowser({
   const [lightboxImage, setLightboxImage] = useState<PromptImage | null>(null)
   const [showArchived, setShowArchived] = useState<boolean | null>(false)
   const [mediaType, setMediaType] = useState<'image' | 'video' | 'all'>('all')
+  const [selectedImages, setSelectedImages] = useState<PromptImage[]>([])
   const queryClient = useQueryClient()
 
   // Listen for new generations and uploads to refresh the list
@@ -328,6 +334,24 @@ export function ImageBrowser({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {multiSelectMode && (
+          <>
+            <div className="h-6 w-px bg-border mx-1" />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                {selectedImages.length} selected
+              </span>
+              <Button
+                size="sm"
+                onClick={() => onMultiSelect?.(selectedImages)}
+                disabled={selectedImages.length === 0}
+              >
+                Use Selected
+              </Button>
+            </div>
+          </>
+        )}
 
         {/* Zoom / View Settings */}
         <DropdownMenu>

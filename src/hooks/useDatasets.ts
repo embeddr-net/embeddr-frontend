@@ -6,7 +6,7 @@ export interface Dataset {
   name: string
   description?: string
   type: 'regular' | 'image_pair'
-  collection_id: number
+  collection_id?: number
   created_at: string
   updated_at: string
   item_count: number
@@ -15,6 +15,7 @@ export interface Dataset {
 
 export interface DatasetItem {
   id: number
+  dataset_id: number
   original_image_id: number
   processed_image_path?: string
   pair_image_path?: string
@@ -50,7 +51,7 @@ async function createDataset(data: {
   name: string
   description?: string
   type: 'regular' | 'image_pair'
-  collection_id: number
+  collection_id?: number
 }): Promise<Dataset> {
   const response = await fetch(`${BACKEND_URL}/datasets`, {
     method: 'POST',
@@ -94,6 +95,7 @@ async function updateDatasetItem(data: {
   updates: {
     processed_image_path?: string
     pair_image_path?: string
+    pair_image_id?: number
     caption?: string
   }
 }): Promise<DatasetItem> {
@@ -198,6 +200,69 @@ export function useUpdateDatasetItem() {
       queryClient.invalidateQueries({
         queryKey: ['dataset-items', variables.datasetId],
       })
+    },
+  })
+}
+
+async function addDatasetItems(data: {
+  datasetId: number
+  imageIds: Array<number>
+}): Promise<Array<DatasetItem>> {
+  const response = await fetch(
+    `${BACKEND_URL}/datasets/${data.datasetId}/items`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ image_ids: data.imageIds }),
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error('Failed to add items to dataset')
+  }
+  return response.json()
+}
+
+async function deleteDatasetItem(data: {
+  datasetId: number
+  itemId: number
+}): Promise<void> {
+  const response = await fetch(
+    `${BACKEND_URL}/datasets/${data.datasetId}/items/${data.itemId}`,
+    {
+      method: 'DELETE',
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error('Failed to delete dataset item')
+  }
+}
+
+export function useDeleteDatasetItem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteDatasetItem,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['dataset-items', variables.datasetId],
+      })
+      queryClient.invalidateQueries({ queryKey: ['datasets'] })
+    },
+  })
+}
+
+export function useAddDatasetItems() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: addDatasetItems,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['dataset-items', variables.datasetId],
+      })
+      queryClient.invalidateQueries({ queryKey: ['datasets'] })
     },
   })
 }

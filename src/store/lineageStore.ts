@@ -69,7 +69,10 @@ const getHammingDistance = (hash1: string, hash2: string) => {
   }
 }
 
-const getLayoutedElements = (nodes: Array<GraphNode>, edges: Array<GraphEdge>) => {
+const getLayoutedElements = (
+  nodes: Array<GraphNode>,
+  edges: Array<GraphEdge>,
+) => {
   const dagreGraph = new dagre.graphlib.Graph()
   dagreGraph.setDefaultEdgeLabel(() => ({}))
 
@@ -275,6 +278,11 @@ export const useLineageStore = create<LineageState>((set, get) => ({
 
         try {
           const image = await fetchItem(imageId)
+
+          // Skip archived images unless it's the root image we're viewing
+          if (image.is_archived && image.id.toString() !== id) {
+            return
+          }
 
           // Add Node
           nodes.push({

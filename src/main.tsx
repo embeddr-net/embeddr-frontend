@@ -6,15 +6,18 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
+import { globalEventBus } from './lib/eventBus'
 
 import './styles.css'
 
 // Expose React and ReactDOM for external plugins
-;
 
-(window as any).React = React
+;(window as any).React = React
 ;(window as any).ReactDOM = ReactDOM
 ;(window as any).EmbeddrUI = EmbeddrUI
+;(window as any).Embeddr = {
+  eventBus: globalEventBus,
+}
 
 // Create a new router instance
 const router = createRouter({

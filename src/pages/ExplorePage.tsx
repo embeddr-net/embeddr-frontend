@@ -67,6 +67,7 @@ import {
 } from '@/lib/api'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { useSettings } from '@/hooks/useSettings'
+import { globalEventBus } from '@/lib/eventBus'
 
 const ExplorePage = () => {
   const { openImage, closeImage } = useImageDialog()
@@ -241,6 +242,20 @@ const ExplorePage = () => {
         return allPages.length * 50
       },
     })
+
+  // Listen for generation completion to refresh the list
+  useEffect(() => {
+    const unsubscribe = globalEventBus.on('generation:complete', () => {
+      console.log(
+        '[ExplorePage] Received generation:complete, invalidating queries',
+      )
+      // Only invalidate if we are on the 'new' tab, as that's where new images appear
+      if (activeTab === 'new') {
+        queryClient.invalidateQueries({ queryKey: ['items'] })
+      }
+    })
+    return unsubscribe
+  }, [queryClient, activeTab])
 
   const posts = useMemo(() => {
     if (!data) return []

@@ -144,6 +144,5 @@ export const RandomSeedPlugin: PluginDefinition = {
 export const DEFAULT_PLUGINS = [
   WorkflowInfoPlugin,
   RandomSeedPlugin,
-  //   DebugLoggerPlugin,
   //   ZenModeCorePlugin,
 ]
