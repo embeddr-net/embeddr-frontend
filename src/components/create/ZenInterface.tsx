@@ -8,7 +8,7 @@ import {
   ZenSettingsDialog,
   ZenToolbar,
   ZenToolbox,
-  ZenDatasetPanel,
+  // ZenDatasetPanel,
 } from './zen'
 import { useGeneration } from '@/context/GenerationContext'
 import { useGlobalStore } from '@/store/globalStore'
@@ -21,8 +21,31 @@ import { usePanelStore } from '@/store/panelStore'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { BACKEND_URL } from '@/lib/api/config'
 import { DraggablePanel } from '@/components/ui/DraggablePanel'
+import { useWindowStore } from '@/store/windowStore'
+import {
+  windowRegistry,
+  registerWindowComponent,
+} from '@/components/ui/windowRegistry'
+import { PanelManager } from '@/components/ui/PanelManager'
 
 // New Components
+
+// Logic component to sync plugin state with window store
+function PluginWindowRegistration({
+  pluginId,
+  def,
+}: {
+  pluginId: string
+  def: any
+}) {
+  useEffect(() => {
+    // Register component for WindowManager
+    const fullId = `${pluginId}-${def.id}`
+    registerWindowComponent(fullId, def.component)
+  }, [pluginId, def.id, def.component])
+
+  return null
+}
 
 interface ZenInterfaceProps {
   leftSidebarOpen: boolean
@@ -69,13 +92,29 @@ export function ZenInterface({
     return () => window.removeEventListener('mousedown', handleGlobalClick)
   }, [setActivePanel])
 
-  const [panels, setPanels] = useLocalStorage('zen-panels-state', {
-    settings: false,
-    queue: false,
-    toolbox: false,
-    images: false,
-    datasets: false,
-  })
+  const {
+    windows: storeWindows,
+    minimizeWindow,
+    restoreWindow,
+    openWindow,
+    showZenToolbar, // Use store state
+  } = useWindowStore()
+
+  // Derive panels state from window store
+  const panels = {
+    settings:
+      !!storeWindows['zen-settings'] &&
+      !storeWindows['zen-settings'].isMinimized,
+    queue:
+      !!storeWindows['zen-queue'] && !storeWindows['zen-queue'].isMinimized,
+    toolbox:
+      !!storeWindows['zen-toolbox'] && !storeWindows['zen-toolbox'].isMinimized,
+    images:
+      !!storeWindows['zen-images'] && !storeWindows['zen-images'].isMinimized,
+    datasets:
+      !!storeWindows['zen-datasets'] &&
+      !storeWindows['zen-datasets'].isMinimized,
+  }
 
   const [seedModes, setSeedModes] = useLocalStorage<
     Record<string, 'fixed' | 'increment' | 'randomize'>
@@ -120,20 +159,64 @@ export function ZenInterface({
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
 
   const togglePanel = (key: string) => {
-    setPanels((prev) => ({
-      ...prev,
-      [key]: !prev[key as keyof typeof panels],
-    }))
+    // If it's a window-managed panel, use the window store
+    if (['toolbox', 'settings', 'queue', 'images', 'datasets'].includes(key)) {
+      const windowId = `zen-${key}`
+      const win = storeWindows[windowId]
+      if (!win) {
+        const titles: Record<string, string> = {
+          toolbox: 'Toolbox',
+          settings: 'Settings',
+          queue: 'Queue',
+          images: 'Images',
+          datasets: 'Datasets',
+        }
+        openWindow({
+          id: windowId,
+          title: titles[key],
+          componentId: `core-${key === 'images' ? 'image-browser' : key}`,
+        })
+      } else if (win.isMinimized) {
+        restoreWindow(windowId)
+      } else {
+        minimizeWindow(windowId)
+      }
+      return
+    }
   }
 
   const setPanel = (key: string, value: boolean) => {
-    setPanels((prev) => ({
-      ...prev,
-      [key]: value,
-    }))
+    if (['toolbox', 'settings', 'queue', 'images', 'datasets'].includes(key)) {
+      const windowId = `zen-${key}`
+      const win = storeWindows[windowId]
+      if (value) {
+        if (!win) {
+          const titles: Record<string, string> = {
+            toolbox: 'Toolbox',
+            settings: 'Settings',
+            queue: 'Queue',
+            images: 'Images',
+            datasets: 'Datasets',
+          }
+          openWindow({
+            id: windowId,
+            title: titles[key],
+            componentId: `core-${key === 'images' ? 'image-browser' : key}`,
+          })
+        } else {
+          restoreWindow(windowId)
+        }
+      } else {
+        if (win) {
+          minimizeWindow(windowId)
+        }
+      }
+      return
+    }
   }
 
   const handleImageSelect = (image: any) => {
+    selectImage(image)
     if (activeImageInput) {
       if (activeImageInput.field === 'image_id') {
         setWorkflowInput(
@@ -304,31 +387,44 @@ export function ZenInterface({
 
     window.addEventListener('keydown', handleKeyDown)
     api.events.on('zen:generate', handleZenGenerate)
+    const handleOpenPlugin = ({
+      id,
+      state,
+    }: {
+      id: string
+      state: boolean
+    }) => {
+      setOpenPlugins((prev) => ({ ...prev, [id]: state }))
+    }
+    api.events.on('zen:open-plugin', handleOpenPlugin)
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       api.events.off('zen:generate', handleZenGenerate)
+      api.events.off('zen:open-plugin', handleOpenPlugin)
     }
   }, [selectedWorkflow, api.events])
 
   return (
     <EmbeddrProvider api={api}>
-      <ZenToolbar
-        panels={panels}
-        togglePanel={togglePanel}
-        isGenerating={isGenerating}
-        handleGenerate={handleGenerate}
-        selectedWorkflow={selectedWorkflow}
-        hasPendingGenerations={generations.some(
-          (g) => g.status === 'pending' || g.status === 'processing',
-        )}
-        hasZenInputs={zenInputs.length > 0}
-        onExitZenMode={() => {
-          setLeftSidebarOpen(true)
-          setRightSidebarOpen(true)
-        }}
-        onOpenSettingsDialog={() => setSettingsDialogOpen(true)}
-      />
+      {showZenToolbar && (
+        <ZenToolbar
+          panels={panels}
+          togglePanel={togglePanel}
+          isGenerating={isGenerating}
+          handleGenerate={handleGenerate}
+          selectedWorkflow={selectedWorkflow}
+          hasPendingGenerations={generations.some(
+            (g) => g.status === 'pending' || g.status === 'processing',
+          )}
+          hasZenInputs={zenInputs.length > 0}
+          onExitZenMode={() => {
+            setLeftSidebarOpen(true)
+            setRightSidebarOpen(true)
+          }}
+          onOpenSettingsDialog={() => setSettingsDialogOpen(true)}
+        />
+      )}
 
       <ZenSettingsDialog
         open={settingsDialogOpen}
@@ -338,8 +434,6 @@ export function ZenInterface({
       />
 
       <ZenToolbox
-        isOpen={panels.toolbox}
-        onClose={() => togglePanel('toolbox')}
         workflows={workflows}
         selectedWorkflow={selectedWorkflow}
         selectWorkflow={selectWorkflow}
@@ -357,8 +451,6 @@ export function ZenInterface({
       />
 
       <ZenSettings
-        isOpen={panels.settings}
-        onClose={() => togglePanel('settings')}
         selectedImage={selectedImage}
         handleUseGlobalImage={handleUseGlobalImage}
         selectImage={selectImage}
@@ -374,8 +466,6 @@ export function ZenInterface({
       />
 
       <ZenQueue
-        isOpen={panels.queue}
-        onClose={() => togglePanel('queue')}
         generations={generations}
         selectedGenerationId={selectedGeneration?.id || null}
         selectGeneration={selectGeneration}
@@ -383,46 +473,22 @@ export function ZenInterface({
       />
 
       <ZenImageBrowser
-        isOpen={panels.images}
-        onClose={() => togglePanel('images')}
         activeImageInput={activeImageInput}
         onSelect={handleImageSelect}
         onMultiSelect={handleMultiSelect}
       />
 
-      <ZenDatasetPanel
-        isOpen={!!panels.datasets}
-        onClose={() => togglePanel('datasets')}
-      />
+      {/* <ZenDatasetPanel /> */}
 
-      {/* Overlay Plugins (e.g. Generate Button) */}
-      {getComponents('zen-overlay').map(({ pluginId, def }) => {
-        const Component = def.component
-        const isOpen = openPlugins[`${pluginId}-${def.id}`] ?? true
-        const pluginApi = extendApiForPlugin(api, pluginId)
-
-        return (
-          <DraggablePanel
-            key={`${pluginId}-${def.id}`}
-            id={`plugin-${pluginId}-${def.id}`}
-            title={def.label}
-            isOpen={isOpen}
-            onClose={() =>
-              setOpenPlugins((prev) => ({
-                ...prev,
-                [`${pluginId}-${def.id}`]: false,
-              }))
-            }
-            defaultPosition={def.defaultPosition || { x: 100, y: 100 }}
-            defaultSize={def.defaultSize || { width: 300, height: 200 }}
-            className="absolute"
-            hideHeader={def.options?.hideHeader}
-            transparent={def.options?.transparent}
-          >
-            <Component api={pluginApi} />
-          </DraggablePanel>
-        )
-      })}
+      {/* Plugin Registration */}
+      {getComponents('zen-overlay').map(({ pluginId, def }) => (
+        <PluginWindowRegistration
+          key={`${pluginId}-${def.id}`}
+          pluginId={pluginId}
+          def={def}
+        />
+      ))}
+      <PanelManager />
     </EmbeddrProvider>
   )
 }
