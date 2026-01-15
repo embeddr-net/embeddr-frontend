@@ -23,6 +23,8 @@ interface FilterConfigPanelProps {
   setMediaType: (type: 'image' | 'video' | 'all') => void
   showArchived: boolean | null
   setShowArchived: (show: boolean | null) => void
+  useReranker?: boolean
+  setUseReranker?: (use: boolean) => void
 }
 
 export function FilterConfigPanel({
@@ -38,6 +40,8 @@ export function FilterConfigPanel({
   setMediaType,
   showArchived,
   setShowArchived,
+  useReranker,
+  setUseReranker,
 }: FilterConfigPanelProps) {
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -93,6 +97,30 @@ export function FilterConfigPanel({
               <SelectItem value="all">All Items</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Search Settings
+          </h4>
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-0.5">
+              <Label htmlFor="use-reranker" className="text-sm font-medium">
+                Use AI Reranker
+              </Label>
+              <p className="text-[10px] text-muted-foreground">
+                Much slower but highly accurate results.
+              </p>
+            </div>
+            <Switch
+              id="use-reranker"
+              checked={useReranker}
+              onCheckedChange={setUseReranker}
+              disabled={!setUseReranker}
+            />
+          </div>
         </div>
 
         <Separator />

@@ -1,14 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createWorkflow,
-  deleteWorkflow,
+  duplicateWorkflow,
+  composeWorkflows,
   fetchWorkflows,
   getWorkflow,
   runWorkflow,
-  syncWorkflows,
-  updateWorkflow,
+  updateWorkflowMetadata,
+  deleteWorkflow,
+  getWorkflowTemplates,
+  type WorkflowArtifactMetadata,
 } from '../lib/api/endpoints/workflows'
-import type { Workflow } from '../lib/api/endpoints/workflows'
+import type { WorkflowArtifact } from '../lib/api/endpoints/workflows'
+
+export function useWorkflowTemplates() {
+  return useQuery({
+    queryKey: ['workflow-templates'],
+    queryFn: getWorkflowTemplates,
+  })
+}
 
 export function useWorkflows() {
   return useQuery({
@@ -17,17 +27,7 @@ export function useWorkflows() {
   })
 }
 
-export function useSyncWorkflows() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: syncWorkflows,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workflows'] })
-    },
-  })
-}
-
-export function useWorkflow(id: number | null) {
+export function useWorkflow(id: string | number | null) {
   return useQuery({
     queryKey: ['workflow', id],
     queryFn: () => (id ? getWorkflow(id) : Promise.resolve(null)),
@@ -35,22 +35,63 @@ export function useWorkflow(id: number | null) {
   })
 }
 
-export function useRunWorkflow() {
-  return useMutation({
-    mutationFn: ({
-      id,
-      inputs,
-    }: {
-      id: number
-      inputs: Record<string, Record<string, any>>
-    }) => runWorkflow(id, inputs),
-  })
-}
-
 export function useCreateWorkflow() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: createWorkflow,
+    mutationFn: (data: {
+      name: string
+      description?: string
+      graph?: any
+      template?: string
+    }) => createWorkflow(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workflows'] })
+    },
+  })
+}
+
+export function useDuplicateWorkflow() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: duplicateWorkflow,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workflows'] }),
+  })
+}
+
+export function useComposeWorkflows() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ ids, name }: { ids: string[]; name: string }) =>
+      composeWorkflows(ids, name),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workflows'] }),
+  })
+}
+
+// Deprecated name, but implemented for V2
+export function useRunWorkflow() {
+  return useMutation({
+    mutationFn: async ({
+      id,
+      inputs,
+    }: {
+      id: string | number
+      inputs: any
+    }) => {
+      return runWorkflow(id, inputs)
+    },
+  })
+}
+
+export function useSyncWorkflows() {
+  return useMutation({
+    mutationFn: async () => ({ status: 'ok' }),
+  })
+}
+
+export function useDeleteWorkflow() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string | number) => deleteWorkflow(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workflows'] })
     },
@@ -58,34 +99,24 @@ export function useCreateWorkflow() {
 }
 
 export function useUpdateWorkflow() {
-  const queryClient = useQueryClient()
+  // Stub
   return useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: number
-      data: Partial<Omit<Workflow, 'id' | 'created_at' | 'updated_at'>>
-    }) => {
-      const { meta, ...rest } = data
-      return updateWorkflow(id, {
-        ...rest,
-        ...(meta ? { metadata: meta } : {}),
-      })
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['workflows'] })
-      queryClient.invalidateQueries({ queryKey: ['workflow', data.id] })
+    mutationFn: async (args: any) => {
+      console.log('update', args)
     },
   })
 }
 
-export function useDeleteWorkflow() {
+export function useUpdateWorkflowMetadata() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: deleteWorkflow,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workflows'] })
-    },
+    mutationFn: ({
+      id,
+      metadata,
+    }: {
+      id: string | number
+      metadata: WorkflowArtifactMetadata
+    }) => updateWorkflowMetadata(id, metadata),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workflow'] }),
   })
 }

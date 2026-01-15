@@ -15,7 +15,8 @@ import {
 } from '@embeddr/react-ui/components/tabs'
 import { Input } from '@embeddr/react-ui/components/input'
 import { Badge } from '@embeddr/react-ui/components/badge'
-import { Search, Database, FileBox, Cpu } from 'lucide-react'
+import { Search, Database, FileBox, Cpu, Activity } from 'lucide-react'
+import { SystemResourceBar } from '@embeddr/react-ui'
 
 export const Route = createFileRoute('/resources')({
   component: ResourcesPage,
@@ -111,11 +112,12 @@ function ResourcesPage() {
       </div>
 
       <Tabs
-        defaultValue="loras"
+        defaultValue="system"
         className="w-full"
         onValueChange={setActiveTab}
       >
-        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+        <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+          <TabsTrigger value="system">System Status</TabsTrigger>
           <TabsTrigger value="loras">LoRAs ({loras.total})</TabsTrigger>
           <TabsTrigger value="checkpoints">
             Checkpoints ({checkpoints.total})
@@ -124,6 +126,41 @@ function ResourcesPage() {
             Embeddings ({embeddings.total})
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="system" className="mt-6 space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div className="space-y-1">
+                <CardTitle className="text-xl">
+                  VRAM / Memory Tracking
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Active models and system resources currently in use by the
+                  backend.
+                </p>
+              </div>
+              <Activity className="h-5 w-5 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <SystemResourceBar className="py-4" />
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">
+                  Auto-Unload
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">
+                Models can be manually unloaded via the context menu on the
+                resource bar. Double-click or right-click on a resource block to
+                see options.
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
         <TabsContent value="loras" className="mt-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

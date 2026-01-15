@@ -21,13 +21,16 @@ export const GenerationProvider = ({
 }: {
   children: React.ReactNode
 }) => {
-  const { fetchWorkflows, fetchHistory, connectWebSocket } =
+  const { fetchWorkflows, fetchHistory, initEventListeners } =
     useGenerationStore()
 
   useEffect(() => {
-    fetchWorkflows()
-    fetchHistory()
-    connectWebSocket()
+    // Initialize listeners for Event Bus -> Store updates
+    initEventListeners()
+
+    // TODO: Re-enable these when the GenerationStore is fully ready
+    // fetchWorkflows()
+    // fetchHistory()
   }, [])
 
   return <>{children}</>

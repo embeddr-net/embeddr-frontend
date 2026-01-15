@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { EmbeddrProvider } from '@embeddr/react-ui'
+import { Button, EmbeddrProvider } from '@embeddr/react-ui'
 import { toast } from 'sonner'
 import {
   ZenImageBrowser,
@@ -27,25 +27,26 @@ import {
   registerWindowComponent,
 } from '@/components/ui/windowRegistry'
 import { PanelManager } from '@/components/ui/PanelManager'
+import { PluginWindowBootstrap } from '@/plugins/PluginWindowBootstrap'
 
 // New Components
 
 // Logic component to sync plugin state with window store
-function PluginWindowRegistration({
-  pluginId,
-  def,
-}: {
-  pluginId: string
-  def: any
-}) {
-  useEffect(() => {
-    // Register component for WindowManager
-    const fullId = `${pluginId}-${def.id}`
-    registerWindowComponent(fullId, def.component)
-  }, [pluginId, def.id, def.component])
+// function PluginWindowRegistration({
+//   pluginId,
+//   def,
+// }: {
+//   pluginId: string
+//   def: any
+// }) {
+//   useEffect(() => {
+//     // Register component for WindowManager
+//     const fullId = `${pluginId}-${def.id}`
+//     registerWindowComponent(fullId, def.component)
+//   }, [pluginId, def.id, def.component])
 
-  return null
-}
+//   return null
+// }
 
 interface ZenInterfaceProps {
   leftSidebarOpen: boolean
@@ -78,6 +79,35 @@ export function ZenInterface({
   const api = useEmbeddrAPI()
   const { getComponents, getActions } = usePluginStore()
 
+  console.log(
+    '[ZenInterface] Rendered with selectedWorkflow:',
+    selectedWorkflow,
+  )
+  console.log(usePluginStore.getState().activatePlugin)
+  console.log(usePluginStore.getState().knownPlugins)
+  console.log(Object.keys(usePluginStore.getState().plugins))
+
+  console.log(
+    '[ZenInterface] overlay components:',
+    usePluginStore.getState().getComponents('zen-overlay'),
+  )
+  console.log(
+    '[ZenInterface] window components:',
+    usePluginStore.getState().getComponents('window'),
+  )
+
+  const winComps = usePluginStore.getState().getComponents('window')
+
+  console.log(
+    '[ZenInterface] window defs:',
+    winComps.map((c) => ({
+      pluginId: c.pluginId,
+      defId: c.def?.id,
+      exportName: c.def?.exportName,
+      location: c.def?.location,
+      componentId: `${c.pluginId}-${c.def?.id}`,
+    })),
+  )
   // Global click handler to clear active panel
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
@@ -97,6 +127,7 @@ export function ZenInterface({
     minimizeWindow,
     restoreWindow,
     openWindow,
+    closeWindow,
     showZenToolbar, // Use store state
   } = useWindowStore()
 
@@ -179,7 +210,7 @@ export function ZenInterface({
       } else if (win.isMinimized) {
         restoreWindow(windowId)
       } else {
-        minimizeWindow(windowId)
+        closeWindow(windowId)
       }
       return
     }
@@ -407,6 +438,17 @@ export function ZenInterface({
 
   return (
     <EmbeddrProvider api={api}>
+      {/* <Button
+        onClick={() => {
+          console.log('Hello')
+          api.windows.spawn('embeddr-llm-llm-artifact', 'Artifact test', {
+            artifactId: '3750283b-c854-4e7d-bd46-973ee9d48983',
+            pluginId: 'embeddr-llm',
+          })
+        }}
+      >
+        Spawn LLM Artifact Window
+      </Button> */}
       {showZenToolbar && (
         <ZenToolbar
           panels={panels}
@@ -481,13 +523,7 @@ export function ZenInterface({
       {/* <ZenDatasetPanel /> */}
 
       {/* Plugin Registration */}
-      {getComponents('zen-overlay').map(({ pluginId, def }) => (
-        <PluginWindowRegistration
-          key={`${pluginId}-${def.id}`}
-          pluginId={pluginId}
-          def={def}
-        />
-      ))}
+      <PluginWindowBootstrap />
       <PanelManager />
     </EmbeddrProvider>
   )

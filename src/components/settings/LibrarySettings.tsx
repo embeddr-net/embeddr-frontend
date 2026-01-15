@@ -1,14 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  BrainCircuit,
-  FolderPlus,
-  Image as ImageIcon,
-  PlusIcon,
-  RefreshCw,
-  Save,
-  Trash2,
-} from 'lucide-react'
+import { FolderPlus, PlusIcon, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@embeddr/react-ui/components/button'
 import { Badge } from '@embeddr/react-ui/components/badge'
 import { Input } from '@embeddr/react-ui/components/input'
@@ -28,191 +20,120 @@ import {
 } from '@embeddr/react-ui/components/accordion'
 import { Spinner } from '@embeddr/react-ui/components/spinner'
 import { toast } from 'sonner'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@embeddr/react-ui/components/select'
+import { Checkbox } from '@embeddr/react-ui/components/checkbox'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@embeddr/react-ui/components/popover'
+import { HelpCircle } from 'lucide-react'
+import { embeddrApi } from '@/lib/api/v2/client'
+import type { ScannerTypeInfo } from '@/lib/api/v2/types'
+import { usePluginEvent } from '@/hooks/usePluginEvent'
 import { StatsPanel } from './StatsPanel'
-import { useSettings } from '@/hooks/useSettings'
-import { BACKEND_URL } from '@/lib/api'
 
-function LibraryPathItem({ path }: { path: any }) {
+function LibraryPathItem({
+  path,
+  isScanning,
+}: {
+  path: any
+  isScanning: boolean
+}) {
   const queryClient = useQueryClient()
-  const [name, setName] = useState(path.name || '')
-  const { selectedModel, batchSize } = useSettings()
 
-  // Update path mutation
-  const updatePathMutation = useMutation({
-    mutationFn: async (data: { name: string }) => {
-      const res = await fetch(`${BACKEND_URL}/workspace/paths/${path.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error('Failed to update path')
-      return res.json()
-    },
+  // Rescan mutation
+  const rescanMutation = useMutation({
+    mutationFn: () => embeddrApi.library.rescan(path.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['paths'] })
-      toast.success('Path updated')
+      // toast.success('Rescan started in background')
+    },
+    onError: () => {
+      toast.error('Failed to start rescan')
     },
   })
 
   // Delete path mutation
   const deletePathMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`${BACKEND_URL}/workspace/paths/${path.id}`, {
-        method: 'DELETE',
-      })
-      if (!res.ok) throw new Error('Failed to delete path')
-      return res.json()
-    },
+    mutationFn: () => embeddrApi.library.remove(path.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['paths'] })
-      toast.success('Path deleted')
+      queryClient.invalidateQueries({ queryKey: ['library-roots'] })
+      toast.success('Library removed')
     },
-  })
-
-  // Generate thumbnails mutation
-  const thumbnailsMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(
-        `${BACKEND_URL}/workspace/paths/${path.id}/thumbnails`,
-        {
-          method: 'POST',
-        },
-      )
-      if (!res.ok) throw new Error('Failed to generate thumbnails')
-      return res.json()
-    },
-    onSuccess: (data) => {
-      toast.success(
-        `Thumbnail generation complete! Generated ${data.generated} thumbnails.`,
-      )
-    },
-  })
-
-  // Generate embeddings mutation
-  const embeddingsMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(
-        `${BACKEND_URL}/workspace/paths/${
-          path.id
-        }/embeddings?model=${encodeURIComponent(
-          selectedModel,
-        )}&batch_size=${batchSize}`,
-        {
-          method: 'POST',
-        },
-      )
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.detail || 'Failed to generate embeddings')
-      }
-      return res.json()
-    },
-    onSuccess: (data) => {
-      toast.success(`Embedding generation started! Job ID: ${data.job_id}`)
-      // Invalidate job status to trigger immediate update
-      queryClient.invalidateQueries({ queryKey: ['job-status'] })
-    },
-    onError: (err) => {
-      toast.error(err.message)
+    onError: () => {
+      toast.error('Failed to remove library')
     },
   })
 
   return (
-    <AccordionItem value={path.id.toString()}>
-      <AccordionTrigger className="hover:no-underline">
+    <AccordionItem value={path.id}>
+      <AccordionTrigger className="hover:no-underline px-2">
         <div className="flex items-center justify-between w-full pr-4">
-          <div className="flex items-center gap-2 text-left">
-            <FolderPlus className="w-4 h-4 text-muted-foreground" />
-            <div className="flex flex-col items-start">
-              <span className="font-medium">
-                {path.name || (
-                  <span className="italic text-muted-foreground">
-                    Untitled Collection
-                  </span>
-                )}
+          <div className="flex items-center gap-3 text-left">
+            <FolderPlus className="w-5 h-5 text-primary/80" />
+            <div className="flex flex-col items-start gap-0.5">
+              <span className="font-medium text-sm">
+                {path.label || 'Untitled'}
               </span>
-              <span className="text-xs text-muted-foreground font-mono wrap-anywhere">
-                {path.path}
+              <span className="text-xs text-muted-foreground font-mono break-all line-clamp-1">
+                {path.uri || path.path}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <Badge variant="secondary">{path.image_count} images</Badge>
+            <Badge variant="secondary" className="font-mono text-xs">
+              {path.file_count ?? 0} items
+            </Badge>
           </div>
         </div>
       </AccordionTrigger>
       <AccordionContent>
-        <div className="p-4 space-y-2 bg-muted/30 border">
-          <div className="grid gap-2 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Collection Name</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Nickname"
-                  autoComplete="off"
-                />
-                <Button
-                  size="sm"
-                  onClick={() => updatePathMutation.mutate({ name })}
-                  disabled={updatePathMutation.isPending}
-                >
-                  <Save className="w-4 h-4" />
-                </Button>
-              </div>
+        <div className="p-4 mx-2 space-y-3 bg-muted/30 border rounded-md">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="text-xs text-muted-foreground font-mono">
+              <p>ID: {path.id}</p>
             </div>
+            <div className="flex gap-2 w-full md:w-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 md:flex-none"
+                onClick={() => rescanMutation.mutate()}
+                disabled={rescanMutation.isPending || isScanning}
+              >
+                {rescanMutation.isPending || isScanning ? (
+                  <Spinner className="w-3 h-3 mr-2" />
+                ) : (
+                  <RefreshCw className="w-3 h-3 mr-2" />
+                )}
+                {isScanning ? 'Scanning...' : 'Rescan'}
+              </Button>
 
-            <div className="space-y-2">
-              <Label>Actions</Label>
-              <div className="flex flex-wrap lgap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => thumbnailsMutation.mutate()}
-                  disabled={thumbnailsMutation.isPending}
-                >
-                  {thumbnailsMutation.isPending ? (
-                    <Spinner className="w-4 h-4 mr-2" />
-                  ) : (
-                    <ImageIcon className="w-4 h-4 mr-2" />
-                  )}
-                  Generate Thumbnails
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => embeddingsMutation.mutate()}
-                  disabled={embeddingsMutation.isPending}
-                >
-                  {embeddingsMutation.isPending ? (
-                    <Spinner className="w-4 h-4 mr-2" />
-                  ) : (
-                    <BrainCircuit className="w-4 h-4 mr-2" />
-                  )}
-                  Generate Embeddings
-                </Button>
-
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    if (confirm('Are you sure you want to remove this path?')) {
-                      deletePathMutation.mutate()
-                    }
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Remove Path
-                </Button>
-              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="flex-1 md:flex-none"
+                onClick={() => {
+                  if (
+                    confirm(
+                      'Are you sure you want to remove this library root? The files on disk will not be deleted.',
+                    )
+                  ) {
+                    deletePathMutation.mutate()
+                  }
+                }}
+                disabled={deletePathMutation.isPending}
+              >
+                <Trash2 className="w-3 h-3 mr-2" />
+                Remove
+              </Button>
             </div>
-          </div>
-
-          <div className="text-xs text-muted-foreground">
-            <p>Path: {path.path}</p>
-            <p>ID: {path.id}</p>
           </div>
         </div>
       </AccordionContent>
@@ -223,122 +144,271 @@ function LibraryPathItem({ path }: { path: any }) {
 export function LibrarySettings() {
   const queryClient = useQueryClient()
   const [newPath, setNewPath] = useState('')
+  const [newLabel, setNewLabel] = useState('')
+  const [selectedScanner, setSelectedScanner] = useState<string>(
+    'collection:directory',
+  )
+  const [scannerConfig, setScannerConfig] = useState<Record<string, any>>({})
+  const [scanningIds, setScanningIds] = useState<Set<string>>(new Set())
+
+  // WebSocket Events
+  usePluginEvent('scan.started', (data) => {
+    if (data.root_id) {
+      toast.info(`Scan started for ${data.uri || 'collection'}`)
+      setScanningIds((prev) => {
+        const next = new Set(prev)
+        next.add(data.root_id)
+        return next
+      })
+    }
+  })
+
+  usePluginEvent('scan.completed', (data) => {
+    if (data.root_id) {
+      toast.success(`Scan completed. Processed ${data.added_count} items.`)
+      setScanningIds((prev) => {
+        const next = new Set(prev)
+        next.delete(data.root_id)
+        return next
+      })
+      queryClient.invalidateQueries({ queryKey: ['library-roots'] })
+    }
+  })
+
+  usePluginEvent('scan.failed', (data) => {
+    if (data.root_id) {
+      toast.error(`Scan failed: ${data.error}`)
+      setScanningIds((prev) => {
+        const next = new Set(prev)
+        next.delete(data.root_id)
+        return next
+      })
+    }
+  })
 
   // Fetch paths
   const { data: paths, isLoading } = useQuery({
-    queryKey: ['paths'],
-    queryFn: async () => {
-      const res = await fetch(`${BACKEND_URL}/workspace/paths`)
-      if (!res.ok) throw new Error('Failed to fetch paths')
-      return res.json()
-    },
+    queryKey: ['library-roots'],
+    queryFn: () => embeddrApi.library.list(),
   })
+
+  // Fetch scanners
+  const { data: scannerData } = useQuery({
+    queryKey: ['available-scanners'],
+    queryFn: () => embeddrApi.library.listScanners(),
+  })
+  const scanners = scannerData || []
+  const currentScannerInfo = scanners.find(
+    (s) => s.type_name === selectedScanner,
+  )
 
   // Add path mutation
   const addPathMutation = useMutation({
-    mutationFn: async (path: string) => {
-      const res = await fetch(`${BACKEND_URL}/workspace/paths`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path, create_if_missing: true }),
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.detail || 'Failed to add path')
-      }
-      return res.json()
-    },
+    mutationFn: (data: {
+      path: string
+      label: string
+      scanner_type: string
+      config: any
+    }) =>
+      embeddrApi.library.add(
+        data.path,
+        data.label,
+        data.scanner_type,
+        data.config,
+      ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['paths'] })
-      queryClient.invalidateQueries({ queryKey: ['library-paths'] })
+      queryClient.invalidateQueries({ queryKey: ['library-roots'] })
       setNewPath('')
-      toast.success('Path added successfully')
+      setNewLabel('')
+      setScannerConfig({})
+      toast.success('Collection added successfully')
     },
     onError: (err) => {
-      toast.error(err.message)
-    },
-  })
-
-  // Scan mutation
-  const scanMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`${BACKEND_URL}/workspace/scan`, {
-        method: 'POST',
-      })
-      if (!res.ok) throw new Error('Failed to scan')
-      return res.json()
-    },
-    onSuccess: (data) => {
-      toast.success(`Scan complete! Added ${data.added} new images.`)
-      queryClient.invalidateQueries({ queryKey: ['paths'] })
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to add collection',
+      )
     },
   })
 
   const handleAddPath = (e: React.FormEvent) => {
     e.preventDefault()
-    if (newPath) addPathMutation.mutate(newPath)
+    if (newPath) {
+      const label = newLabel || newPath.split('/').pop() || 'New Collection'
+      addPathMutation.mutate({
+        path: newPath,
+        label,
+        scanner_type: selectedScanner,
+        config: scannerConfig,
+      })
+    }
   }
 
   return (
-    <div className="space-y-1 py-1">
+    <div className="space-y-6 py-2">
       <StatsPanel />
       <Card>
         <CardHeader>
-          <CardTitle>Library Collections</CardTitle>
+          <CardTitle>Collections</CardTitle>
           <CardDescription>
-            Manage your local image libraries and collections.
+            Manage the collections Embeddr indexes. Local folders, remote
+            storage, or other data sources.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <form onSubmit={handleAddPath} className="flex gap-2">
-            <div className="grid w-full items-center gap-1.5">
-              <Label htmlFor="path">Add Directory Path</Label>
-              <div className="flex gap-2 h-full">
+        <CardContent className="space-y-6">
+          <form
+            onSubmit={handleAddPath}
+            className="p-4 bg-muted/20 border rounded-lg space-y-4"
+          >
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="path">Path / URL</Label>
                 <Input
                   autoComplete="off"
                   id="path"
-                  placeholder="/home/user/images"
+                  placeholder={
+                    currentScannerInfo?.type_name === 'collection:directory'
+                      ? '/home/user/images'
+                      : 's3://bucket/path'
+                  }
                   value={newPath}
                   onChange={(e) => setNewPath(e.target.value)}
                 />
-                <Button type="submit" disabled={addPathMutation.isPending}>
-                  <PlusIcon className="w-4 h-4 mr-2" />
-                  Add Path
-                </Button>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="label">Label (Optional)</Label>
+                <Input
+                  autoComplete="off"
+                  id="label"
+                  placeholder="e.g. My Portfolio"
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-[1fr_auto] gap-4 items-end">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="scanner">Scanner Type</Label>
+                  {currentScannerInfo && (
+                    <Popover>
+                      <PopoverTrigger>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80">
+                        <div className="space-y-2">
+                          <h4 className="font-medium">
+                            {currentScannerInfo.display_name}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {currentScannerInfo.description}
+                          </p>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </div>
+                <Select
+                  value={selectedScanner}
+                  onValueChange={setSelectedScanner}
+                >
+                  <SelectTrigger id="scanner">
+                    <SelectValue placeholder="Select scanner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {scanners.map((s: ScannerTypeInfo) => (
+                      <SelectItem key={s.type_name} value={s.type_name}>
+                        {s.display_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Dynamic Config Fields */}
+              {currentScannerInfo &&
+                currentScannerInfo.required_config &&
+                Object.keys(currentScannerInfo.required_config).length > 0 && (
+                  <div className="col-span-full border-t pt-4 mt-2">
+                    <Label className="text-sm font-semibold mb-3 block">
+                      Scanner Options
+                    </Label>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {Object.entries(currentScannerInfo.required_config).map(
+                        ([key, schema]: [string, any]) => {
+                          if (schema.type === 'boolean') {
+                            return (
+                              <div
+                                key={key}
+                                className="flex items-start space-x-2"
+                              >
+                                <Checkbox
+                                  id={`config-${key}`}
+                                  checked={scannerConfig[key] ?? schema.default}
+                                  onCheckedChange={(checked) =>
+                                    setScannerConfig((prev) => ({
+                                      ...prev,
+                                      [key]: checked,
+                                    }))
+                                  }
+                                />
+                                <div className="grid gap-1.5 leading-none">
+                                  <Label
+                                    htmlFor={`config-${key}`}
+                                    className="text-sm font-medium cursor-pointer"
+                                  >
+                                    {schema.label || key}
+                                  </Label>
+                                  {schema.description && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {schema.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          }
+                          // Fallback for other types if we add them later
+                          return null
+                        },
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              <Button type="submit" disabled={addPathMutation.isPending}>
+                {addPathMutation.isPending ? (
+                  <Spinner className="w-4 h-4 mr-2" />
+                ) : (
+                  <PlusIcon className="w-4 h-4 mr-2" />
+                )}
+                Add Collection
+              </Button>
             </div>
           </form>
 
-          <div className="flex items-center justify-between border-t pt-4">
-            <div className="text-sm text-muted-foreground">Global Actions</div>
-            <Button
-              variant="outline"
-              onClick={() => scanMutation.mutate()}
-              disabled={scanMutation.isPending}
-            >
-              {scanMutation.isPending ? (
-                <>
-                  <Spinner className="mr-2 h-4 w-4" /> Scanning...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" /> Scan All Libraries
-                </>
-              )}
-            </Button>
-          </div>
-
           <div className="space-y-2">
             {isLoading ? (
-              <p>Loading paths...</p>
-            ) : paths?.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">
-                No paths added yet.
-              </p>
+              <div className="flex justify-center p-8">
+                <Spinner />
+              </div>
+            ) : !paths || paths.length === 0 ? (
+              <div className="text-center p-12 border border-dashed rounded-lg text-muted-foreground bg-muted/10">
+                <FolderPlus className="mx-auto w-10 h-10 mb-3 opacity-30" />
+                <p className="font-medium">No libraries configured yet.</p>
+                <p className="text-sm mt-1">
+                  Add a directory path above to start indexing your visual
+                  assets.
+                </p>
+              </div>
             ) : (
               <Accordion type="single" collapsible className="w-full">
-                {paths?.map((path: any) => (
-                  <LibraryPathItem key={path.id} path={path} />
+                {paths.map((path) => (
+                  <LibraryPathItem
+                    key={path.id}
+                    path={path}
+                    isScanning={scanningIds.has(path.id)}
+                  />
                 ))}
               </Accordion>
             )}

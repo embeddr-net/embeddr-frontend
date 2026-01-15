@@ -14,8 +14,8 @@ interface PostsScrollAreaProps {
   onSelect?: (post: PromptImage) => void
   onSearchByImage?: (post: PromptImage) => void
   onOpenDetails?: (post: PromptImage) => void
-  selectedId?: number | null
-  selectedIds?: number[]
+  selectedId?: number | string | null
+  selectedIds?: (number | string)[]
   gridCols?: number | null
   imageFit?: 'cover' | 'contain'
   useOriginalImages?: boolean

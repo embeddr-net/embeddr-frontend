@@ -6,9 +6,11 @@ import {
   ImageDialogProvider,
 } from '@embeddr/react-ui/providers'
 import { ThemeProvider } from './ThemeProvider'
+import { ThemeSynchronizer } from '@/components/ThemeSynchronizer'
 import { SettingsProvider } from '@/providers/SettingsProvider'
 import { GenerationProvider } from '@/context/GenerationContext'
 import { PluginProvider } from '@/providers/PluginProvider'
+import { WebSocketProvider } from '@/providers/WebSocketProvider'
 
 const queryClient = new QueryClient()
 
@@ -18,11 +20,14 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
       <ExternalNavProvider>
         <SettingsProvider>
           <ThemeProvider>
+            <ThemeSynchronizer />
             <TooltipProvider disableHoverableContent>
               <ImageDialogProvider>
-                <GenerationProvider>
-                  <PluginProvider>{children}</PluginProvider>
-                </GenerationProvider>
+                <WebSocketProvider>
+                  <GenerationProvider>
+                    <PluginProvider>{children}</PluginProvider>
+                  </GenerationProvider>
+                </WebSocketProvider>
               </ImageDialogProvider>
             </TooltipProvider>
           </ThemeProvider>

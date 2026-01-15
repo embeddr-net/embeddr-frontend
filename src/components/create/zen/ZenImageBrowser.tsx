@@ -3,22 +3,29 @@ import { DraggablePanel } from '@/components/ui/DraggablePanel'
 import { ImageBrowser } from '@/components/search/ImageBrowser'
 import { Switch } from '@embeddr/react-ui/components/switch'
 import { Label } from '@embeddr/react-ui/components/label'
+import { useWindowStore } from '@/store/windowStore'
 
 interface ZenImageBrowserProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen?: boolean
+  onClose?: () => void
   activeImageInput: { nodeId: string; field: string } | null
   onSelect: (image: any) => void
   onMultiSelect?: (images: any[]) => void
 }
 
 export function ZenImageBrowser({
-  isOpen,
-  onClose,
+  isOpen: propIsOpen,
+  onClose: propOnClose,
   activeImageInput,
   onSelect,
   onMultiSelect,
 }: ZenImageBrowserProps) {
+  const { windows, minimizeWindow, closeWindow } = useWindowStore()
+  const windowState = windows['zen-images']
+  const isOpen = propIsOpen ?? (windowState ? !windowState.isMinimized : false)
+  // const onClose = propOnClose ?? (() => minimizeWindow('zen-images'))
+  const onClose = propOnClose ?? (() => closeWindow('zen-images'))
+
   const [isMultiSelect, setIsMultiSelect] = useState(false)
 
   return (
@@ -29,7 +36,7 @@ export function ZenImageBrowser({
       onClose={onClose}
       defaultPosition={{ x: 450, y: window.innerHeight - 500 }}
       defaultSize={{ width: 600, height: 400 }}
-      className="absolute"
+      className="absolute select-none"
     >
       {isOpen && (
         <div className="flex flex-col h-full">
@@ -66,6 +73,7 @@ export function ZenImageBrowser({
               storageKey="zen-grid-cols"
               multiSelectMode={isMultiSelect}
               onMultiSelect={onMultiSelect}
+              useV2={true}
             />
           </div>
         </div>

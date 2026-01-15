@@ -9,7 +9,7 @@ import { useMemo } from 'react'
 import { useWorkflow } from '@/hooks/useWorkflows'
 
 interface NodeSelectorProps {
-  workflowId: number | null
+  workflowId: string | number | null
   value: string | null
   onChange: (value: string) => void
   nodeType?: string | Array<string>

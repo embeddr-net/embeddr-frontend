@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useRef } from 'react'
 import { EmbeddrProvider, PluginContext } from '@embeddr/react-ui/context'
-import { WebSocketProvider } from '@embeddr/react-ui/providers'
 import { useEmbeddrAPI, usePluginStore } from '@/plugins/store'
 import { DEFAULT_PLUGINS } from '@/plugins/defaults'
 
@@ -70,19 +69,17 @@ export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <EmbeddrProvider api={api}>
-      <WebSocketProvider>
-        <PluginContext.Provider
-          value={{
-            plugins,
-            activePlugins,
-            registerPlugin,
-            activatePlugin,
-            deactivatePlugin,
-          }}
-        >
-          {children}
-        </PluginContext.Provider>
-      </WebSocketProvider>
+      <PluginContext.Provider
+        value={{
+          plugins,
+          activePlugins,
+          registerPlugin,
+          activatePlugin,
+          deactivatePlugin,
+        }}
+      >
+        {children}
+      </PluginContext.Provider>
     </EmbeddrProvider>
   )
 }

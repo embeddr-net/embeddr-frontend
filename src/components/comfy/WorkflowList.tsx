@@ -8,8 +8,8 @@ import { useDeleteWorkflow } from '@/hooks/useWorkflows'
 
 interface WorkflowListProps {
   workflows: Array<Workflow>
-  selectedId: number | null
-  onSelect: (id: number | null) => void
+  selectedId: string | number | null
+  onSelect: (id: string | number | null) => void
 }
 
 export default function WorkflowList({
@@ -19,7 +19,7 @@ export default function WorkflowList({
 }: WorkflowListProps) {
   const deleteWorkflow = useDeleteWorkflow()
 
-  const handleDelete = async (e: React.MouseEvent, id: number) => {
+  const handleDelete = async (e: React.MouseEvent, id: string | number) => {
     e.stopPropagation()
     if (confirm('Are you sure you want to delete this workflow?')) {
       await deleteWorkflow.mutateAsync(id)

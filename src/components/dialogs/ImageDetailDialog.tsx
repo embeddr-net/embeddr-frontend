@@ -9,6 +9,7 @@ import { ArrowRight, Loader2 } from 'lucide-react'
 import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
 import type { PromptImage } from '@/lib/api/types'
 import { BACKEND_URL } from '@/lib/api/config'
+import { embeddrApi } from '@/lib/api/v2/client'
 
 interface ImageDetailDialogProps {
   imageId: string | number | null
@@ -27,8 +28,33 @@ export function ImageDetailDialog({
   useEffect(() => {
     if (open && imageId) {
       setLoading(true)
-      fetch(`${BACKEND_URL}/images/${imageId}`)
-        .then((res) => res.json())
+      const isUuid = typeof imageId === 'string' && imageId.includes('-')
+
+      const promise = isUuid
+        ? embeddrApi.artifacts.get(imageId.toString()).then((a: any) => ({
+            id: a.id,
+            owner_id: 'local',
+            created_at: a.created_at,
+            image_url: embeddrApi.artifacts.getContentUrl(a.id),
+            thumb_url: embeddrApi.artifacts.getPreviewUrl(a.id, 'thumbnail'),
+            file_size: 0,
+            prompt: a.metadata_json?.prompt || a.metadata_json?.label || '',
+            author_name: 'Local User',
+            author_username: 'local',
+            media_type: a.base_type_name === 'video' ? 'video' : 'image',
+            duration: 0,
+            fps: 0,
+            frame_count: 0,
+            phash: '',
+            is_archived: !!a.metadata_json?.is_archived,
+            width: a.metadata_json?.width || 0,
+            height: a.metadata_json?.height || 0,
+            parents: [],
+            children: [], // Lineage requires separate call for V2
+          }))
+        : fetch(`${BACKEND_URL}/images/${imageId}`).then((res) => res.json())
+
+      promise
         .then((data) => setImage(data))
         .catch((err) => console.error(err))
         .finally(() => setLoading(false))
@@ -54,7 +80,10 @@ export function ImageDetailDialog({
               <div className="flex-1 bg-muted/10 flex items-center justify-center p-4 overflow-hidden">
                 {image.media_type === 'video' ? (
                   <video
-                    src={`${BACKEND_URL}/images/${image.id}/file`}
+                    src={
+                      image.image_url ||
+                      `${BACKEND_URL}/images/${image.id}/file`
+                    }
                     className="max-w-full max-h-full object-contain shadow-sm"
                     controls
                     autoPlay
@@ -62,7 +91,10 @@ export function ImageDetailDialog({
                   />
                 ) : (
                   <img
-                    src={`${BACKEND_URL}/images/${image.id}/file`}
+                    src={
+                      image.image_url ||
+                      `${BACKEND_URL}/images/${image.id}/file`
+                    }
                     className="max-w-full max-h-full object-contain shadow-sm"
                     alt={image.prompt}
                   />

@@ -37,16 +37,20 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { BACKEND_URL, BACKEND_V2_URL } from '@/lib/api/config'
 import { ImageLightbox } from './ImageLightbox'
 import type { PromptImage } from '@/lib/api/types'
+// V1 imports commented out for deprecation
 import {
-  fetchCollectionItems,
+  // fetchCollectionItems,
   fetchCollections,
-  fetchItems,
+  // fetchItems,
   fetchLibraryPaths,
-  searchItems,
-  searchItemsByImageId,
+  // searchItems,
+  // searchItemsByImageId,
 } from '@/lib/api'
+import { useArtifacts } from '@/lib/api/client-v2'
 import PostsScrollArea from '@/components/search/PostsScrollArea'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { cn } from '@/lib/utils'
@@ -58,6 +62,7 @@ interface ImageBrowserProps {
   storageKey?: string
   multiSelectMode?: boolean
   onMultiSelect?: (images: PromptImage[]) => void
+  useV2?: boolean
 }
 
 export function ImageBrowser({
@@ -66,10 +71,13 @@ export function ImageBrowser({
   storageKey = 'explore-grid-cols',
   multiSelectMode = false,
   onMultiSelect,
+  useV2 = false,
 }: ImageBrowserProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeSearchQuery, setActiveSearchQuery] = useState('')
-  const [searchImageId, setSearchImageId] = useState<number | null>(null)
+  const [searchImageId, setSearchImageId] = useState<number | string | null>(
+    null,
+  )
   const [selectedCollectionId, setSelectedCollectionId] = useState<
     number | null
   >(null)
@@ -111,32 +119,58 @@ export function ImageBrowser({
   })
 
   // Fetch libraries
-  const { data: libraries } = useQuery({
-    queryKey: ['libraries'],
-    queryFn: fetchLibraryPaths,
-  })
+  const libraries: any = []
+  // const { data: libraries } = useQuery({
+  //   queryKey: ['libraries'],
+  //   queryFn: fetchLibraryPaths,
+  // })
+
+  // V2 Fetching
+  const { data: v2Artifacts } = useArtifacts(
+    useV2
+      ? {
+          q: activeSearchQuery || undefined,
+          limit: 100,
+          type_name: 'image,document', // Added document support
+        }
+      : undefined,
+  )
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useInfiniteQuery({
       queryKey: [
-        'images',
+        useV2 ? 'artifacts' : 'images', // Toggle key
         activeSearchQuery,
         searchImageId,
         selectedCollectionId,
         selectedLibraryId,
         showArchived,
         mediaType,
+        useV2,
       ],
-      queryFn: ({ pageParam = 0 }) => {
+      queryFn: async ({ pageParam: _pageParam = 0 }) => {
+        if (useV2) {
+          // If we are in V2 mode, return empty array for infinite query structure
+          // Real data comes from useArtifacts hook above currently
+          return []
+        }
+
         if (searchImageId) {
+          // V1 DISABLED
+          return []
+          /*
           return searchItemsByImageId(
-            searchImageId,
+            searchImageId as number, // Cast back as V1 expects number
             50,
             pageParam,
             selectedLibraryId,
           )
+          */
         }
         if (activeSearchQuery) {
+          // V1 DISABLED
+          return []
+          /*
           return searchItems(
             activeSearchQuery,
             50,
@@ -147,10 +181,16 @@ export function ImageBrowser({
             showArchived,
             mediaType === 'all' ? undefined : mediaType,
           )
+          */
         }
         if (selectedCollectionId) {
-          return fetchCollectionItems(selectedCollectionId, pageParam, 50)
+          // V1 DISABLED
+          return []
+          // return fetchCollectionItems(selectedCollectionId, pageParam, 50)
         }
+        // V1 DISABLED
+        return []
+        /*
         return fetchItems({
           offset: pageParam,
           limit: 50,
@@ -158,13 +198,35 @@ export function ImageBrowser({
           isArchived: showArchived,
           mediaType: mediaType === 'all' ? undefined : mediaType,
         })
+        */
       },
       initialPageParam: 0,
       getNextPageParam: (lastPage, allPages) =>
         lastPage.length === 50 ? allPages.length * 50 : undefined,
     })
 
-  const posts = data?.pages.flatMap((page) => page) || []
+  const posts = useMemo(() => {
+    if (useV2 && v2Artifacts) {
+      return v2Artifacts.items.map((a: any) => ({
+        id: a.id, // UUID
+        url: `${BACKEND_V2_URL}/artifacts/${a.id}/content`, // Use V2 content endpoint
+        image_url: `${BACKEND_V2_URL}/artifacts/${a.id}/content`,
+        width: a.metadata_json?.width || 0,
+        height: a.metadata_json?.height || 0,
+        prompt:
+          a.metadata_json?.prompt || a.metadata_json?.filename || 'Artifact',
+        media_type: a.type_name === 'document' ? 'document' : 'image', // Add media_type map
+        created_at: a.created_at,
+        // Mock properties to satisfy PromptImage
+        model: 'V2',
+        steps: 0,
+        cfg_scale: 0,
+        sampler_name: 'unknown',
+        seed: 0,
+      })) as PromptImage[]
+    }
+    return data?.pages.flatMap((page) => page) || []
+  }, [data, v2Artifacts, useV2])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()

@@ -28,14 +28,21 @@ export function StatsPanel() {
     refetchInterval: 5000,
   })
 
-  const { data: models } = useQuery({
+  const { data: modelsData, isError: isModelError } = useQuery({
     queryKey: ['available-models'],
     queryFn: async () => {
       const res = await fetch(`${BACKEND_URL}/system/models`)
+      // Handle non-200 responses gracefully so we don't crash
+      if (!res.ok) {
+        return []
+      }
       return res.json()
     },
     refetchInterval: 5000, // Poll to check loaded status
   })
+
+  // Safe access to models array
+  const models = Array.isArray(modelsData) ? modelsData : []
 
   const loadModelMutation = useMutation({
     mutationFn: async (modelId: string) => {
@@ -70,7 +77,8 @@ export function StatsPanel() {
     onError: (err) => toast.error(err.message),
   })
 
-  const activeModel = models?.find((m: any) => m.loaded)
+  // Defensive check: find can only be called on an array
+  const activeModel = models.find((m: any) => m.loaded)
   const isModelLoading =
     loadModelMutation.isPending || unloadModelMutation.isPending
 

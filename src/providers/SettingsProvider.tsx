@@ -13,7 +13,7 @@ export const SettingsProvider = ({
 
   // Local state for optimistic UI / fallback
   const [selectedModel, setSelectedModel] = useState(
-    'openai/clip-vit-base-patch32',
+    'Qwen/Qwen3-VL-Embedding-2B',
   )
   const [batchSize, setBatchSize] = useState(32)
   const [uploadConfig, setUploadConfig] = useState({
@@ -26,6 +26,7 @@ export const SettingsProvider = ({
   const { data: config } = useQuery({
     queryKey: ['system-config'],
     queryFn: async () => {
+      return []
       const res = await fetch(`${BACKEND_URL}/system/config`)
       if (!res.ok) throw new Error('Failed to fetch config')
       return res.json()

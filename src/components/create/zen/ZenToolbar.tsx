@@ -45,11 +45,11 @@ export function ZenToolbar({
   panels,
   togglePanel,
   isGenerating,
-  handleGenerate,
-  selectedWorkflow,
+  // handleGenerate,
+  // selectedWorkflow,
   hasPendingGenerations,
-  onExitZenMode,
-  hasZenInputs,
+  // onExitZenMode,
+  // hasZenInputs,
   onOpenSettingsDialog,
 }: ZenToolbarProps) {
   const [generateText] = useLocalStorage('zen-generate-text', 'Generate')
@@ -94,7 +94,7 @@ export function ZenToolbar({
   }
 
   return (
-    <div className="absolute bottom-4 left-4 z-40 flex flex-col gap-2 p-2 bg-background/80 backdrop-blur-md border shadow-lg animate-in slide-in-from-left-4 duration-300">
+    <div className="absolute bottom-10 left-1 z-40 flex flex-col gap-2 p-2 bg-background/80 backdrop-blur-md border shadow-lg animate-in slide-in-from-left-4 duration-300">
       <TooltipProvider delayDuration={0}>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -120,7 +120,7 @@ export function ZenToolbar({
           <TooltipContent side="right">Toolbox</TooltipContent>
         </Tooltip>
 
-        <Tooltip>
+        {/* <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant={panels.settings ? 'secondary' : 'ghost'}
@@ -132,7 +132,7 @@ export function ZenToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">Quick Settings</TooltipContent>
-        </Tooltip>
+        </Tooltip> */}
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -143,7 +143,7 @@ export function ZenToolbar({
             >
               <List className="h-5 w-5" />
               {hasPendingGenerations && (
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+                <span className="absolute top-1 right-1 h-2 w-2  bg-primary" />
               )}
             </Button>
           </TooltipTrigger>
@@ -163,7 +163,7 @@ export function ZenToolbar({
           <TooltipContent side="right">Image Browser</TooltipContent>
         </Tooltip>
 
-        <Tooltip>
+        {/* <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant={panels.datasets ? 'secondary' : 'ghost'}
@@ -174,8 +174,8 @@ export function ZenToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">Datasets</TooltipContent>
-        </Tooltip>
-
+        </Tooltip> */}
+        {/* 
         <Separator className="my-1" />
 
         <Tooltip>
@@ -203,9 +203,9 @@ export function ZenToolbar({
           <div className="text-[10px] font-mono text-center text-muted-foreground animate-in fade-in">
             {elapsed.toFixed(1)}s
           </div>
-        )}
+        )} */}
 
-        <Separator className="my-1" />
+        {/* <Separator className="my-1" />
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -214,7 +214,7 @@ export function ZenToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">Exit Zen Mode</TooltipContent>
-        </Tooltip>
+        </Tooltip> */}
       </TooltipProvider>
     </div>
   )

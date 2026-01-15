@@ -2,6 +2,8 @@ import React, { StrictMode } from 'react'
 import ReactDOMClient from 'react-dom/client'
 import ReactDOM from 'react-dom'
 import * as EmbeddrUI from '@embeddr/react-ui'
+import * as Lucide from 'lucide-react'
+import * as ReactQuery from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 
 // Import the generated route tree
@@ -11,10 +13,11 @@ import { globalEventBus } from './lib/eventBus'
 import './styles.css'
 
 // Expose React and ReactDOM for external plugins
-
 ;(window as any).React = React
 ;(window as any).ReactDOM = ReactDOM
 ;(window as any).EmbeddrUI = EmbeddrUI
+;(window as any).Lucide = Lucide
+;(window as any).ReactQuery = ReactQuery
 ;(window as any).Embeddr = {
   eventBus: globalEventBus,
 }

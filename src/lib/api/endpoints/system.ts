@@ -2,6 +2,11 @@ import { BACKEND_URL } from '../config'
 import type { PromptImage, SystemStatus } from '../types'
 
 export async function getSystemStatus(): Promise<SystemStatus> {
+  return {
+    comfy: false,
+    docs: false,
+    mcp: false,
+  }
   const response = await fetch(`${BACKEND_URL}/system/status`)
   if (!response.ok) {
     throw new Error(`Failed to fetch system status: ${response.statusText}`)

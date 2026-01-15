@@ -18,10 +18,11 @@ import {
 import { ZenInput } from '../ZenInput'
 import { cn } from '@/lib/utils'
 import { DraggablePanel } from '@/components/ui/DraggablePanel'
+import { useWindowStore } from '@/store/windowStore'
 
 interface ZenSettingsProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen?: boolean
+  onClose?: () => void
   selectedImage: any
   handleUseGlobalImage: () => void
   selectImage: (image: any) => void
@@ -39,8 +40,8 @@ interface ZenSettingsProps {
 }
 
 export function ZenSettings({
-  isOpen,
-  onClose,
+  isOpen: propIsOpen,
+  onClose: propOnClose,
   selectedImage,
   handleUseGlobalImage,
   selectImage,
@@ -53,6 +54,11 @@ export function ZenSettings({
   setSeedModes,
   setWorkflowInput,
 }: ZenSettingsProps) {
+  const { windows, minimizeWindow } = useWindowStore()
+  const windowState = windows['zen-settings']
+  const isOpen = propIsOpen ?? (windowState ? !windowState.isMinimized : false)
+  const onClose = propOnClose ?? (() => minimizeWindow('zen-settings'))
+
   return (
     <DraggablePanel
       id="zen-settings"
@@ -101,7 +107,7 @@ export function ZenSettings({
             </div>
           )}
 
-          {zenInputs.map((input: any) => {
+          {zenInputs?.map((input: any) => {
             const value = workflowInputs[input.node_id]?.[input.field] || ''
 
             if (

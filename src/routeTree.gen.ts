@@ -9,20 +9,29 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as Workflows_v2RouteImport } from './routes/workflows_v2'
 import { Route as UmapRouteImport } from './routes/umap'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as LineageRouteImport } from './routes/lineage'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as DebugRouteImport } from './routes/debug'
 import { Route as DatasetsRouteImport } from './routes/datasets'
-import { Route as CreateRouteImport } from './routes/create'
 import { Route as ComfyRouteImport } from './routes/comfy'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ActionsIndexRouteImport } from './routes/actions.index'
+import { Route as PluginsActionsRouteImport } from './routes/plugins.actions'
 import { Route as PluginsPluginIdRouteImport } from './routes/plugins.$pluginId'
 import { Route as ImagesImageIdRouteImport } from './routes/images.$imageId'
+import { Route as ActionsActionIdRouteImport } from './routes/actions.$actionId'
 
+const Workflows_v2Route = Workflows_v2RouteImport.update({
+  id: '/workflows_v2',
+  path: '/workflows_v2',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UmapRoute = UmapRouteImport.update({
   id: '/umap',
   path: '/umap',
@@ -31,6 +40,11 @@ const UmapRoute = UmapRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResourcesRoute = ResourcesRouteImport.update({
@@ -63,11 +77,6 @@ const DatasetsRoute = DatasetsRouteImport.update({
   path: '/datasets',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CreateRoute = CreateRouteImport.update({
-  id: '/create',
-  path: '/create',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ComfyRoute = ComfyRouteImport.update({
   id: '/comfy',
   path: '/comfy',
@@ -76,6 +85,16 @@ const ComfyRoute = ComfyRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActionsIndexRoute = ActionsIndexRouteImport.update({
+  id: '/actions/',
+  path: '/actions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PluginsActionsRoute = PluginsActionsRouteImport.update({
+  id: '/plugins/actions',
+  path: '/plugins/actions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PluginsPluginIdRoute = PluginsPluginIdRouteImport.update({
@@ -88,119 +107,159 @@ const ImagesImageIdRoute = ImagesImageIdRouteImport.update({
   path: '/images/$imageId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ActionsActionIdRoute = ActionsActionIdRouteImport.update({
+  id: '/actions/$actionId',
+  path: '/actions/$actionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/comfy': typeof ComfyRoute
-  '/create': typeof CreateRoute
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
   '/help': typeof HelpRoute
   '/lineage': typeof LineageRoute
   '/resources': typeof ResourcesRoute
+  '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/umap': typeof UmapRoute
+  '/workflows_v2': typeof Workflows_v2Route
+  '/actions/$actionId': typeof ActionsActionIdRoute
   '/images/$imageId': typeof ImagesImageIdRoute
   '/plugins/$pluginId': typeof PluginsPluginIdRoute
+  '/plugins/actions': typeof PluginsActionsRoute
+  '/actions': typeof ActionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/comfy': typeof ComfyRoute
-  '/create': typeof CreateRoute
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
   '/help': typeof HelpRoute
   '/lineage': typeof LineageRoute
   '/resources': typeof ResourcesRoute
+  '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/umap': typeof UmapRoute
+  '/workflows_v2': typeof Workflows_v2Route
+  '/actions/$actionId': typeof ActionsActionIdRoute
   '/images/$imageId': typeof ImagesImageIdRoute
   '/plugins/$pluginId': typeof PluginsPluginIdRoute
+  '/plugins/actions': typeof PluginsActionsRoute
+  '/actions': typeof ActionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/comfy': typeof ComfyRoute
-  '/create': typeof CreateRoute
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
   '/help': typeof HelpRoute
   '/lineage': typeof LineageRoute
   '/resources': typeof ResourcesRoute
+  '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/umap': typeof UmapRoute
+  '/workflows_v2': typeof Workflows_v2Route
+  '/actions/$actionId': typeof ActionsActionIdRoute
   '/images/$imageId': typeof ImagesImageIdRoute
   '/plugins/$pluginId': typeof PluginsPluginIdRoute
+  '/plugins/actions': typeof PluginsActionsRoute
+  '/actions/': typeof ActionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/comfy'
-    | '/create'
     | '/datasets'
     | '/debug'
     | '/docs'
     | '/help'
     | '/lineage'
     | '/resources'
+    | '/search'
     | '/settings'
     | '/umap'
+    | '/workflows_v2'
+    | '/actions/$actionId'
     | '/images/$imageId'
     | '/plugins/$pluginId'
+    | '/plugins/actions'
+    | '/actions'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/comfy'
-    | '/create'
     | '/datasets'
     | '/debug'
     | '/docs'
     | '/help'
     | '/lineage'
     | '/resources'
+    | '/search'
     | '/settings'
     | '/umap'
+    | '/workflows_v2'
+    | '/actions/$actionId'
     | '/images/$imageId'
     | '/plugins/$pluginId'
+    | '/plugins/actions'
+    | '/actions'
   id:
     | '__root__'
     | '/'
     | '/comfy'
-    | '/create'
     | '/datasets'
     | '/debug'
     | '/docs'
     | '/help'
     | '/lineage'
     | '/resources'
+    | '/search'
     | '/settings'
     | '/umap'
+    | '/workflows_v2'
+    | '/actions/$actionId'
     | '/images/$imageId'
     | '/plugins/$pluginId'
+    | '/plugins/actions'
+    | '/actions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ComfyRoute: typeof ComfyRoute
-  CreateRoute: typeof CreateRoute
   DatasetsRoute: typeof DatasetsRoute
   DebugRoute: typeof DebugRoute
   DocsRoute: typeof DocsRoute
   HelpRoute: typeof HelpRoute
   LineageRoute: typeof LineageRoute
   ResourcesRoute: typeof ResourcesRoute
+  SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   UmapRoute: typeof UmapRoute
+  Workflows_v2Route: typeof Workflows_v2Route
+  ActionsActionIdRoute: typeof ActionsActionIdRoute
   ImagesImageIdRoute: typeof ImagesImageIdRoute
   PluginsPluginIdRoute: typeof PluginsPluginIdRoute
+  PluginsActionsRoute: typeof PluginsActionsRoute
+  ActionsIndexRoute: typeof ActionsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/workflows_v2': {
+      id: '/workflows_v2'
+      path: '/workflows_v2'
+      fullPath: '/workflows_v2'
+      preLoaderRoute: typeof Workflows_v2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/umap': {
       id: '/umap'
       path: '/umap'
@@ -213,6 +272,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/resources': {
@@ -257,13 +323,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DatasetsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/create': {
-      id: '/create'
-      path: '/create'
-      fullPath: '/create'
-      preLoaderRoute: typeof CreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/comfy': {
       id: '/comfy'
       path: '/comfy'
@@ -276,6 +335,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/actions/': {
+      id: '/actions/'
+      path: '/actions'
+      fullPath: '/actions'
+      preLoaderRoute: typeof ActionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plugins/actions': {
+      id: '/plugins/actions'
+      path: '/plugins/actions'
+      fullPath: '/plugins/actions'
+      preLoaderRoute: typeof PluginsActionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/plugins/$pluginId': {
@@ -292,23 +365,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ImagesImageIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/actions/$actionId': {
+      id: '/actions/$actionId'
+      path: '/actions/$actionId'
+      fullPath: '/actions/$actionId'
+      preLoaderRoute: typeof ActionsActionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ComfyRoute: ComfyRoute,
-  CreateRoute: CreateRoute,
   DatasetsRoute: DatasetsRoute,
   DebugRoute: DebugRoute,
   DocsRoute: DocsRoute,
   HelpRoute: HelpRoute,
   LineageRoute: LineageRoute,
   ResourcesRoute: ResourcesRoute,
+  SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   UmapRoute: UmapRoute,
+  Workflows_v2Route: Workflows_v2Route,
+  ActionsActionIdRoute: ActionsActionIdRoute,
   ImagesImageIdRoute: ImagesImageIdRoute,
   PluginsPluginIdRoute: PluginsPluginIdRoute,
+  PluginsActionsRoute: PluginsActionsRoute,
+  ActionsIndexRoute: ActionsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

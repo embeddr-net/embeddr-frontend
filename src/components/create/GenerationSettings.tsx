@@ -35,7 +35,7 @@ import {
 import { Switch } from '@embeddr/react-ui/components/switch'
 import { ImageIdInput } from './inputs/ImageIdInput'
 import { BACKEND_URL } from '@/lib/api/config'
-import { getObjectInfo } from '@/lib/api/endpoints/comfy'
+// import { getObjectInfo } from '@/lib/api/endpoints/comfy'
 import { ImageSelectorDialog } from '@/components/dialogs/ImageSelectorDialog'
 import { useGeneration } from '@/context/GenerationContext'
 import { LoRAStackInput } from './inputs/LoRAStackInput'
@@ -96,14 +96,14 @@ export function GenerationSettings() {
   )
   const [mode, setMode] = useState<'run' | 'configure'>('run')
   const [exposedInputs, setExposedInputs] = useState<Array<any>>([])
-  const [objectInfo, setObjectInfo] = useState<Record<string, any> | null>(null)
+  // const [objectInfo, setObjectInfo] = useState<Record<string, any> | null>(null)
 
   // Fetch object info on mount
-  useEffect(() => {
-    getObjectInfo()
-      .then(setObjectInfo)
-      .catch((err) => console.error('Failed to fetch object info:', err))
-  }, [])
+  // useEffect(() => {
+  //   getObjectInfo()
+  //     .then(setObjectInfo)
+  //     .catch((err) => console.error('Failed to fetch object info:', err))
+  // }, [])
 
   // Initialize exposed inputs from workflow meta
   useEffect(() => {
@@ -980,17 +980,17 @@ export function GenerationSettings() {
                     }
 
                     const effectiveObjectInfo = {
-                      ...(objectInfo || {}),
+                      // ...(objectInfo || {}),
                       ...subgraphDefs,
                     }
 
-                    if (!objectInfo) {
-                      return (
-                        <div className="p-4 text-center text-muted-foreground text-xs">
-                          Loading node definitions...
-                        </div>
-                      )
-                    }
+                    // if (!objectInfo) {
+                    //   return (
+                    //     <div className="p-4 text-center text-muted-foreground text-xs">
+                    //       Loading node definitions...
+                    //     </div>
+                    //   )
+                    // }
 
                     return (selectedWorkflow.data as any).nodes.map(
                       (node: any) => {

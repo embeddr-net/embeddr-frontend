@@ -67,3 +67,13 @@ export interface FolderInfo {
   has_subfolders: boolean
   parent_path?: string
 }
+
+export interface Artifact {
+  id: string
+  created_at: string
+  uri?: string
+  type_name: string
+  base_type_name: string
+  metadata_json: Record<string, any>
+  override_capabilities?: string[]
+}

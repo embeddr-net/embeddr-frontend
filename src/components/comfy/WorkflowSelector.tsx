@@ -8,8 +8,8 @@ import {
 import { useWorkflows } from '@/hooks/useWorkflows'
 
 interface WorkflowSelectorProps {
-  value: number | null
-  onChange: (value: number) => void
+  value: string | number | null
+  onChange: (value: string | number) => void
   disabled?: boolean
 }
 

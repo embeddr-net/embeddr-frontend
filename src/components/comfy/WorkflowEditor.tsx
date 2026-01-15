@@ -20,10 +20,10 @@ import { Bot, Eye, EyeOff, Loader2, Save, Settings2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Label } from '@embeddr/react-ui/components/label'
 import { useUpdateWorkflow, useWorkflow } from '@/hooks/useWorkflows'
-import { getObjectInfo } from '@/lib/api/endpoints/comfy'
+// import { getObjectInfo } from '@/lib/api/endpoints/comfy'
 
 interface WorkflowEditorProps {
-  workflowId: number
+  workflowId: string | number
 }
 
 interface ComfyNode {
@@ -54,11 +54,11 @@ export default function WorkflowEditor({ workflowId }: WorkflowEditorProps) {
   const [description, setDescription] = useState('')
   const [isActive, setIsActive] = useState(true)
   const [exposedInputs, setExposedInputs] = useState<Array<ExposedInput>>([])
-  const [objectInfo, setObjectInfo] = useState<Record<string, any> | null>(null)
+  // const [objectInfo, setObjectInfo] = useState<Record<string, any> | null>(null)
 
-  useEffect(() => {
-    getObjectInfo().then(setObjectInfo).catch(console.error)
-  }, [])
+  // useEffect(() => {
+  //   getObjectInfo().then(setObjectInfo).catch(console.error)
+  // }, [])
 
   useEffect(() => {
     if (workflow) {
@@ -125,9 +125,9 @@ export default function WorkflowEditor({ workflowId }: WorkflowEditorProps) {
       const subgraphDefs: Record<string, any> = {}
       if (
         'definitions' in workflow.data &&
-        (workflow.data.definitions)?.subgraphs
+        workflow.data.definitions?.subgraphs
       ) {
-        ;(workflow.data.definitions).subgraphs.forEach((sg: any) => {
+        workflow.data.definitions.subgraphs.forEach((sg: any) => {
           // Convert subgraph inputs to object info format
           const required: Record<string, any> = {}
           if (sg.inputs) {
@@ -145,7 +145,8 @@ export default function WorkflowEditor({ workflowId }: WorkflowEditorProps) {
       }
 
       // Merge global object info with subgraph definitions
-      const effectiveObjectInfo = { ...(objectInfo || {}), ...subgraphDefs }
+      // const effectiveObjectInfo = { ...(objectInfo || {}), ...subgraphDefs }
+      const effectiveObjectInfo = { ...subgraphDefs }
 
       return workflow.data.nodes.map((node: any) => {
         const inputs: Record<string, any> = {}
@@ -168,7 +169,7 @@ export default function WorkflowEditor({ workflowId }: WorkflowEditorProps) {
           const widgetsValues = node.widgets_values || []
 
           // Check for proxyWidgets (Subgraph Group Node)
-          const proxyWidgets = (node.properties)?.proxyWidgets
+          const proxyWidgets = node.properties?.proxyWidgets
           if (proxyWidgets && Array.isArray(proxyWidgets)) {
             proxyWidgets.forEach((mapping: Array<any>, idx: number) => {
               const name = mapping[1]
@@ -238,7 +239,7 @@ export default function WorkflowEditor({ workflowId }: WorkflowEditorProps) {
       ...node,
       title: node._meta?.title || node.class_type,
     }))
-  }, [workflow?.data, objectInfo])
+  }, [workflow?.data])
 
   const updateInputConfig = (
     nodeId: string,

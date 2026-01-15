@@ -5,7 +5,9 @@ import { toast } from 'sonner'
 import type { Generation, Workflow } from '@/lib/api/types'
 import { BACKEND_URL } from '@/lib/api/config'
 import { globalEventBus } from '@/lib/eventBus'
-import type { EmbeddrMessage } from '@embeddr/react-ui/types/websocket'
+// import type { EmbeddrMessage } from '@embeddr/react-ui/types/websocket'
+// Using any for message type to avoid build issues with deep imports
+type EmbeddrMessage = any
 
 interface GenerationState {
   // Data
@@ -25,7 +27,7 @@ interface GenerationState {
   followLatest: boolean
   lastWorkflowId: string | null
   quickWorkflowIds: Array<number>
-  socket: WebSocket | null
+  // socket: WebSocket | null // Deprecated
   connectionStatus: 'connected' | 'disconnected' | 'connecting'
   queueStatus: { remaining: number } | null
   currentPreview: string | null
@@ -39,7 +41,8 @@ interface GenerationState {
   selectNextGeneration: () => void
   selectPreviousGeneration: () => void
   toggleQuickWorkflow: (workflowId: number) => void
-  connectWebSocket: () => void
+  // connectWebSocket: () => void
+  initEventListeners: () => void
 
   // Async Actions
   fetchWorkflows: () => Promise<void>
@@ -72,7 +75,7 @@ export const useGenerationStore = create<GenerationState>()(
       followLatest: true,
       lastWorkflowId: null,
       quickWorkflowIds: [],
-      socket: null,
+      // socket: null,
       connectionStatus: 'disconnected',
       queueStatus: null,
       currentPreview: null,
@@ -80,356 +83,244 @@ export const useGenerationStore = create<GenerationState>()(
       // Actions
       setWorkflows: (workflows) => set({ workflows }),
 
-      connectWebSocket: () => {
-        const { socket } = get()
-        // Check if socket exists and is either OPEN or CONNECTING
-        if (
-          socket &&
-          (socket.readyState === WebSocket.OPEN ||
-            socket.readyState === WebSocket.CONNECTING)
-        ) {
-          console.log(
-            '[GenerationStore] WebSocket already connected or connecting',
-          )
-          return
-        }
+      initEventListeners: () => {
+        const { connectionStatus } = get()
+        if (connectionStatus === 'connected') return // Already initialized?
 
-        console.log('[GenerationStore] Creating new WebSocket connection')
-        set({ connectionStatus: 'connecting' })
-        const wsUrl = BACKEND_URL.replace('http', 'ws') + '/ws'
-        const ws = new WebSocket(wsUrl)
-
-        ws.onopen = () => {
-          console.log('Connected to Embeddr WebSocket')
+        // WebSocket Status
+        globalEventBus.on('websocket:connected', () => {
           set({ connectionStatus: 'connected' })
-          // Request initial status sync
-          ws.send(JSON.stringify({ type: 'request_status' }))
-        }
+          // Request status
+          globalEventBus.emit('websocket:send', { type: 'request_status' })
+        })
 
-        ws.onclose = () => {
-          console.log('Disconnected from Embeddr WebSocket')
-          set({ connectionStatus: 'disconnected', socket: null })
-          // Try to reconnect after 5 seconds
-          setTimeout(() => {
-            get().connectWebSocket()
-          }, 5000)
-        }
-
-        ws.onerror = (error) => {
-          console.error('WebSocket error:', error)
+        globalEventBus.on('websocket:disconnected', () => {
           set({ connectionStatus: 'disconnected' })
-        }
+        })
 
-        ws.onmessage = (event) => {
-          try {
-            const msg = JSON.parse(event.data) as EmbeddrMessage
-
-            // Emit raw message for debugging/plugins
-            globalEventBus.emit('websocket:message', msg)
-
-            // Also emit specific event type if available
-            if (msg.type) {
-              globalEventBus.emit(msg.type, msg.data)
-            }
-
-            // msg structure: { source: 'comfyui' | 'embeddr', type: string, data: any }
-            if (msg.source === 'embeddr') {
-              if (msg.type === 'generation_submitted') {
-                // data: Full Generation object
-                // Cast to any because TS might complain that GenerationSubmittedMsg data is 'any' while state expects Generation
-                const genData = msg.data as Generation
-
-                set((state) => {
-                  const exists = state.generations.some(
-                    (g) => g.id === genData.id,
-                  )
-                  if (exists) {
-                    return {
-                      generations: state.generations.map((g) =>
-                        g.id === genData.id ? { ...g, ...genData } : g,
-                      ),
-                    }
-                  } else {
-                    // New generation from another client
-                    // It won't have 'images' computed yet as it is just submitted
-                    const newGen = { ...genData, images: [] }
-                    // Ensure created_at is a Date or string as expected?
-                    // msg.data is JSON, so string. Types match.
-                    return {
-                      generations: [newGen, ...state.generations],
-                    }
-                  }
-                })
-              } else if (msg.type === 'status_response') {
-                // data: { queue_status: { remaining: number }, running_generations: Generation[] }
-                const { queue_status, running_generations } = msg.data
-
-                // Update Queue Status
-                if (queue_status) {
-                  set({ queueStatus: queue_status })
-                }
-
-                // Update Running Generations
-                if (running_generations && Array.isArray(running_generations)) {
-                  set((state) => {
-                    const currentIds = new Set(
-                      state.generations.map((g) => g.id),
-                    )
-                    const newGenerations = [...state.generations]
-                    let hasRunning = false
-
-                    running_generations.forEach((gen: any) => {
-                      // Normalize generation data
-                      let images = gen.images || []
-                      let outputs = gen.outputs
-                      if (typeof outputs === 'string') {
-                        try {
-                          outputs = JSON.parse(outputs)
-                        } catch (e) {
-                          outputs = []
-                        }
-                      }
-                      if (!Array.isArray(outputs)) outputs = []
-
-                      if (images.length === 0 && outputs.length > 0) {
-                        images = outputs
-                          .filter(
-                            (o: any) =>
-                              o.type === 'image' && o.comfy_type !== 'temp',
-                          )
-                          .map(
-                            (o: any) =>
-                              `${BACKEND_URL}/comfy/view?filename=${o.filename}&subfolder=${o.subfolder || ''}&type=${o.comfy_type || 'output'}`,
-                          )
-                        const embeddrImages = outputs
-                          .filter((o: any) => o.type === 'embeddr_id')
-                          .map(
-                            (o: any) => `${BACKEND_URL}/images/${o.value}/file`,
-                          )
-                        images =
-                          embeddrImages.length > 0 ? embeddrImages : images
-                      }
-
-                      const normalizedGen = {
-                        ...gen,
-                        outputs,
-                        images,
-                      }
-
-                      if (
-                        ['pending', 'processing'].includes(normalizedGen.status)
-                      ) {
-                        hasRunning = true
-                      }
-
-                      if (currentIds.has(gen.id)) {
-                        // Update existing
-                        const index = newGenerations.findIndex(
-                          (g) => g.id === gen.id,
-                        )
-                        if (index !== -1) {
-                          newGenerations[index] = {
-                            ...newGenerations[index],
-                            ...normalizedGen,
-                          }
-                        }
-                      } else {
-                        // Add new (prepend)
-                        newGenerations.unshift(normalizedGen)
-                      }
-                    })
-
-                    // Sort by created_at desc to be safe
-                    newGenerations.sort(
-                      (a, b) =>
-                        new Date(b.created_at).getTime() -
-                        new Date(a.created_at).getTime(),
-                    )
-
-                    return {
-                      generations: newGenerations,
-                      isGenerating: hasRunning,
-                    }
-                  })
-                }
+        // Embeddr Events
+        globalEventBus.on('generation_submitted', (genData: Generation) => {
+          set((state) => {
+            const exists = state.generations.some((g) => g.id === genData.id)
+            if (exists) {
+              return {
+                generations: state.generations.map((g) =>
+                  g.id === genData.id ? { ...g, ...genData } : g,
+                ),
               }
-            } else if (msg.source === 'comfyui') {
-              const { type, data } = msg
-              // console.log('[GenerationStore] WS Message:', type)
-              const { generations } = get()
+            } else {
+              const newGen = { ...genData, images: [] }
+              return {
+                generations: [newGen, ...state.generations],
+              }
+            }
+          })
+        })
 
-              if (type === 'status') {
-                // data: { status: { exec_info: { queue_remaining: number } } }
-                const remaining = data?.status?.exec_info?.queue_remaining
-                if (typeof remaining === 'number') {
-                  set({ queueStatus: { remaining } })
+        globalEventBus.on('status_response', (data: any) => {
+          const { queue_status, running_generations } = data
+
+          if (queue_status) {
+            set({ queueStatus: queue_status })
+          }
+
+          if (running_generations && Array.isArray(running_generations)) {
+            set((state) => {
+              const currentIds = new Set(state.generations.map((g) => g.id))
+              const newGenerations = [...state.generations]
+              let hasRunning = false
+
+              running_generations.forEach((gen: any) => {
+                let images = gen.images || []
+                let outputs = gen.outputs
+                if (typeof outputs === 'string') {
+                  try {
+                    outputs = JSON.parse(outputs)
+                  } catch (e) {
+                    outputs = []
+                  }
                 }
-              } else if (type === 'execution_start') {
-                // data: { prompt_id: string }
-                console.log('Execution started for prompt:', data.prompt_id)
-                set((state) => ({
-                  isGenerating: true,
-                  currentPreview: null,
-                  generations: state.generations.map((g) =>
-                    g.prompt_id === data.prompt_id
-                      ? { ...g, status: 'processing' }
-                      : g,
-                  ),
-                }))
-                globalEventBus.emit('generation:start', data.prompt_id)
-              } else if (type === 'executed') {
-                console.log(
-                  '[GenerationStore] Received executed event for prompt:',
-                  data.prompt_id,
-                )
-                // data: { prompt_id: string, output: { images: ... } }
-                const gen = generations.find(
-                  (g) => g.prompt_id === data.prompt_id,
-                )
-                if (gen) {
-                  console.log(
-                    '[GenerationStore] Found generation, processing output:',
-                    gen.id,
-                  )
-                  const images = (data.output.images || [])
-                    .filter((o: any) => o.type !== 'temp')
+                if (!Array.isArray(outputs)) outputs = []
+
+                if (images.length === 0 && outputs.length > 0) {
+                  images = outputs
+                    .filter(
+                      (o: any) => o.type === 'image' && o.comfy_type !== 'temp',
+                    )
                     .map(
                       (o: any) =>
-                        `${BACKEND_URL}/comfy/view?filename=${o.filename}&subfolder=${o.subfolder || ''}&type=${o.type || 'output'}`,
+                        `${BACKEND_URL}/comfy/view?filename=${o.filename}&subfolder=${o.subfolder || ''}&type=${o.comfy_type || 'output'}`,
                     )
+                  const embeddrImages = outputs
+                    .filter((o: any) => o.type === 'embeddr_id')
+                    .map((o: any) => `${BACKEND_URL}/images/${o.value}/file`)
+                  images = embeddrImages.length > 0 ? embeddrImages : images
+                }
 
-                  let embeddrIds = data.output.embeddr_ids || []
-                  if (data.output.embeddr_id) {
-                    if (Array.isArray(data.output.embeddr_id)) {
-                      embeddrIds = [...embeddrIds, ...data.output.embeddr_id]
-                    } else {
-                      embeddrIds = [...embeddrIds, data.output.embeddr_id]
+                const normalizedGen = {
+                  ...gen,
+                  outputs,
+                  images,
+                }
+
+                if (['pending', 'processing'].includes(normalizedGen.status)) {
+                  hasRunning = true
+                }
+
+                if (currentIds.has(gen.id)) {
+                  const index = newGenerations.findIndex((g) => g.id === gen.id)
+                  if (index !== -1) {
+                    newGenerations[index] = {
+                      ...newGenerations[index],
+                      ...normalizedGen,
                     }
                   }
-
-                  const embeddrImages = embeddrIds.map(
-                    (id: any) => `${BACKEND_URL}/images/${id}/file`,
-                  )
-
-                  // Prioritize embeddr images, fallback to comfy images if no embeddr images
-                  const allImages =
-                    embeddrImages.length > 0 ? embeddrImages : images
-
-                  // Normalize outputs to match backend storage format
-                  const normalizedOutputs = [
-                    ...(data.output.images || []).map((img: any) => ({
-                      type: 'image',
-                      filename: img.filename,
-                      subfolder: img.subfolder || '',
-                      comfy_type: img.type || 'output',
-                    })),
-                    ...embeddrIds.map((id: any) => ({
-                      type: 'embeddr_id',
-                      value: id,
-                    })),
-                  ]
-
-                  // Check if we already completed this generation (to avoid double events)
-                  const wasCompleted = gen.status === 'completed'
-
-                  set((state) => ({
-                    isGenerating: false,
-                    currentPreview: null,
-                    generations: state.generations.map((g) =>
-                      g.prompt_id === data.prompt_id
-                        ? {
-                            ...g,
-                            status: 'completed',
-                            images: [...(g.images || []), ...allImages],
-                            outputs: [
-                              ...(g.outputs || []),
-                              ...normalizedOutputs,
-                            ],
-                          }
-                        : g,
-                    ),
-                  }))
-
-                  // If followLatest is enabled, select this generation
-                  // Only if it is the latest generation to avoid jumping to old generations
-                  const isLatest =
-                    get().generations.length > 0 &&
-                    get().generations[0].id === gen.id
-
-                  if (get().followLatest && isLatest) {
-                    console.log(
-                      '[GenerationStore] Auto-selecting new generation:',
-                      gen.id,
-                    )
-                    set({ selectedGenerationId: gen.id })
-                  }
-
-                  if (!wasCompleted) {
-                    console.log(
-                      '[GenerationStore] Emitting generation:complete event',
-                    )
-                    globalEventBus.emit('generation:complete', {
-                      id: gen.id,
-                      prompt_id: data.prompt_id,
-                    })
-                  } else {
-                    console.log(
-                      '[GenerationStore] Skipping generation:complete event (already completed)',
-                    )
-                  }
                 } else {
-                  console.warn(
-                    '[GenerationStore] Generation not found for prompt:',
-                    data.prompt_id,
-                  )
-                  // Even if we don't have the generation locally, we should notify the app
-                  // that a generation has completed (e.g. to refresh the gallery)
-                  globalEventBus.emit('generation:complete', {
-                    id: null,
-                    prompt_id: data.prompt_id,
-                  })
+                  newGenerations.unshift(normalizedGen)
                 }
-              } else if (type === 'preview') {
-                // data: "data:image/jpeg;base64,..."
-                // Find the currently processing generation and update its preview
-                set((state) => ({
-                  currentPreview: data,
-                  generations: state.generations.map((g) =>
-                    g.status === 'processing' ? { ...g, preview_url: data } : g,
-                  ),
-                }))
-              } else if (type === 'execution_error') {
-                // data: { prompt_id: string, exception_message: string }
-                set((state) => ({
-                  isGenerating: false,
-                  currentPreview: null,
-                  generations: state.generations.map((g) =>
-                    g.prompt_id === data.prompt_id
-                      ? {
-                          ...g,
-                          status: 'failed',
-                          error_message: data.exception_message,
-                        }
-                      : g,
-                  ),
-                }))
-                globalEventBus.emit('generation:error', {
-                  prompt_id: data.prompt_id,
-                  error: data.exception_message,
-                })
+              })
+
+              newGenerations.sort(
+                (a, b) =>
+                  new Date(b.created_at).getTime() -
+                  new Date(a.created_at).getTime(),
+              )
+
+              return {
+                generations: newGenerations,
+                isGenerating: hasRunning,
+              }
+            })
+          }
+        })
+
+        // ComfyUI Events (via Provider mapping to comfyui:type)
+        globalEventBus.on('comfyui:status', (data: any) => {
+          const remaining = data?.status?.exec_info?.queue_remaining
+          if (typeof remaining === 'number') {
+            set({ queueStatus: { remaining } })
+          }
+        })
+
+        globalEventBus.on('comfyui:execution_start', (data: any) => {
+          console.log('Execution started for prompt:', data.prompt_id)
+          set((state) => ({
+            isGenerating: true,
+            currentPreview: null,
+            generations: state.generations.map((g) =>
+              g.prompt_id === data.prompt_id
+                ? { ...g, status: 'processing' }
+                : g,
+            ),
+          }))
+          globalEventBus.emit('generation:start', data.prompt_id)
+        })
+
+        globalEventBus.on('comfyui:preview', (data: any) => {
+          set((state) => ({
+            currentPreview: data,
+            generations: state.generations.map((g) =>
+              g.status === 'processing' ? { ...g, preview_url: data } : g,
+            ),
+          }))
+        })
+
+        globalEventBus.on('comfyui:execution_error', (data: any) => {
+          set((state) => ({
+            isGenerating: false,
+            currentPreview: null,
+            generations: state.generations.map((g) =>
+              g.prompt_id === data.prompt_id
+                ? {
+                    ...g,
+                    status: 'failed',
+                    error_message: data.exception_message,
+                  }
+                : g,
+            ),
+          }))
+          globalEventBus.emit('generation:error', {
+            prompt_id: data.prompt_id,
+            error: data.exception_message,
+          })
+        })
+
+        globalEventBus.on('comfyui:executed', (data: any) => {
+          const { generations, followLatest } = get()
+          const gen = generations.find((g) => g.prompt_id === data.prompt_id)
+          if (gen) {
+            const images = (data.output.images || [])
+              .filter((o: any) => o.type !== 'temp')
+              .map(
+                (o: any) =>
+                  `${BACKEND_URL}/comfy/view?filename=${o.filename}&subfolder=${o.subfolder || ''}&type=${o.type || 'output'}`,
+              )
+
+            let embeddrIds = data.output.embeddr_ids || []
+            if (data.output.embeddr_id) {
+              if (Array.isArray(data.output.embeddr_id)) {
+                embeddrIds = [...embeddrIds, ...data.output.embeddr_id]
+              } else {
+                embeddrIds = [...embeddrIds, data.output.embeddr_id]
               }
             }
-          } catch (e) {
-            console.error('WebSocket message error', e)
+
+            const embeddrImages = embeddrIds.map(
+              (id: any) => `${BACKEND_URL}/images/${id}/file`,
+            )
+
+            const allImages = embeddrImages.length > 0 ? embeddrImages : images
+
+            const normalizedOutputs = [
+              ...(data.output.images || []).map((img: any) => ({
+                type: 'image',
+                filename: img.filename,
+                subfolder: img.subfolder || '',
+                comfy_type: img.type || 'output',
+              })),
+              ...embeddrIds.map((id: any) => ({
+                type: 'embeddr_id',
+                value: id,
+              })),
+            ]
+
+            const wasCompleted = gen.status === 'completed'
+
+            set((state) => ({
+              isGenerating: false,
+              currentPreview: null,
+              generations: state.generations.map((g) =>
+                g.prompt_id === data.prompt_id
+                  ? {
+                      ...g,
+                      status: 'completed',
+                      images: [...(g.images || []), ...allImages],
+                      outputs: [...(g.outputs || []), ...normalizedOutputs],
+                    }
+                  : g,
+              ),
+            }))
+
+            const isLatest =
+              get().generations.length > 0 && get().generations[0].id === gen.id
+
+            if (get().followLatest && isLatest) {
+              set({ selectedGenerationId: gen.id })
+            }
+
+            if (!wasCompleted) {
+              globalEventBus.emit('generation:complete', {
+                id: gen.id,
+                prompt_id: data.prompt_id,
+              })
+            }
+          } else {
+            globalEventBus.emit('generation:complete', {
+              id: null,
+              prompt_id: data.prompt_id,
+            })
           }
-        }
-
-        ws.onclose = () => {
-          console.log('WebSocket disconnected, reconnecting in 5s...')
-          setTimeout(() => get().connectWebSocket(), 5000)
-        }
-
-        set({ socket: ws })
+        })
       },
 
       selectWorkflow: (workflow) => {

@@ -1,15 +1,18 @@
 import { memo } from 'react'
 import { Button } from '@embeddr/react-ui/components/button'
+import { EmbeddrDnDTypes } from '@embeddr/react-ui'
 import {
   Archive,
   ArrowDownToLine,
   ExternalLink,
   Eye,
+  FileText,
   FolderPlus,
   GitFork,
   ImagePlus,
   MoreHorizontal,
   Video,
+  Folder,
 } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -26,13 +29,13 @@ import type { PromptImage } from '@/lib/api'
 import { useGlobalStore } from '@/store/globalStore'
 import { useLineageStore } from '@/store/lineageStore'
 import { updateImage } from '@/lib/api/endpoints/images'
-import { BACKEND_URL } from '@/lib/api'
+import { BACKEND_URL, BACKEND_V2_URL } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 interface PostCardProps {
   post: PromptImage
   onToggleLike?: (args: { id: number; liked_by_me: boolean }) => void
-  onSelect?: (post: PromptImage) => void
+  onSelect?: (post: PromptImage, e?: React.MouseEvent) => void
   onSearchByImage?: (post: PromptImage) => void
   onOpenDetails?: (post: PromptImage) => void
   onArchive?: (post: PromptImage) => void
@@ -58,8 +61,8 @@ const PostCard = memo(
 
     const imageUrl =
       useOriginalImages && post.media_type !== 'video'
-        ? `${BACKEND_URL}/images/${post.id}/file`
-        : `${BACKEND_URL}/images/${post.id}/thumbnail`
+        ? post.image_url || `${BACKEND_URL}/images/${post.id}/file`
+        : post.thumb_url || `${BACKEND_V2_URL}/artifacts/${post.id}/preview`
 
     const handleUseInCreate = () => {
       selectGlobalImage(post)
@@ -86,21 +89,44 @@ const PostCard = memo(
         <ContextMenuTrigger>
           <div
             className={cn(
-              'border bg-card text-card-foreground shadow-sm overflow-hidden group/post border-foreground/10 p-0! gap-0! cursor-pointer transition-all',
+              'border bg-card/40 text-card-foreground shadow-sm overflow-hidden group/post border-foreground/10 p-0! gap-0! cursor-pointer transition-all hover:border hover:border-primary',
               isSelected && 'border-foreground/40',
             )}
-            onClick={() => onSelect?.(post)}
+            onClick={(e) => onSelect?.(post, e)}
             draggable
             onDragStart={(e) => {
-              const fileUrl = `${BACKEND_URL}/images/${post.id}/file`
+              // Force the use of the API URL for DnD to permit browser/plugin access
+              // Do not use post.image_url as it might contain the local filesystem path
+              const contentUrl = `${BACKEND_V2_URL}/artifacts/${post.id}/content`
+              const previewUrl = `${BACKEND_V2_URL}/artifacts/${post.id}/preview`
 
+              console.log('[DnD] DragStart detected on PostCard', {
+                id: post.id,
+                url: contentUrl,
+                previewUrl,
+                mediaType: post.media_type,
+                path: (post as any).path,
+              })
+
+              // Standardized Tags
               e.dataTransfer.setData(
-                'application/embeddr-image-id',
+                EmbeddrDnDTypes.ARTIFACT_ID,
                 post.id.toString(),
               )
+              // Legacy/Compat
               e.dataTransfer.setData(
-                'application/embeddr-image-path',
-                post.path,
+                EmbeddrDnDTypes.IMAGE_ID,
+                post.id.toString(),
+              )
+
+              e.dataTransfer.setData(
+                EmbeddrDnDTypes.ARTIFACT_PATH,
+                (post as any).path || '',
+              )
+
+              e.dataTransfer.setData(
+                EmbeddrDnDTypes.ARTIFACT_TYPE,
+                post.media_type || 'image',
               )
 
               // Set URL in text/plain for general compatibility (if it looks like a URL)
@@ -108,18 +134,13 @@ const PostCard = memo(
               // Existing code set it to ID: e.dataTransfer.setData('text/plain', post.id.toString())
               // Let's keep ID in text/plain for safety if other components rely on it,
               // but ALSO provide the URL in specific formats.
-              e.dataTransfer.setData('text/plain', fileUrl)
+              e.dataTransfer.setData('text/plain', contentUrl)
+              e.dataTransfer.setData(EmbeddrDnDTypes.PREVIEW_URL, previewUrl)
 
               if (post.media_type === 'video') {
-                e.dataTransfer.setData(
-                  'application/external-video-url',
-                  fileUrl,
-                )
+                e.dataTransfer.setData(EmbeddrDnDTypes.VIDEO_URL, contentUrl)
               } else {
-                e.dataTransfer.setData(
-                  'application/external-image-url',
-                  fileUrl,
-                )
+                e.dataTransfer.setData(EmbeddrDnDTypes.IMAGE_URL, contentUrl)
               }
 
               // Optional: Set drag image or effect
@@ -127,15 +148,39 @@ const PostCard = memo(
             }}
           >
             <div className="relative overflow-hidden aspect-square">
-              <img
-                src={imageUrl}
-                alt={post.prompt}
-                loading="lazy"
-                className={cn(
-                  'z-40 w-full h-full duration-300',
-                  imageFit === 'cover' ? 'object-cover' : 'object-contain',
-                )}
-              />
+              {(post as any).media_type === 'collection' ? (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-muted/20 text-muted-foreground p-4">
+                  <Folder className="w-16 h-16 opacity-50 mb-2" />
+                  <span className="text-xs font-medium text-center line-clamp-2 px-2">
+                    {post.prompt || 'Collection'}
+                  </span>
+                </div>
+              ) : (post.media_type as string) === 'document' ? (
+                <div className="w-full h-full flex items-center justify-center bg-muted">
+                  {/* Fallback to preview if available, else icon */}
+                  {post.thumb_url ? (
+                    <img
+                      src={post.thumb_url}
+                      alt={post.prompt}
+                      className={cn(
+                        'z-40 w-full h-full duration-300 object-contain',
+                      )}
+                    />
+                  ) : (
+                    <FileText className="w-16 h-16 text-muted-foreground/50" />
+                  )}
+                </div>
+              ) : (
+                <img
+                  src={imageUrl}
+                  alt={post.prompt}
+                  loading="lazy"
+                  className={cn(
+                    'z-40 w-full h-full duration-300',
+                    imageFit === 'cover' ? 'object-cover' : 'object-contain',
+                  )}
+                />
+              )}
               {post.media_type === 'video' && (
                 <div className="absolute top-2 right-2 bg-black/50 p-1 rounded-md backdrop-blur-sm">
                   <Video className="w-3 h-3 text-white" />

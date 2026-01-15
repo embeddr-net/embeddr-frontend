@@ -1,6 +1,7 @@
 import { Button } from '@embeddr/react-ui/components/button'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Badge } from '@embeddr/react-ui/components/badge'
+import { SystemResourceBar } from '@embeddr/react-ui'
 import {
   BookOpenIcon,
   ChartNetworkIcon,
@@ -13,12 +14,15 @@ import {
   Settings,
   Database,
   Plug,
+  GitBranch,
+  SearchIcon,
 } from 'lucide-react'
 import { IconRobot } from '@tabler/icons-react'
 import { ModeToggle } from './ThemeToggle'
 import type { IconNode, LucideProps } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSystemStatus } from '@/hooks/useSystemStatus'
+import { useWebSocket } from '@/providers/WebSocketProvider'
 import { useGenerationStore } from '@/store/generationStore'
 import { usePluginStore } from '@/plugins/store'
 import {
@@ -39,7 +43,11 @@ interface NavLink {
 }
 
 const ConnectionStatus = () => {
-  const { connectionStatus, queueStatus } = useGenerationStore()
+  const { isConnected } = useWebSocket()
+  // const isConnected = false
+
+  const { queueStatus } = useGenerationStore()
+  const connectionStatus = isConnected ? 'connected' : 'disconnected'
   const navigate = useNavigate()
   const statusColor = {
     connected: 'bg-green-500',
@@ -95,15 +103,26 @@ export default function Header() {
   const currentPath = window.location.pathname
   const links: Array<NavLink> = [
     { to: '/', label: 'Home', icon: HomeIcon },
+    { to: '/search', label: 'Search', icon: SearchIcon },
     {
-      to: '/datasets',
-      label: 'Datasets',
-      icon: DraftingCompassIcon,
+      to: '/actions',
+      label: 'Actions',
+      icon: GitBranch,
     },
+    // {
+    //   to: '/datasets',
+    //   label: 'Datasets',
+    //   icon: DraftingCompassIcon,
+    // },
     {
       to: '/resources',
       label: 'Resources',
       icon: Database,
+    },
+    {
+      to: '/workflows_v2',
+      label: 'Workflows',
+      icon: DraftingCompassIcon,
     },
   ]
 
@@ -138,7 +157,7 @@ export default function Header() {
   }
 
   return (
-    <div className=" border border-foreground/10 bg-card text-card-foreground ">
+    <div className=" border border-foreground/10 bg-card/20 backdrop-blur-md text-card-foreground ">
       <div className="links space-x-1 min-w-full flex items-center text-sm p-1">
         {links.map(({ to, label, icon: IconNode, target }) => (
           // <Link
@@ -171,6 +190,8 @@ export default function Header() {
         ))}
 
         <div className="ml-auto flex items-center space-x-1">
+          <div className="hidden lg:block w-48 mr-2 px-2 border-r border-border"></div>
+          <SystemResourceBar variant="compact" />
           <ConnectionStatus />
           {mode && mode !== 'production' && (
             <Button
@@ -183,14 +204,14 @@ export default function Header() {
           )}
 
           <Link
-            to="/create"
+            to="/debug"
             activeProps={{
               'data-active': 'true',
               className: 'bg-primary/20!',
             }}
           >
             <Button variant="ghost" size="icon-sm">
-              <Plus className="h-4 w-4" />
+              <CircleQuestionMarkIcon className="h-4 w-4" />
             </Button>
           </Link>
 

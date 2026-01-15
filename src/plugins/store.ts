@@ -1,14 +1,30 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { toast } from 'sonner'
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 import type { EmbeddrAPI, PluginDefinition } from '@embeddr/react-ui/types'
 import { useGlobalStore } from '@/store/globalStore'
 import { useGeneration } from '@/context/GenerationContext'
 import { usePanelStore } from '@/store/panelStore'
+import { useWindowStore } from '@/store/windowStore'
+import { registerWindowComponent } from '@/components/ui/windowRegistry'
 import { uploadItem } from '@/lib/api/endpoints/images'
-import { BACKEND_URL } from '@/lib/api/config'
+import { BACKEND_URL, BASE_URL, BACKEND_V2_URL } from '@/lib/api/config'
 import { globalEventBus } from '@/lib/eventBus'
+import { DynamicPluginComponent } from './DynamicLoader'
+import * as Icons from 'lucide-react'
+
+function lucideIconFromName(name: string) {
+  return (Icons as any)[name] || undefined
+}
+const LOCATION_MAP: Record<string, any> = {
+  ZEN_PANEL: 'zen-toolbox-tab',
+  SIDEBAR: 'zen-sidebar',
+  OVERLAY: 'zen-overlay',
+  HEADER: 'header-nav',
+
+  WINDOW: 'window', // registered, not shown automatically
+}
 
 interface PluginState {
   plugins: Record<string, PluginDefinition>
@@ -26,6 +42,9 @@ interface PluginState {
 
   // External Plugin Loading
   loadExternalPlugins: () => Promise<void>
+
+  // Storage for backend metadata to merge later
+  backendMetadata: Record<string, any>
 }
 
 export const usePluginStore = create<PluginState>()(
@@ -34,17 +53,78 @@ export const usePluginStore = create<PluginState>()(
       plugins: {},
       activePlugins: [],
       knownPlugins: [],
+      backendMetadata: {},
 
       loadExternalPlugins: async () => {
         try {
-          const res = await fetch(`${BACKEND_URL}/plugins`)
+          // Use v2 endpoint for plugins as v1 is deprecated/empty for plugins
+          const res = await fetch(`${BACKEND_V2_URL}/plugins`)
           if (!res.ok) return
           const plugins = await res.json()
 
-          // Expose register function globally for plugins to use
+          // Store metadata for lookup during registration
+          const metadataMap: Record<string, any> = {}
+          plugins.forEach((p: any) => {
+            metadataMap[p.id] = p
+
+            // Pre-register frontend components if defined in backend manifest
+            if (p.frontend_components && p.frontend_components.length > 0) {
+              const virtualDef: PluginDefinition = {
+                id: p.id,
+                name: p.name || p.id,
+                version: p.version || '0.0.0',
+                description: '',
+                components: p.frontend_components.map((c: any) => ({
+                  id: c.name,
+                  location: LOCATION_MAP[c.location] || c.location,
+                  label: c.label || c.name,
+
+                  // ✅ keep metadata needed by host-owned windows
+                  exportName: c.component,
+                  props: c.props || {},
+
+                  // optional extras from backend
+                  icon: c.icon,
+                })),
+
+                actions: (p.frontend_actions || []).map((a: any) => ({
+                  id: a.name,
+                  location: a.location || 'zen-toolbox-action',
+                  label: a.label || a.name,
+                  // icon: map string -> lucide component (see below)
+                  icon: a.icon ? lucideIconFromName(a.icon) : undefined,
+
+                  // If action has a component, your toolbox UI will render accordion content.
+                  component: a.component
+                    ? (apiProps: any) =>
+                        React.createElement(DynamicPluginComponent, {
+                          pluginId: p.id,
+                          componentName: a.component,
+                          api: apiProps.api,
+                          ...(a.props || {}),
+                        })
+                    : undefined,
+
+                  // If you want button-only actions later:
+                  handler: !a.component
+                    ? async (api: any) => {
+                        // Option A: call server-side action by name (recommended)
+                        // await api.actions.runServerAction({ pluginId: p.id, action: a.name })
+                      }
+                    : undefined,
+                })),
+              }
+              get().registerPlugin(virtualDef)
+            }
+          })
+          set({ backendMetadata: metadataMap })
           ;(window as any).Embeddr = {
             ...(window as any).Embeddr,
             registerPlugin: (plugin: PluginDefinition) => {
+              console.log(
+                '[Store] Global registerPlugin called for:',
+                plugin.id,
+              )
               get().registerPlugin(plugin)
             },
           }
@@ -55,18 +135,11 @@ export const usePluginStore = create<PluginState>()(
             // but usually it's served from the same origin or we need a full URL.
             // The API returns /plugins/filename.js.
             // If we are on localhost:3000 and backend is localhost:8003, we need full URL.
-            // BACKEND_URL is usually /api/v1 or http://localhost:8003/api/v1
-            // We need the base URL of the backend.
+            // We use BASE_URL which is the root of the backend (e.g. http://localhost:8003).
 
-            // Let's assume BACKEND_URL is like http://localhost:8003/api/v1
-            // We need http://localhost:8003/plugins/filename.js
-            // Or if BACKEND_URL is /api/v1 (proxy), then /plugins/filename.js works if proxy handles it.
-            // But proxy usually only handles /api.
-
-            // If BACKEND_URL is absolute, we can derive the base.
             let scriptUrl = plugin.url
-            if (BACKEND_URL.startsWith('http')) {
-              const url = new URL(BACKEND_URL)
+            if (BASE_URL.startsWith('http')) {
+              const url = new URL(BASE_URL)
               scriptUrl = `${url.origin}${plugin.url}`
             }
 
@@ -75,6 +148,17 @@ export const usePluginStore = create<PluginState>()(
 
             script.src = scriptUrl
             script.async = true
+            script.onload = () => {
+              console.log(
+                `[PluginStore] Successfully loaded script for ${plugin.id}: ${scriptUrl}`,
+              )
+            }
+            script.onerror = (e) => {
+              console.error(
+                `[PluginStore] FAILED to load script for ${plugin.id}: ${scriptUrl}`,
+                e,
+              )
+            }
             document.body.appendChild(script)
 
             // Try to load CSS if it exists
@@ -98,6 +182,13 @@ export const usePluginStore = create<PluginState>()(
 
       registerPlugin: (plugin) => {
         console.log('[PluginStore] Registering plugin:', plugin.id)
+
+        // Merge backend metadata if available (intents, etc)
+        const metadata = get().backendMetadata[plugin.id]
+        if (metadata && metadata.intents) {
+          plugin.intents = metadata.intents
+        }
+
         set((state) => {
           if (state.plugins[plugin.id]) {
             // Plugin definition update (optional, but good for HMR)
@@ -107,16 +198,16 @@ export const usePluginStore = create<PluginState>()(
           }
 
           const isKnown = state.knownPlugins.includes(plugin.id)
-          const shouldActivate = !isKnown // Default to active if new
+          const isActive = state.activePlugins.includes(plugin.id)
 
           return {
             plugins: { ...state.plugins, [plugin.id]: plugin },
             knownPlugins: isKnown
               ? state.knownPlugins
               : [...state.knownPlugins, plugin.id],
-            activePlugins: shouldActivate
-              ? [...state.activePlugins, plugin.id]
-              : state.activePlugins,
+            activePlugins: isActive
+              ? state.activePlugins
+              : [...state.activePlugins, plugin.id],
           }
         })
       },
@@ -193,13 +284,20 @@ export const extendApiForPlugin = (
   api: EmbeddrAPI,
   pluginId: string,
 ): EmbeddrAPI => {
+  if (!api || !api.utils) {
+    console.error(
+      '[PluginStore] extendApiForPlugin called with invalid api:',
+      api,
+    )
+    return api
+  }
   return {
     ...api,
     utils: {
       ...api.utils,
       getPluginUrl: (path: string) => {
         const cleanPath = path.startsWith('/') ? path.slice(1) : path
-        return `${api.utils.backendUrl}/plugins/${pluginId}/${cleanPath}`
+        return `${BACKEND_V2_URL}/plugins/${pluginId}/${cleanPath}`
       },
     },
   }
@@ -210,14 +308,14 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
   const globalStore = useGlobalStore()
   const generation = useGeneration()
   const panelStore = usePanelStore()
+  const windowStore = useWindowStore()
 
   // Memoize stable parts of the API
   const events = useMemo(
     () => ({
-      on: (event: string, listener: any) => globalEventBus.on(event, listener),
-      off: (event: string, listener: any) =>
-        globalEventBus.off(event, listener),
-      emit: (event: string, ...args: Array<any>) =>
+      on: (event: any, listener: any) => globalEventBus.on(event, listener),
+      off: (event: any, listener: any) => globalEventBus.off(event, listener),
+      emit: (event: any, ...args: Array<any>) =>
         globalEventBus.emit(event, ...args),
     }),
     [],
@@ -330,8 +428,51 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
         isPanelActive: (panelId: string) =>
           panelStore.activePanelId === panelId,
       },
+      windows: {
+        open: (id: string, title: string, componentId: string, props?: any) => {
+          windowStore.openWindow({ id, title, componentId, props })
+        },
+
+        spawn: (componentId: string, title: string, props?: any) => {
+          const id = crypto.randomUUID()
+          windowStore.openWindow({ id, title, componentId, props })
+          return id
+        },
+
+        register: (id: string, component: any) => {
+          registerWindowComponent(id, component)
+        },
+      },
       toast: toastApi,
       utils: utils,
+      client: {
+        plugins: {
+          call: async <T = any>(
+            pluginId: string,
+            path: string,
+            method: string,
+            body?: any,
+          ): Promise<T> => {
+            const cleanPath = path.startsWith('/') ? path.slice(1) : path
+            const url = `${BACKEND_V2_URL}/plugins/${pluginId}/${cleanPath}`
+
+            const headers: Record<string, string> = {}
+            if (body) headers['Content-Type'] = 'application/json'
+
+            const res = await fetch(url, {
+              method,
+              headers,
+              body: body ? JSON.stringify(body) : undefined,
+            })
+
+            if (!res.ok) {
+              const text = await res.text()
+              throw new Error(`Plugin API Call failed: ${res.status} ${text}`)
+            }
+            return res.json()
+          },
+        },
+      },
       events: events,
       comfy: comfy,
     }),

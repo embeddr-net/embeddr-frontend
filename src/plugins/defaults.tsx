@@ -54,43 +54,43 @@ export const WorkflowInfoPlugin: PluginDefinition = {
 }
 
 // --- Plugin 2: Random Seed Action (Action) ---
-export const RandomSeedPlugin: PluginDefinition = {
-  id: 'core.random-seed',
-  name: 'Random Seed',
-  description: 'Randomizes the seed for the current workflow',
-  version: '1.0.0',
-  actions: [
-    {
-      id: 'randomize-seed',
-      location: 'zen-toolbox-action',
-      label: 'Randomize Seed',
-      icon: Dice5,
-      handler: (api: EmbeddrAPI) => {
-        const { selectedWorkflow, setWorkflowInput } = api.stores.generation
+// export const RandomSeedPlugin: PluginDefinition = {
+//   id: 'core.random-seed',
+//   name: 'Random Seed',
+//   description: 'Randomizes the seed for the current workflow',
+//   version: '1.0.0',
+//   actions: [
+//     {
+//       id: 'randomize-seed',
+//       location: 'zen-toolbox-action',
+//       label: 'Randomize Seed',
+//       icon: Dice5,
+//       handler: (api: EmbeddrAPI) => {
+//         const { selectedWorkflow, setWorkflowInput } = api.stores.generation
 
-        if (!selectedWorkflow) {
-          api.toast.error('No workflow selected')
-          return
-        }
+//         if (!selectedWorkflow) {
+//           api.toast.error('No workflow selected')
+//           return
+//         }
 
-        // Find a seed input (heuristic)
-        const inputs = selectedWorkflow.meta?.exposed_inputs || []
-        const seedInput = inputs.find(
-          (i: any) =>
-            i.field.includes('seed') || i.label?.toLowerCase().includes('seed'),
-        )
+//         // Find a seed input (heuristic)
+//         const inputs = selectedWorkflow.meta?.exposed_inputs || []
+//         const seedInput = inputs.find(
+//           (i: any) =>
+//             i.field.includes('seed') || i.label?.toLowerCase().includes('seed'),
+//         )
 
-        if (seedInput) {
-          const newSeed = Math.floor(Math.random() * 1000000000)
-          setWorkflowInput(seedInput.node_id, seedInput.field, newSeed)
-          api.toast.success(`Seed set to ${newSeed}`)
-        } else {
-          api.toast.info('No exposed seed input found in this workflow')
-        }
-      },
-    },
-  ],
-}
+//         if (seedInput) {
+//           const newSeed = Math.floor(Math.random() * 1000000000)
+//           setWorkflowInput(seedInput.node_id, seedInput.field, newSeed)
+//           api.toast.success(`Seed set to ${newSeed}`)
+//         } else {
+//           api.toast.info('No exposed seed input found in this workflow')
+//         }
+//       },
+//     },
+//   ],
+// }
 
 // --- Plugin 3: Debug Logger (Action) ---
 // export const DebugLoggerPlugin: PluginDefinition = {
@@ -142,7 +142,7 @@ export const RandomSeedPlugin: PluginDefinition = {
 // }
 
 export const DEFAULT_PLUGINS = [
-  WorkflowInfoPlugin,
-  RandomSeedPlugin,
+  // WorkflowInfoPlugin,
+  // RandomSeedPlugin,
   //   ZenModeCorePlugin,
 ]

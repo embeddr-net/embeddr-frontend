@@ -1,0 +1,563 @@
+import React, { useState, useEffect } from 'react'
+import { Badge, Button, ScrollArea } from '@embeddr/react-ui'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@embeddr/react-ui/components/tabs'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@embeddr/react-ui/components/accordion'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@embeddr/react-ui/components/select'
+import {
+  RefreshCcw,
+  Search,
+  Database,
+  Loader2,
+  Info,
+  Microscope,
+  Network,
+  Link as LinkIcon,
+  Hash,
+  ChevronRight,
+  ChevronLeft,
+} from 'lucide-react'
+import { Input } from '@embeddr/react-ui/components/input'
+import { useQuery } from '@tanstack/react-query'
+import { embeddrApi } from '@/lib/api/v2/client'
+import { useArtifact } from '@/hooks/useArtifact'
+import { Separator } from '@embeddr/react-ui/components/separator'
+import { useDebounce } from '@/hooks/use-debounce'
+
+export const ApiExplorer = () => {
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(50)
+
+  // Debounce search
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  useEffect(() => {
+    setPage(0)
+  }, [debouncedSearchTerm, typeFilter])
+
+  const {
+    data: artifactsData,
+    isLoading: isLoadingList,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      'v2',
+      'artifacts',
+      page,
+      pageSize,
+      debouncedSearchTerm,
+      typeFilter,
+    ],
+    queryFn: () => {
+      if (debouncedSearchTerm) {
+        return embeddrApi.artifacts.search(
+          debouncedSearchTerm,
+          pageSize,
+          page * pageSize,
+          typeFilter === 'all' ? undefined : typeFilter,
+        )
+      }
+      return embeddrApi.artifacts.list({
+        limit: pageSize,
+        offset: page * pageSize,
+        type_name: typeFilter === 'all' ? undefined : typeFilter,
+      })
+    },
+    placeholderData: (previousData) => previousData,
+  })
+
+  // Pagination info
+  const artifacts = artifactsData?.items || []
+  const totalItems = artifactsData?.total || 0
+  const totalPages = Math.ceil(totalItems / pageSize)
+
+  const handlePrevPage = () => setPage((p) => Math.max(0, p - 1))
+  const handleNextPage = () => setPage((p) => (p < totalPages - 1 ? p + 1 : p))
+
+  // Unified hook for selected artifact
+  const artifactQuery = useArtifact(selectedId)
+  const {
+    details,
+    embeddings,
+    annotations,
+    lineage,
+    relations,
+    contentUrl,
+    capabilities,
+    isLoading: isLoadingArtifactData,
+  } = artifactQuery
+
+  const isLoading = isLoadingList
+
+  const filteredArtifacts = artifacts
+
+  // Hardcoded types/common types
+  const docTypes = [
+    'image',
+    'text',
+    'video',
+    'audio',
+    'collection',
+    'document',
+  ].sort()
+
+  return (
+    <div className="flex w-full h-full border-t min-h-0">
+      <div className="w-1/3 border-r bg-muted/10 flex flex-col min-h-0">
+        <div className="p-2 border-b bg-muted/20 flex flex-col gap-2 shrink-0">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted-foreground">
+              V2 Artifacts ({totalItems})
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={handlePrevPage}
+                disabled={page === 0 || isLoadingList}
+                title="Previous Page"
+              >
+                <ChevronLeft className="w-3 h-3" />
+              </Button>
+              <span className="text-[10px] text-muted-foreground w-12 text-center">
+                {page + 1}/{totalPages || 1}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={handleNextPage}
+                disabled={page >= totalPages - 1 || isLoadingList}
+                title="Next Page"
+              >
+                <ChevronRight className="w-3 h-3" />
+              </Button>
+              <Separator orientation="vertical" className="h-4 mx-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={() => refetch()}
+                title="Refresh"
+              >
+                <RefreshCcw className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-1.5 h-3 w-3 text-muted-foreground" />
+              <Input
+                placeholder="Search artifacts..."
+                className="h-7 text-xs pl-7 bg-background"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[100px] h-7 text-[10px]">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {docTypes.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea
+            className="h-full w-full pr-2"
+            variant="left-border"
+            type="always"
+          >
+            <div className="flex flex-col">
+              {isLoading && <div className="p-4 text-xs">Loading...</div>}
+              {filteredArtifacts?.map((a) => (
+                <div
+                  key={a.id}
+                  className={`p-2 text-xs border-b cursor-pointer hover:bg-muted/50 flex flex-col gap-0.5 transition-colors  ${
+                    selectedId === a.id
+                      ? 'bg-primary/10 border-l-2 border-l-primary'
+                      : 'border-l-2 border-l-transparent'
+                  }`}
+                  onClick={() => setSelectedId(a.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium truncate flex-1">
+                      {a.base_type_name}
+                    </span>
+                    <span className="font-mono text-[9px] text-muted-foreground opacity-50 ml-1">
+                      {a.id.substring(0, 6)}
+                    </span>
+                  </div>
+                  <div className="truncate text-muted-foreground text-[10px] break-all whitespace-pre-wrap">
+                    {a.metadata_json?.label ||
+                      (a.uri ? a.uri.split('/').pop() : 'No Label')}
+                  </div>
+                </div>
+              ))}
+              {filteredArtifacts?.length === 0 && !isLoading && (
+                <div className="p-4 text-xs text-muted-foreground text-center">
+                  No artifacts found
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col bg-card overflow-hidden min-h-0">
+        {!selectedId ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <Database className="w-8 h-8 opacity-20 mb-2" />
+            <span className="text-xs">Select an artifact to inspect</span>
+          </div>
+        ) : (
+          <Tabs defaultValue="info" className="h-full flex flex-col">
+            <div className="border-b px-2 bg-muted/20 flex items-center justify-between">
+              <TabsList className="bg-transparent h-8">
+                <TabsTrigger
+                  value="info"
+                  className="text-[10px] sm:text-xs data-[state=active]:bg-background"
+                >
+                  Info
+                </TabsTrigger>
+                <TabsTrigger
+                  value="capabilities"
+                  className="text-[10px] sm:text-xs data-[state=active]:bg-background"
+                >
+                  Preview
+                </TabsTrigger>
+                <TabsTrigger
+                  value="embeddings"
+                  className="text-[10px] sm:text-xs data-[state=active]:bg-background"
+                >
+                  Vectors ({embeddings?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="annotations"
+                  className="text-[10px] sm:text-xs data-[state=active]:bg-background"
+                >
+                  Data ({annotations?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="lineage"
+                  className="text-[10px] sm:text-xs data-[state=active]:bg-background"
+                >
+                  Lineage
+                </TabsTrigger>
+                <TabsTrigger
+                  value="relations"
+                  className="text-[10px] sm:text-xs data-[state=active]:bg-background"
+                >
+                  Graph ({relations?.length || 0})
+                </TabsTrigger>
+              </TabsList>
+              {isLoadingArtifactData && (
+                <Loader2 className="w-3 h-3 animate-spin text-muted-foreground mr-2" />
+              )}
+            </div>
+
+            <TabsContent value="info" className="flex-1 overflow-auto p-4 m-0">
+              <Accordion
+                type="multiple"
+                defaultValue={['metadata', 'capabilities']}
+              >
+                <AccordionItem value="capabilities">
+                  <AccordionTrigger className="text-sm py-2">
+                    Capabilities
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="flex gap-2 flex-wrap text-xs">
+                      {details?.type_name === 'image' && (
+                        <Badge>Viewable</Badge>
+                      )}
+                      {details?.type_name === 'text' && <Badge>Readable</Badge>}
+                      {details?.type_name === 'document' && (
+                        <Badge>Viewable</Badge>
+                      )}
+                      {details?.type_name === 'document' && (
+                        <Badge>Readable</Badge>
+                      )}
+                      {(details as any)?.override_capabilities?.map(
+                        (c: string) => (
+                          <Badge key={c} variant="secondary">
+                            {c}
+                          </Badge>
+                        ),
+                      )}
+                      <span className="text-muted-foreground ml-2 italic">
+                        {details?.type_name === 'image' ||
+                        details?.type_name === 'document'
+                          ? 'Can be previewed/streamed via API'
+                          : ''}
+                      </span>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="metadata">
+                  <AccordionTrigger className="text-sm py-2">
+                    Metadata JSON
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <pre className="text-[10px] font-mono whitespace-pre-wrap bg-secondary/50 border p-2 rounded">
+                      {JSON.stringify(details?.metadata_json, null, 2)}
+                    </pre>
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="raw">
+                  <AccordionTrigger className="text-sm py-2">
+                    Raw JSON
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <pre className="text-[10px] font-mono whitespace-pre-wrap">
+                      {JSON.stringify(details, null, 2)}
+                    </pre>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </TabsContent>
+
+            <TabsContent
+              value="capabilities"
+              className="flex-1 overflow-auto p-4 m-0 flex flex-col items-center bg-zinc-950/5"
+            >
+              <div className="w-full flex gap-2 mb-4 justify-centern items-center my-4 justify-center">
+                {capabilities.map((c) => (
+                  <Badge key={c}>{c}</Badge>
+                ))}
+                {capabilities.length === 0 && (
+                  <span className="text-muted-foreground text-xs italic">
+                    No explicit capabilities
+                  </span>
+                )}
+              </div>
+
+              {capabilities.includes('viewable') &&
+                details?.type_name === 'image' && (
+                  <div className="border border-border/50 shadow-sm rounded-lg overflow-hidden max-w-full max-h-full">
+                    <img
+                      src={contentUrl}
+                      className="max-w-full max-h-[600px] object-contain"
+                      alt="preview"
+                    />
+                  </div>
+                )}
+              {capabilities.includes('viewable') &&
+                details?.type_name === 'document' &&
+                contentUrl && (
+                  <iframe
+                    src={contentUrl}
+                    className="w-full h-full min-h-[500px] border rounded"
+                    title="PDF Preview"
+                  ></iframe>
+                )}
+              {capabilities.includes('readable') &&
+                capabilities.includes('viewable') &&
+                details?.type_name === 'text' &&
+                contentUrl && (
+                  <div className="w-full max-w-3xl bg-background border p-1 rounded shadow-sm h-full flex flex-col">
+                    <div className="bg-muted px-3 py-1 text-xs border-b">
+                      Using plain text viewer (readable)
+                    </div>
+                    <iframe
+                      src={contentUrl}
+                      className="w-full flex-1 border-0 p-4 font-mono text-sm"
+                      title="Text Preview"
+                    ></iframe>
+                  </div>
+                )}
+              {!capabilities.includes('viewable') && (
+                <div className="text-muted-foreground mt-10">
+                  Artifact of type <strong>{details?.type_name}</strong> is not
+                  marked as viewable.
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent
+              value="embeddings"
+              className="flex-1 overflow-auto p-4 m-0 bg-muted/5"
+            >
+              <div className="flex flex-col gap-4">
+                {embeddings && embeddings.length > 0 ? (
+                  embeddings.map((emb, idx) => (
+                    <div
+                      key={emb.id || idx}
+                      className="border rounded-lg bg-background overflow-hidden p-3 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Microscope className="w-4 h-4 text-primary" />
+                          <span className="text-xs font-bold">
+                            {emb.model_name}
+                          </span>
+                        </div>
+                        <Badge variant="outline" className="text-[10px]">
+                          {emb.space}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="bg-muted/30 p-2 rounded flex flex-col">
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold">
+                            Dimensions
+                          </span>
+                          <span className="text-sm font-mono">
+                            {emb.vector_dim}
+                          </span>
+                        </div>
+                        <div className="bg-muted/30 p-2 rounded flex flex-col">
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold">
+                            Plugin
+                          </span>
+                          <span className="text-xs">
+                            {emb.plugin_name || 'core'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between px-1">
+                          <span className="text-[10px] text-muted-foreground font-bold">
+                            Vector Values (Preview)
+                          </span>
+                          <span className="text-[9px] text-muted-foreground opacity-50 font-mono italic">
+                            First 8 components shown
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {emb.vector_json.slice(0, 8).map((v, i) => (
+                            <div
+                              key={i}
+                              className="px-2 py-1 bg-secondary rounded font-mono text-[10px] border border-border/50"
+                            >
+                              {v.toFixed(4)}
+                            </div>
+                          ))}
+                          <div className="px-2 py-1 bg-secondary/30 rounded font-mono text-[10px] italic">
+                            ...
+                          </div>
+                        </div>
+                      </div>
+
+                      <Accordion type="single" collapsible className="mt-3">
+                        <AccordionItem value="full-json" className="border-0">
+                          <AccordionTrigger className="py-1 text-[10px] hover:no-underline">
+                            View Full Vector JSON
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <pre className="text-[9px] font-mono whitespace-pre-wrap bg-zinc-950 text-zinc-400 p-2 rounded max-h-[200px] overflow-auto">
+                              {JSON.stringify(emb.vector_json, null, 1)}
+                            </pre>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-muted-foreground opacity-50">
+                    <Hash className="w-10 h-10 mb-2" />
+                    <span className="text-sm">
+                      No embeddings found for this artifact
+                    </span>
+                    <span className="text-[10px]">
+                      Run generate-embeddings to create some
+                    </span>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent
+              value="annotations"
+              className="flex-1 overflow-auto p-4 m-0"
+            >
+              <div className="flex flex-col gap-3">
+                {annotations && annotations.length > 0 ? (
+                  annotations.map((ann, idx) => (
+                    <div key={idx} className="border rounded bg-muted/20 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="secondary" className="text-[10px]">
+                          {ann.annotation_type}
+                        </Badge>
+                        <span className="text-[9px] text-muted-foreground">
+                          {ann.plugin_name}
+                        </span>
+                      </div>
+                      <div className="text-xs font-serif italic text-foreground leading-relaxed">
+                        "{ann.text}"
+                      </div>
+                      {ann.confidence !== undefined && (
+                        <div className="mt-2 text-[9px] text-muted-foreground">
+                          Confidence: {(ann.confidence * 100).toFixed(1)}%
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-muted-foreground text-xs text-center py-20 italic">
+                    No annotations found
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent
+              value="relations"
+              className="flex-1 overflow-auto p-4 m-0"
+            >
+              <pre className="text-[10px] font-mono whitespace-pre-wrap">
+                {JSON.stringify(relations, null, 2)}
+              </pre>
+            </TabsContent>
+
+            <TabsContent
+              value="lineage"
+              className="flex-1 overflow-auto p-4 m-0"
+            >
+              <div className="grid grid-cols-2 gap-4 h-full">
+                <div className="border rounded p-2">
+                  <h4 className="text-xs font-semibold mb-2">Parents</h4>
+                  <pre className="text-[10px] font-mono whitespace-pre-wrap">
+                    {JSON.stringify(lineage?.parents, null, 2)}
+                  </pre>
+                </div>
+                <div className="border rounded p-2">
+                  <h4 className="text-xs font-semibold mb-2">Children</h4>
+                  <pre className="text-[10px] font-mono whitespace-pre-wrap">
+                    {JSON.stringify(lineage?.children, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        )}
+      </div>
+    </div>
+  )
+}

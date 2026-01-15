@@ -1,19 +1,30 @@
-import { BACKEND_URL } from '../config'
+import { BACKEND_URL, BACKEND_V2_URL } from '../config'
 import type { FolderInfo, LibraryStats, ScanResult } from '../types'
 
 export interface LibraryPath {
   id: number
   path: string
-  name: string | null
+  label: string
+  name: string
+  file_count: number
   image_count: number
 }
 
 export async function fetchLibraryPaths(): Promise<Array<LibraryPath>> {
-  const response = await fetch(`${BACKEND_URL}/workspace/paths`)
+  const response = await fetch(`${BACKEND_V2_URL}/collections/`)
   if (!response.ok) {
     throw new Error('Failed to fetch library paths')
   }
-  return response.json()
+  const data = await response.json()
+  // Map internal collection model to legacy library path model
+  return data.map((item: any) => ({
+    id: item.id,
+    path: item.uri,
+    label: item.label,
+    name: item.label,
+    file_count: item.file_count,
+    image_count: item.file_count,
+  }))
 }
 
 export const fetchLibraries = fetchLibraryPaths

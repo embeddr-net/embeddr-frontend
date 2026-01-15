@@ -12,7 +12,7 @@ import {
   useDeleteDataset,
 } from '@/hooks/useDatasets'
 
-import { CaptionSettingsDialog } from '@/components/dialogs/CaptionSettingsDialog'
+import { DatasetSettingsDialog } from '@/components/dialogs/DatasetSettingsDialog'
 import { CreateDatasetDialog } from '@/components/dialogs/CreateDatasetDialog'
 import { DatasetHeader } from '@/components/dataset/DatasetHeader'
 import { DatasetToolbar } from '@/components/dataset/DatasetToolbar'
@@ -41,7 +41,7 @@ function DatasetDetail({ dataset }: { dataset: Dataset }) {
 
   return (
     <div className="flex flex-col h-full  gap-1">
-      <CaptionSettingsDialog
+      <DatasetSettingsDialog
         dataset={dataset}
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}

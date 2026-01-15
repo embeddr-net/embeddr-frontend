@@ -16,6 +16,8 @@ import {
   Library,
   Server,
   Settings as SettingsIcon,
+  Plug,
+  Zap,
 } from 'lucide-react'
 import { Button } from '@embeddr/react-ui/components/button'
 import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
@@ -33,9 +35,11 @@ import { Label } from '@embeddr/react-ui/components/label'
 import { BACKEND_URL, fetchAvailableModels } from '@/lib/api'
 import { useSettings } from '@/hooks/useSettings'
 import { LibrarySettings } from '@/components/settings/LibrarySettings'
+import { AutoAnalysisSettings } from '@/components/settings/AutoAnalysisSettings'
 import { LogViewer } from '@/components/settings/LogViewer'
 import { SystemInfo } from '@/components/settings/SystemInfo'
 import { UploadSettings } from '@/components/settings/UploadSettings'
+import { PluginSettings } from '@/components/settings/PluginSettings'
 import { Route } from '@/routes/settings'
 import { cn } from '@/lib/utils'
 
@@ -135,6 +139,16 @@ const SettingsPage = () => {
       value: 'upload',
     },
     {
+      title: 'Plugins',
+      icon: <Plug className="h-4 w-4" />,
+      value: 'plugins',
+    },
+    {
+      title: 'Automation',
+      icon: <Zap className="h-4 w-4" />,
+      value: 'automation',
+    },
+    {
       title: 'System Info',
       icon: <Info className="h-4 w-4" />,
       value: 'info',
@@ -197,6 +211,10 @@ const SettingsPage = () => {
               {activeTab === 'general' && <GeneralSettings />}
               {activeTab === 'library' && <LibrarySettings />}
               {activeTab === 'upload' && <UploadSettings />}
+              {activeTab === 'plugins' && <PluginSettings />}
+              {activeTab === 'automation' && (
+                <AutoAnalysisSettings scope="global" />
+              )}
               {activeTab === 'info' && <SystemInfo />}
             </ScrollArea>
           </div>

@@ -14,7 +14,6 @@ import { toast } from 'sonner'
 import { WorkflowSelector } from '@/components/comfy/WorkflowSelector'
 import { NodeSelector } from '@/components/comfy/NodeSelector'
 import { useRunWorkflow, useWorkflow } from '@/hooks/useWorkflows'
-import { uploadImageFromPath } from '@/lib/api/endpoints/comfy'
 import { fetchLocalImage } from '@/lib/api/endpoints/images'
 
 interface WorkflowRunnerDialogProps {
@@ -30,13 +29,12 @@ interface WorkflowRunnerDialogProps {
 export function WorkflowRunnerDialog({
   open,
   onOpenChange,
-  imagePath,
   imageId,
   onSuccess,
   title = 'Generate Image Pair',
   description = 'Select a workflow to generate a pair for this image.',
 }: WorkflowRunnerDialogProps) {
-  const [workflowId, setWorkflowId] = useState<number | null>(null)
+  const [workflowId, setWorkflowId] = useState<string | number | null>(null)
   const [nodeId, setNodeId] = useState<string | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const runWorkflow = useRunWorkflow()
@@ -78,18 +76,12 @@ export function WorkflowRunnerDialog({
           },
         }
       } else {
-        // Default to uploading image
-        toast.info('Uploading image to ComfyUI...')
-        const uploadResult = await uploadImageFromPath(
-          imagePath,
-          undefined,
-          true,
+        // Legacy LoadImage support removed
+        toast.error(
+          'Workflow does not use Embeddr nodes. Please update workflow to use Embeddr Load Artifact.',
         )
-        inputs = {
-          [nodeId]: {
-            image: uploadResult.name,
-          },
-        }
+        setIsRunning(false)
+        return
       }
 
       // 2. Run workflow

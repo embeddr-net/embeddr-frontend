@@ -27,6 +27,8 @@ import { BACKEND_URL } from '@/lib/api'
 import { useSettings } from '@/hooks/useSettings'
 import { cn } from '@/lib/utils'
 
+import { ParentArtifactSelector } from './ParentArtifactSelector'
+
 interface UploadDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -57,19 +59,14 @@ export function UploadDialog({ open, onOpenChange, files }: UploadDialogProps) {
   const [prompt, setPrompt] = useState('')
   const [tags, setTags] = useState('')
   const [libraryId, setLibraryId] = useState<number | null>(null)
-  const [collectionId, setCollectionId] = useState<number | null>(null)
+  const [parentId, setParentId] = useState('')
   const [isUploading, setIsUploading] = useState(false)
-
-  const { data: collections } = useQuery({
-    queryKey: ['collections'],
-    queryFn: fetchCollections,
-  })
 
   useEffect(() => {
     if (open) {
       setTags(uploadConfig.default_tags || '')
       setLibraryId(uploadConfig.default_library_id)
-      setCollectionId(uploadConfig.default_collection_id)
+      setParentId('')
       setPrompt('')
 
       // Initialize file statuses
@@ -100,7 +97,8 @@ export function UploadDialog({ open, onOpenChange, files }: UploadDialogProps) {
       const formData = new FormData()
       formData.append('file', file)
 
-      const res = await fetch(`${BACKEND_URL}/images/check`, {
+      // Use explicit api/v1 prefix as BACKEND_URL is root
+      const res = await fetch(`${BACKEND_URL}/api/v1/images/check`, {
         method: 'POST',
         body: formData,
       })
@@ -182,6 +180,11 @@ export function UploadDialog({ open, onOpenChange, files }: UploadDialogProps) {
     })
   }
 
+  const handleRemoveDuplicates = () => {
+    setFileStatuses((prev) => prev.filter((s) => s.status !== 'duplicate'))
+    toast.info('Removed duplicate images from list')
+  }
+
   const handleUpload = async () => {
     setIsUploading(true)
     const filesToUpload = fileStatuses.filter(
@@ -203,20 +206,13 @@ export function UploadDialog({ open, onOpenChange, files }: UploadDialogProps) {
 
         if (status.status === 'duplicate' && status.existingImage) {
           // Update existing image metadata
-          // We need an endpoint for this, or use PATCH /images/{id}
-          // Assuming PATCH /images/{id} exists and accepts tags/collection
-          // If not, we might need to create it.
-          // Let's assume we just want to add to collection for now as that's a common use case
+          // For now, let's assume we just want to add to parent if provided
 
-          if (collectionId) {
-            await fetch(`${BACKEND_URL}/collections/${collectionId}/items`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ image_id: status.existingImage.id }),
-            })
+          if (parentId) {
+            // Use dedicated endpoint to add relation if image already exists?
+            // Or maybe we skip for now as user just wants upload logic
+            // Ideally: POST /api/v2/artifacts/{parentId}/relations { target_id: existing.id }
           }
-
-          // Also update tags if provided? (Need backend support for patching tags)
 
           setFileStatuses((prev) =>
             prev.map((s) =>
@@ -231,22 +227,15 @@ export function UploadDialog({ open, onOpenChange, files }: UploadDialogProps) {
         if (prompt) formData.append('prompt', prompt)
         if (tags) formData.append('tags', tags)
         if (libraryId) formData.append('library_id', libraryId.toString())
+        if (parentId) formData.append('parent_ids', parentId)
 
-        const res = await fetch(`${BACKEND_URL}/images/upload`, {
+        const res = await fetch(`${BACKEND_URL}/api/v1/images/upload`, {
           method: 'POST',
           body: formData,
         })
 
         if (!res.ok) throw new Error('Upload failed')
         const data = await res.json()
-
-        if (collectionId && data.id) {
-          await fetch(`${BACKEND_URL}/collections/${collectionId}/items`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image_id: data.id }),
-          })
-        }
 
         setFileStatuses((prev) =>
           prev.map((s) =>
@@ -352,25 +341,8 @@ export function UploadDialog({ open, onOpenChange, files }: UploadDialogProps) {
           {/* Right: Metadata Controls */}
           <div className="w-1/3 space-y-4">
             <div className="grid gap-2">
-              <Label>Collection</Label>
-              <Select
-                value={collectionId?.toString() || 'none'}
-                onValueChange={(val) =>
-                  setCollectionId(val === 'none' ? null : parseInt(val))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Collection" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {collections?.map((col) => (
-                    <SelectItem key={col.id} value={col.id.toString()}>
-                      {col.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="parentId">Parent Artifact (Album/Folder)</Label>
+              <ParentArtifactSelector value={parentId} onChange={setParentId} />
             </div>
 
             <div className="grid gap-2">
@@ -403,6 +375,16 @@ export function UploadDialog({ open, onOpenChange, files }: UploadDialogProps) {
                 Unique images:{' '}
                 {fileStatuses.filter((s) => s.status === 'unique').length}
               </p>
+              {fileStatuses.some((s) => s.status === 'duplicate') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 text-red-500 hover:text-red-600 hover:bg-red-50 p-0 h-auto font-normal"
+                  onClick={handleRemoveDuplicates}
+                >
+                  <X className="w-3 h-3 mr-1" /> Remove Duplicates
+                </Button>
+              )}
             </div>
           </div>
         </div>
