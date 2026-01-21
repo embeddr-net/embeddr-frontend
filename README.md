@@ -2,7 +2,7 @@
 
 <img height="120" src="https://embeddr.net/embeddr_logo_transparent.png">
 
-<h1>Embeddr Frontend </h1>
+<h1> Zen UI </h1>
 </div>
 
 > [!WARNING]
