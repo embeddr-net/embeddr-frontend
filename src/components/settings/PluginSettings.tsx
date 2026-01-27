@@ -27,7 +27,14 @@ interface PluginConfigResponse {
   schema: Record<string, ConfigItem>
 }
 
-function PluginConfigCard({ pluginId }: { pluginId: string }) {
+// Export for reuse
+export function PluginConfigCard({
+  pluginId,
+  showHeader = true,
+}: {
+  pluginId: string
+  showHeader?: boolean
+}) {
   const queryClient = useQueryClient()
   const { data, isLoading, error } = useQuery<PluginConfigResponse>({
     queryKey: ['plugin-config', pluginId],
@@ -78,36 +85,38 @@ function PluginConfigCard({ pluginId }: { pluginId: string }) {
   }
 
   return (
-    <Card className="my-2">
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center justify-between">
-          <span>{pluginId}</span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setLocalConfig(data.config)}
-              disabled={
-                JSON.stringify(localConfig) === JSON.stringify(data.config)
-              }
-            >
-              <RefreshCcw className="h-3 w-3 mr-1" /> Reset
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => mutation.mutate(localConfig)}
-              disabled={
-                mutation.isPending ||
-                JSON.stringify(localConfig) === JSON.stringify(data.config)
-              }
-            >
-              <Save className="h-3 w-3 mr-1" /> Save
-            </Button>
-          </div>
-        </CardTitle>
-        <CardDescription>Configure {pluginId} settings</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Card className={showHeader ? 'my-2' : 'border-0 shadow-none my-0'}>
+      {showHeader && (
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center justify-between">
+            <span>{pluginId}</span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLocalConfig(data.config)}
+                disabled={
+                  JSON.stringify(localConfig) === JSON.stringify(data.config)
+                }
+              >
+                <RefreshCcw className="h-3 w-3 mr-1" /> Reset
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => mutation.mutate(localConfig)}
+                disabled={
+                  mutation.isPending ||
+                  JSON.stringify(localConfig) === JSON.stringify(data.config)
+                }
+              >
+                <Save className="h-3 w-3 mr-1" /> Save
+              </Button>
+            </div>
+          </CardTitle>
+          <CardDescription>Configure {pluginId} settings</CardDescription>
+        </CardHeader>
+      )}
+      <CardContent className={showHeader ? 'space-y-4' : 'p-0 space-y-4'}>
         {Object.entries(data.schema).map(([key, item]) => (
           <div
             key={key}
@@ -139,6 +148,31 @@ function PluginConfigCard({ pluginId }: { pluginId: string }) {
             </div>
           </div>
         ))}
+
+        {!showHeader && (
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setLocalConfig(data.config)}
+              disabled={
+                JSON.stringify(localConfig) === JSON.stringify(data.config)
+              }
+            >
+              <RefreshCcw className="h-3 w-3 mr-1" /> Reset
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => mutation.mutate(localConfig)}
+              disabled={
+                mutation.isPending ||
+                JSON.stringify(localConfig) === JSON.stringify(data.config)
+              }
+            >
+              <Save className="h-3 w-3 mr-1" /> Save
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

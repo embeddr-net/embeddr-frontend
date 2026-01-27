@@ -35,7 +35,7 @@ import {
 } from '@/hooks/useCaptioning'
 import { useUpdateDataset } from '@/hooks/useDatasets'
 import { cn } from '@/lib/utils'
-import { AutoAnalysisSettings } from '@/components/settings/AutoAnalysisSettings'
+import { IngestionWorkflowEditor } from '@/components/settings/IngestionWorkflowEditor'
 
 function CaptionSettingsForm({
   dataset,
@@ -316,7 +316,7 @@ export function DatasetSettingsDialog({
 
           <div className="flex-1 overflow-y-auto p-6">
             <TabsContent value="automation" className="mt-0 h-full">
-              <AutoAnalysisSettings
+              <IngestionWorkflowEditor
                 scope="collection"
                 scopeId={String(dataset.id)}
               />

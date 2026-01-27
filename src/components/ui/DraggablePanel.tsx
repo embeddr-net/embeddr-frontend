@@ -9,6 +9,7 @@ import { Button } from '@embeddr/react-ui/components/button'
 interface DraggablePanelProps {
   id: string
   title: string
+  titleIcon?: React.ReactNode
   children:
     | React.ReactNode
     | ((props: { showTitle: boolean; isActive: boolean }) => React.ReactNode)
@@ -24,6 +25,19 @@ interface DraggablePanelProps {
   onMinimize?: () => void
   zIndex?: number
   additionalSettingsItems?: React.ReactNode
+  pinned?: boolean
+  onPinChange?: () => void
+  isActive?: boolean
+  position?: { x: number; y: number }
+  size?: { width: number; height: number }
+  onPositionChange?: (pos: { x: number; y: number }) => void
+  onSizeChange?: (size: { width: number; height: number }) => void
+  onDragEnd?: () => void
+  onResizeEnd?: () => void
+  onMouseDown?: (event: React.MouseEvent) => void
+  showTitle?: boolean
+  onShowTitleChange?: (showTitle: boolean) => void
+  context?: { artifactId?: string | number; imageUrl?: string }
 }
 
 interface PanelState {
@@ -39,6 +53,7 @@ interface PanelState {
 export function DraggablePanel({
   id,
   title,
+  titleIcon,
   children,
   isOpen,
   onClose,
@@ -52,34 +67,46 @@ export function DraggablePanel({
   onMinimize,
   additionalSettingsItems,
   zIndex: propZIndex,
+  pinned,
+  onPinChange,
+  isActive: isActiveProp,
 }: DraggablePanelProps) {
-  const {
-    bringToFront,
-    panelOrder,
-    windows,
-    updateWindow,
-    togglePin,
-    setBackdrop,
-    backdropWindowId,
-  } = useWindowStore()
+  const bringToFront = useWindowStore((s) => s.bringToFront)
+  const updateWindow = useWindowStore((s) => s.updateWindow)
+  const togglePin = useWindowStore((s) => s.togglePin)
+  const setBackdrop = useWindowStore((s) => s.setBackdrop)
+  const { panelOrder, backdropWindowId } = useWindowStore()
+
+  // Explicitly select only this window's state to prevent re-renders when other windows update
+  const windowState = useWindowStore((s) => s.windows[id])
+  const isPinned = pinned ?? windowState?.isPinned ?? false
+
+  // Efficient selections for derived state
+  const isActive =
+    isActiveProp ??
+    useWindowStore((s) => s.panelOrder[s.panelOrder.length - 1] === id)
+  const isBackdrop = useWindowStore((s) => s.backdropWindowId === id)
 
   const logger = useRef(createLogger(`DraggablePanel:${id}`)).current
 
-  const windowState = windows[id]
-  const isPinned = windowState?.isPinned ?? false
-  const isActive = panelOrder[panelOrder.length - 1] === id
-  const isBackdrop = backdropWindowId === id
-
   // Default internal state for anchoring logic
-  const defaultState: PanelState = {
-    anchorX: 'left',
-    anchorY: 'top',
-    offsetX: defaultPosition.x,
-    offsetY: defaultPosition.y,
-    width: defaultSize.width,
-    height: defaultSize.height,
-    showTitle: true,
-  }
+  const defaultState: PanelState = React.useMemo(
+    () => ({
+      anchorX: 'left',
+      anchorY: 'top',
+      offsetX: defaultPosition.x,
+      offsetY: defaultPosition.y,
+      width: defaultSize.width,
+      height: defaultSize.height,
+      showTitle: true,
+    }),
+    [
+      defaultPosition.x,
+      defaultPosition.y,
+      defaultSize.width,
+      defaultSize.height,
+    ],
+  )
 
   const [state, setState] = useLocalStorage<PanelState>(
     `panel-state-${id}`,
@@ -401,6 +428,7 @@ export function DraggablePanel({
     <LibDraggablePanel
       id={id}
       title={title}
+      titleIcon={titleIcon}
       isOpen={isOpen}
       onClose={onClose}
       position={position}
@@ -417,7 +445,7 @@ export function DraggablePanel({
       minWidth={minWidth}
       minHeight={minHeight}
       pinned={isPinned}
-      onPinChange={() => togglePin(id)}
+      onPinChange={onPinChange || (() => togglePin(id))}
       onDragEnd={handleInteractionEnd}
       onResizeEnd={handleInteractionEnd}
       zIndex={zIndex}

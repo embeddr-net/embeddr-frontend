@@ -9,27 +9,35 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as Workflows_v2RouteImport } from './routes/workflows_v2'
+import { Route as WorkflowsRouteImport } from './routes/workflows'
 import { Route as UmapRouteImport } from './routes/umap'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as ResourcesRouteImport } from './routes/resources'
+import { Route as PipelinesRouteImport } from './routes/pipelines'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as LotusPlaygroundRouteImport } from './routes/lotus-playground'
+import { Route as LotusRouteImport } from './routes/lotus'
 import { Route as LineageRouteImport } from './routes/lineage'
 import { Route as HelpRouteImport } from './routes/help'
+import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as DebugRouteImport } from './routes/debug'
 import { Route as DatasetsRouteImport } from './routes/datasets'
 import { Route as ComfyRouteImport } from './routes/comfy'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PipelinesIndexRouteImport } from './routes/pipelines.index'
 import { Route as ActionsIndexRouteImport } from './routes/actions.index'
 import { Route as PluginsActionsRouteImport } from './routes/plugins.actions'
 import { Route as PluginsPluginIdRouteImport } from './routes/plugins.$pluginId'
+import { Route as PipelinesPipelineIdRouteImport } from './routes/pipelines.$pipelineId'
 import { Route as ImagesImageIdRouteImport } from './routes/images.$imageId'
 import { Route as ActionsActionIdRouteImport } from './routes/actions.$actionId'
+import { Route as PluginsPluginIdPageIdRouteImport } from './routes/plugins.$pluginId.$pageId'
 
-const Workflows_v2Route = Workflows_v2RouteImport.update({
-  id: '/workflows_v2',
-  path: '/workflows_v2',
+const WorkflowsRoute = WorkflowsRouteImport.update({
+  id: '/workflows',
+  path: '/workflows',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UmapRoute = UmapRouteImport.update({
@@ -52,6 +60,26 @@ const ResourcesRoute = ResourcesRouteImport.update({
   path: '/resources',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PipelinesRoute = PipelinesRouteImport.update({
+  id: '/pipelines',
+  path: '/pipelines',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LotusPlaygroundRoute = LotusPlaygroundRouteImport.update({
+  id: '/lotus-playground',
+  path: '/lotus-playground',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LotusRoute = LotusRouteImport.update({
+  id: '/lotus',
+  path: '/lotus',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LineageRoute = LineageRouteImport.update({
   id: '/lineage',
   path: '/lineage',
@@ -60,6 +88,11 @@ const LineageRoute = LineageRouteImport.update({
 const HelpRoute = HelpRouteImport.update({
   id: '/help',
   path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsRoute = DocsRouteImport.update({
@@ -87,6 +120,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PipelinesIndexRoute = PipelinesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PipelinesRoute,
+} as any)
 const ActionsIndexRoute = ActionsIndexRouteImport.update({
   id: '/actions/',
   path: '/actions/',
@@ -102,6 +140,11 @@ const PluginsPluginIdRoute = PluginsPluginIdRouteImport.update({
   path: '/plugins/$pluginId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PipelinesPipelineIdRoute = PipelinesPipelineIdRouteImport.update({
+  id: '/$pipelineId',
+  path: '/$pipelineId',
+  getParentRoute: () => PipelinesRoute,
+} as any)
 const ImagesImageIdRoute = ImagesImageIdRouteImport.update({
   id: '/images/$imageId',
   path: '/images/$imageId',
@@ -112,6 +155,11 @@ const ActionsActionIdRoute = ActionsActionIdRouteImport.update({
   path: '/actions/$actionId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PluginsPluginIdPageIdRoute = PluginsPluginIdPageIdRouteImport.update({
+  id: '/$pageId',
+  path: '/$pageId',
+  getParentRoute: () => PluginsPluginIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -119,18 +167,26 @@ export interface FileRoutesByFullPath {
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
+  '/features': typeof FeaturesRoute
   '/help': typeof HelpRoute
   '/lineage': typeof LineageRoute
+  '/lotus': typeof LotusRoute
+  '/lotus-playground': typeof LotusPlaygroundRoute
+  '/onboarding': typeof OnboardingRoute
+  '/pipelines': typeof PipelinesRouteWithChildren
   '/resources': typeof ResourcesRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/umap': typeof UmapRoute
-  '/workflows_v2': typeof Workflows_v2Route
+  '/workflows': typeof WorkflowsRoute
   '/actions/$actionId': typeof ActionsActionIdRoute
   '/images/$imageId': typeof ImagesImageIdRoute
-  '/plugins/$pluginId': typeof PluginsPluginIdRoute
+  '/pipelines/$pipelineId': typeof PipelinesPipelineIdRoute
+  '/plugins/$pluginId': typeof PluginsPluginIdRouteWithChildren
   '/plugins/actions': typeof PluginsActionsRoute
   '/actions': typeof ActionsIndexRoute
+  '/pipelines/': typeof PipelinesIndexRoute
+  '/plugins/$pluginId/$pageId': typeof PluginsPluginIdPageIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -138,18 +194,25 @@ export interface FileRoutesByTo {
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
+  '/features': typeof FeaturesRoute
   '/help': typeof HelpRoute
   '/lineage': typeof LineageRoute
+  '/lotus': typeof LotusRoute
+  '/lotus-playground': typeof LotusPlaygroundRoute
+  '/onboarding': typeof OnboardingRoute
   '/resources': typeof ResourcesRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/umap': typeof UmapRoute
-  '/workflows_v2': typeof Workflows_v2Route
+  '/workflows': typeof WorkflowsRoute
   '/actions/$actionId': typeof ActionsActionIdRoute
   '/images/$imageId': typeof ImagesImageIdRoute
-  '/plugins/$pluginId': typeof PluginsPluginIdRoute
+  '/pipelines/$pipelineId': typeof PipelinesPipelineIdRoute
+  '/plugins/$pluginId': typeof PluginsPluginIdRouteWithChildren
   '/plugins/actions': typeof PluginsActionsRoute
   '/actions': typeof ActionsIndexRoute
+  '/pipelines': typeof PipelinesIndexRoute
+  '/plugins/$pluginId/$pageId': typeof PluginsPluginIdPageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -158,18 +221,26 @@ export interface FileRoutesById {
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
+  '/features': typeof FeaturesRoute
   '/help': typeof HelpRoute
   '/lineage': typeof LineageRoute
+  '/lotus': typeof LotusRoute
+  '/lotus-playground': typeof LotusPlaygroundRoute
+  '/onboarding': typeof OnboardingRoute
+  '/pipelines': typeof PipelinesRouteWithChildren
   '/resources': typeof ResourcesRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/umap': typeof UmapRoute
-  '/workflows_v2': typeof Workflows_v2Route
+  '/workflows': typeof WorkflowsRoute
   '/actions/$actionId': typeof ActionsActionIdRoute
   '/images/$imageId': typeof ImagesImageIdRoute
-  '/plugins/$pluginId': typeof PluginsPluginIdRoute
+  '/pipelines/$pipelineId': typeof PipelinesPipelineIdRoute
+  '/plugins/$pluginId': typeof PluginsPluginIdRouteWithChildren
   '/plugins/actions': typeof PluginsActionsRoute
   '/actions/': typeof ActionsIndexRoute
+  '/pipelines/': typeof PipelinesIndexRoute
+  '/plugins/$pluginId/$pageId': typeof PluginsPluginIdPageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -179,18 +250,26 @@ export interface FileRouteTypes {
     | '/datasets'
     | '/debug'
     | '/docs'
+    | '/features'
     | '/help'
     | '/lineage'
+    | '/lotus'
+    | '/lotus-playground'
+    | '/onboarding'
+    | '/pipelines'
     | '/resources'
     | '/search'
     | '/settings'
     | '/umap'
-    | '/workflows_v2'
+    | '/workflows'
     | '/actions/$actionId'
     | '/images/$imageId'
+    | '/pipelines/$pipelineId'
     | '/plugins/$pluginId'
     | '/plugins/actions'
     | '/actions'
+    | '/pipelines/'
+    | '/plugins/$pluginId/$pageId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -198,18 +277,25 @@ export interface FileRouteTypes {
     | '/datasets'
     | '/debug'
     | '/docs'
+    | '/features'
     | '/help'
     | '/lineage'
+    | '/lotus'
+    | '/lotus-playground'
+    | '/onboarding'
     | '/resources'
     | '/search'
     | '/settings'
     | '/umap'
-    | '/workflows_v2'
+    | '/workflows'
     | '/actions/$actionId'
     | '/images/$imageId'
+    | '/pipelines/$pipelineId'
     | '/plugins/$pluginId'
     | '/plugins/actions'
     | '/actions'
+    | '/pipelines'
+    | '/plugins/$pluginId/$pageId'
   id:
     | '__root__'
     | '/'
@@ -217,18 +303,26 @@ export interface FileRouteTypes {
     | '/datasets'
     | '/debug'
     | '/docs'
+    | '/features'
     | '/help'
     | '/lineage'
+    | '/lotus'
+    | '/lotus-playground'
+    | '/onboarding'
+    | '/pipelines'
     | '/resources'
     | '/search'
     | '/settings'
     | '/umap'
-    | '/workflows_v2'
+    | '/workflows'
     | '/actions/$actionId'
     | '/images/$imageId'
+    | '/pipelines/$pipelineId'
     | '/plugins/$pluginId'
     | '/plugins/actions'
     | '/actions/'
+    | '/pipelines/'
+    | '/plugins/$pluginId/$pageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -237,27 +331,32 @@ export interface RootRouteChildren {
   DatasetsRoute: typeof DatasetsRoute
   DebugRoute: typeof DebugRoute
   DocsRoute: typeof DocsRoute
+  FeaturesRoute: typeof FeaturesRoute
   HelpRoute: typeof HelpRoute
   LineageRoute: typeof LineageRoute
+  LotusRoute: typeof LotusRoute
+  LotusPlaygroundRoute: typeof LotusPlaygroundRoute
+  OnboardingRoute: typeof OnboardingRoute
+  PipelinesRoute: typeof PipelinesRouteWithChildren
   ResourcesRoute: typeof ResourcesRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   UmapRoute: typeof UmapRoute
-  Workflows_v2Route: typeof Workflows_v2Route
+  WorkflowsRoute: typeof WorkflowsRoute
   ActionsActionIdRoute: typeof ActionsActionIdRoute
   ImagesImageIdRoute: typeof ImagesImageIdRoute
-  PluginsPluginIdRoute: typeof PluginsPluginIdRoute
+  PluginsPluginIdRoute: typeof PluginsPluginIdRouteWithChildren
   PluginsActionsRoute: typeof PluginsActionsRoute
   ActionsIndexRoute: typeof ActionsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/workflows_v2': {
-      id: '/workflows_v2'
-      path: '/workflows_v2'
-      fullPath: '/workflows_v2'
-      preLoaderRoute: typeof Workflows_v2RouteImport
+    '/workflows': {
+      id: '/workflows'
+      path: '/workflows'
+      fullPath: '/workflows'
+      preLoaderRoute: typeof WorkflowsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/umap': {
@@ -288,6 +387,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pipelines': {
+      id: '/pipelines'
+      path: '/pipelines'
+      fullPath: '/pipelines'
+      preLoaderRoute: typeof PipelinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lotus-playground': {
+      id: '/lotus-playground'
+      path: '/lotus-playground'
+      fullPath: '/lotus-playground'
+      preLoaderRoute: typeof LotusPlaygroundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lotus': {
+      id: '/lotus'
+      path: '/lotus'
+      fullPath: '/lotus'
+      preLoaderRoute: typeof LotusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lineage': {
       id: '/lineage'
       path: '/lineage'
@@ -300,6 +427,13 @@ declare module '@tanstack/react-router' {
       path: '/help'
       fullPath: '/help'
       preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs': {
@@ -337,6 +471,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pipelines/': {
+      id: '/pipelines/'
+      path: '/'
+      fullPath: '/pipelines/'
+      preLoaderRoute: typeof PipelinesIndexRouteImport
+      parentRoute: typeof PipelinesRoute
+    }
     '/actions/': {
       id: '/actions/'
       path: '/actions'
@@ -358,6 +499,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PluginsPluginIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pipelines/$pipelineId': {
+      id: '/pipelines/$pipelineId'
+      path: '/$pipelineId'
+      fullPath: '/pipelines/$pipelineId'
+      preLoaderRoute: typeof PipelinesPipelineIdRouteImport
+      parentRoute: typeof PipelinesRoute
+    }
     '/images/$imageId': {
       id: '/images/$imageId'
       path: '/images/$imageId'
@@ -372,8 +520,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActionsActionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/plugins/$pluginId/$pageId': {
+      id: '/plugins/$pluginId/$pageId'
+      path: '/$pageId'
+      fullPath: '/plugins/$pluginId/$pageId'
+      preLoaderRoute: typeof PluginsPluginIdPageIdRouteImport
+      parentRoute: typeof PluginsPluginIdRoute
+    }
   }
 }
+
+interface PipelinesRouteChildren {
+  PipelinesPipelineIdRoute: typeof PipelinesPipelineIdRoute
+  PipelinesIndexRoute: typeof PipelinesIndexRoute
+}
+
+const PipelinesRouteChildren: PipelinesRouteChildren = {
+  PipelinesPipelineIdRoute: PipelinesPipelineIdRoute,
+  PipelinesIndexRoute: PipelinesIndexRoute,
+}
+
+const PipelinesRouteWithChildren = PipelinesRoute._addFileChildren(
+  PipelinesRouteChildren,
+)
+
+interface PluginsPluginIdRouteChildren {
+  PluginsPluginIdPageIdRoute: typeof PluginsPluginIdPageIdRoute
+}
+
+const PluginsPluginIdRouteChildren: PluginsPluginIdRouteChildren = {
+  PluginsPluginIdPageIdRoute: PluginsPluginIdPageIdRoute,
+}
+
+const PluginsPluginIdRouteWithChildren = PluginsPluginIdRoute._addFileChildren(
+  PluginsPluginIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -381,16 +562,21 @@ const rootRouteChildren: RootRouteChildren = {
   DatasetsRoute: DatasetsRoute,
   DebugRoute: DebugRoute,
   DocsRoute: DocsRoute,
+  FeaturesRoute: FeaturesRoute,
   HelpRoute: HelpRoute,
   LineageRoute: LineageRoute,
+  LotusRoute: LotusRoute,
+  LotusPlaygroundRoute: LotusPlaygroundRoute,
+  OnboardingRoute: OnboardingRoute,
+  PipelinesRoute: PipelinesRouteWithChildren,
   ResourcesRoute: ResourcesRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   UmapRoute: UmapRoute,
-  Workflows_v2Route: Workflows_v2Route,
+  WorkflowsRoute: WorkflowsRoute,
   ActionsActionIdRoute: ActionsActionIdRoute,
   ImagesImageIdRoute: ImagesImageIdRoute,
-  PluginsPluginIdRoute: PluginsPluginIdRoute,
+  PluginsPluginIdRoute: PluginsPluginIdRouteWithChildren,
   PluginsActionsRoute: PluginsActionsRoute,
   ActionsIndexRoute: ActionsIndexRoute,
 }

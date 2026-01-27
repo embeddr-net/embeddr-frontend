@@ -1,0 +1,1008 @@
+// src/features/lotus/LotusFinder.tsx
+import React from 'react'
+import { Dialog, DialogContent } from '@embeddr/react-ui/components/dialog'
+import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import { useNavigate } from '@tanstack/react-router'
+import { embeddrApi } from '@/lib/api/client'
+import { usePluginStore } from '@/plugins/store'
+import { useEmbeddrAPI } from '@/plugins/store'
+import { useLotus } from '@/providers/LotusProvider'
+import { useSettingsStore } from '@/store/settingsStore'
+import type { LotusResultItem } from './types'
+import { LotusSearchBar } from './LotusSearchBar'
+import { LotusPreviewPane } from './LotusPreviewPane'
+import { LotusResultsList } from './LotusResultsList'
+
+type LotusQueryResponse = { query: string; results: LotusResultItem[] }
+
+type SearchDefaults = {
+  text_provider?: string
+  similar_provider?: string
+}
+
+type FinderDefaults = {
+  enable_search?: boolean
+  shebangs?: Record<string, string | { provider: string; kind?: string }>
+}
+
+type ParsedFinderQuery = {
+  raw: string
+  text: string
+  shebang: string | null
+  shebangArgs: string
+  tags: Array<{ key: string; value?: string }>
+}
+
+function norm(s: string) {
+  return (s || '').toLowerCase().trim()
+}
+
+function localScore(q: string, title: string, subtitle?: string) {
+  const qq = norm(q)
+  if (!qq) return 0
+  const t = norm(title)
+  const st = norm(subtitle || '')
+  if (t === qq) return 100
+  if (t.startsWith(qq)) return 80
+  if (t.includes(qq)) return 55
+  if (st.includes(qq)) return 35
+  return 0
+}
+
+function mergeDedup(a: LotusResultItem[], b: LotusResultItem[]) {
+  const map = new Map<string, LotusResultItem>()
+  for (const it of [...a, ...b]) {
+    const prev = map.get(it.id)
+    if (!prev) map.set(it.id, it)
+    else if ((it.score ?? 0) > (prev.score ?? 0)) map.set(it.id, it)
+  }
+  return Array.from(map.values())
+}
+
+const SHEBANG_PROVIDERS: Record<string, { provider: string; kind?: string }> = {
+  stash: { provider: 'nynxz-stash.search', kind: 'scenes' },
+  arxiv: { provider: 'nynxz-arxiv.search' },
+  openverse: { provider: 'nynxz-openverse.search' },
+  stocks: { provider: 'embeddr-stocks.search' },
+}
+
+function parseFinderQuery(raw: string): ParsedFinderQuery {
+  const trimmed = raw.trim()
+  let shebang: string | null = null
+  let shebangArgs = ''
+  let rest = trimmed
+
+  if (trimmed.startsWith('!')) {
+    const match = /^!([^\s]+)\s*(.*)$/.exec(trimmed)
+    if (match) {
+      shebang = match[1].toLowerCase()
+      shebangArgs = match[2] || ''
+      rest = shebangArgs
+    }
+  }
+
+  const tags: Array<{ key: string; value?: string }> = []
+  const tokens = rest.split(/\s+/).filter(Boolean)
+  const remaining: string[] = []
+
+  for (const token of tokens) {
+    if (token.startsWith('@') && token.length > 1) {
+      const tag = token.slice(1)
+      const parts = tag.split(/[:=]/, 2)
+      const key = (parts[0] || '').trim().toLowerCase()
+      const value = (parts[1] || '').trim()
+      if (key) tags.push({ key, value: value || undefined })
+    } else {
+      remaining.push(token)
+    }
+  }
+
+  return {
+    raw,
+    text: remaining.join(' ').trim(),
+    shebang,
+    shebangArgs,
+    tags,
+  }
+}
+
+interface LotusFinderProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
+  const navigate = useNavigate()
+  const { setSettingsOpen } = useLotus()
+  const setWidgetConfig = useSettingsStore((s) => s.setWidgetConfig)
+  const api = useEmbeddrAPI()
+  const plugins = usePluginStore((s) => s.plugins)
+  const activePlugins = usePluginStore((s) => s.activePlugins)
+
+  const apiRef = React.useRef(api)
+  React.useEffect(() => {
+    apiRef.current = api
+  }, [api])
+
+  const [query, setQuery] = React.useState('')
+  const [items, setItems] = React.useState<LotusResultItem[]>([])
+  const [selectedId, setSelectedId] = React.useState<string | null>(null)
+  const [loading, setLoading] = React.useState(false)
+  const [defaults, setDefaults] = React.useState<SearchDefaults>({
+    text_provider: 'search.text',
+    similar_provider: 'search.similar',
+  })
+  const [finderDefaults, setFinderDefaults] = React.useState<FinderDefaults>({
+    enable_search: true,
+    shebangs: {},
+  })
+  const [resolvedResource, setResolvedResource] = React.useState<Record<
+    string,
+    any
+  > | null>(null)
+
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
+  const rawSelectedIndex = React.useMemo(() => {
+    if (!items.length) return -1
+    if (!selectedId) return -1
+    return items.findIndex((x) => x.id === selectedId)
+  }, [items, selectedId])
+
+  const selectedIndex = rawSelectedIndex === -1 ? 0 : rawSelectedIndex
+
+  const selectedItem = React.useMemo(
+    () => items.find((x) => x.id === selectedId) ?? null,
+    [items, selectedId],
+  )
+
+  const resolvedSelectedItem = React.useMemo(() => {
+    if (!selectedItem || selectedItem.kind !== 'resource' || !resolvedResource)
+      return selectedItem
+    return {
+      ...selectedItem,
+      title: resolvedResource.title || selectedItem.title,
+      description: resolvedResource.description || selectedItem.description,
+      data: {
+        ...selectedItem.data,
+        preview_url:
+          resolvedResource.preview_url || selectedItem.data?.preview_url,
+        resource: {
+          ...(selectedItem.data?.resource || {}),
+          ...resolvedResource,
+        },
+      },
+    } satisfies LotusResultItem
+  }, [selectedItem, resolvedResource])
+
+  const parsedQuery = React.useMemo(() => parseFinderQuery(query), [query])
+
+  const focusInput = React.useCallback(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  React.useEffect(() => {
+    let alive = true
+    const run = async () => {
+      if (!selectedItem || selectedItem.kind !== 'resource') {
+        if (alive) setResolvedResource(null)
+        return
+      }
+
+      const resource = selectedItem.data?.resource || {}
+      const url = resource?.content_url || resource?.url
+      if (!url || !apiRef.current.resources?.resolve) {
+        if (alive) setResolvedResource(null)
+        return
+      }
+
+      try {
+        const out = await apiRef.current.resources.resolve({
+          url,
+          hintType: resource?.type,
+        })
+        if (alive) setResolvedResource(out ?? null)
+      } catch {
+        if (alive) setResolvedResource(null)
+      }
+    }
+
+    run()
+    return () => {
+      alive = false
+    }
+  }, [selectedItem])
+
+  // Build local commands (panels/actions) from active plugin defs
+  const localItems = React.useMemo<LotusResultItem[]>(() => {
+    const out: LotusResultItem[] = [
+      {
+        id: 'system:settings',
+        kind: 'action',
+        source: 'local',
+        title: 'Open Settings',
+        subtitle: 'System',
+        description: 'Open the settings dialog (Ctrl+,)',
+        data: { systemAction: 'open_settings' },
+      },
+      {
+        id: 'system:layout_reset',
+        kind: 'action',
+        source: 'local',
+        title: 'Reset Widget Layout',
+        subtitle: 'System',
+        description: 'Restores default command bar widgets',
+        data: { systemAction: 'reset_layout' },
+      },
+    ]
+
+    for (const pid of activePlugins) {
+      const p = plugins[pid]
+      if (!p) continue
+
+      for (const c of p.components || []) {
+        const componentDef = c as {
+          id: string
+          label?: string
+          description?: string
+          props?: Record<string, any>
+        }
+        const componentId = `${pid}-${componentDef.id}`
+        out.push({
+          id: `panel:${componentId}`,
+          kind: 'panel',
+          source: 'local',
+          title: componentDef.label || componentDef.id,
+          subtitle: `${p.name || pid} • panel`,
+          description:
+            componentDef.description ||
+            `Open ${componentDef.label || componentDef.id}`,
+          data: {
+            pluginId: pid,
+            componentId,
+            props: componentDef.props || {},
+            icon: (componentDef as any).icon,
+          },
+        })
+      }
+
+      for (const a of p.actions || []) {
+        const actionDef = a as {
+          id: string
+          label?: string
+          description?: string
+          payload?: any
+        }
+        out.push({
+          id: `action:${pid}:${actionDef.id}`,
+          kind: 'action',
+          source: 'local',
+          title: actionDef.label || actionDef.id,
+          subtitle: `${p.name || pid} • action`,
+          description:
+            actionDef.description || `Run ${actionDef.label || actionDef.id}`,
+          data: {
+            pluginId: pid,
+            action: actionDef.id,
+            payload: actionDef.payload,
+            icon: (actionDef as any).icon,
+          },
+        })
+      }
+    }
+
+    return out
+  }, [plugins, activePlugins])
+
+  // Local search (instant)
+  const filteredLocal = React.useMemo(() => {
+    const q = parsedQuery.text
+    if (!norm(q))
+      return localItems.slice(0, 40).map((x) => ({ ...x, score: 0 }))
+    const scored = localItems
+      .map((x) => ({ ...x, score: localScore(q, x.title, x.subtitle) }))
+      .filter((x) => (x.score ?? 0) > 0)
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    return scored.slice(0, 40)
+  }, [localItems, parsedQuery.text])
+
+  const loadDefaults = React.useCallback(async () => {
+    try {
+      const out = await apiRef.current.lotus.invoke('embeddr-core.config.get', {
+        plugin_name: 'embeddr-core',
+        scope: 'global',
+        scope_id: null,
+        include_capability: false,
+      })
+      setDefaults(out?.value || {})
+    } catch {
+      setDefaults({})
+    }
+    try {
+      const finderOut = await apiRef.current.lotus.invoke(
+        'embeddr-core.config.get',
+        {
+          plugin_name: 'embeddr-core',
+          config_id: 'embeddr-core.finder.config',
+          scope: 'global',
+          scope_id: null,
+          include_capability: false,
+        },
+      )
+      setFinderDefaults(finderOut?.value || {})
+    } catch {
+      setFinderDefaults({ enable_search: true, shebangs: {} })
+    }
+  }, [])
+
+  const buildArtifactItems = React.useCallback(
+    (
+      artifacts: Array<any>,
+      scores: Map<string, number>,
+      source: 'local' | 'server' = 'server',
+    ) => {
+      return artifacts.map((artifact) => {
+        const previewUrl = artifact?.id
+          ? embeddrApi.artifacts.getPreviewUrl(String(artifact.id), 'thumbnail')
+          : undefined
+        const title =
+          artifact?.metadata_json?.title ||
+          artifact?.metadata_json?.name ||
+          artifact?.uri ||
+          artifact?.id
+        const description =
+          artifact?.metadata_json?.description || artifact?.uri
+        return {
+          id: artifact?.id,
+          kind: 'artifact',
+          source,
+          title: title || artifact?.id,
+          subtitle: artifact?.type_name || artifact?.base_type_name,
+          description,
+          score: scores.get(String(artifact?.id)),
+          data: {
+            artifact_id: artifact?.id,
+            preview_url: previewUrl,
+          },
+        } satisfies LotusResultItem
+      })
+    },
+    [],
+  )
+
+  const buildResourceItem = React.useCallback(
+    (input: {
+      id: string
+      title: string
+      subtitle?: string
+      description?: string
+      contentUrl?: string
+      previewUrl?: string
+      type?: string
+      source?: 'local' | 'server'
+    }) => {
+      const contentUrl = input.contentUrl || input.previewUrl || ''
+      return {
+        id: input.id,
+        kind: 'resource',
+        source: input.source || 'server',
+        title: input.title,
+        subtitle: input.subtitle,
+        description: input.description,
+        data: {
+          resource: {
+            id: input.id,
+            type: input.type || 'web',
+            content_url: contentUrl,
+            preview_url: input.previewUrl || contentUrl,
+            url: contentUrl,
+            title: input.title,
+          },
+        },
+      } satisfies LotusResultItem
+    },
+    [],
+  )
+
+  // Debounced server search
+  React.useEffect(() => {
+    if (!open) return
+
+    const { text, shebang, tags } = parsedQuery
+    let cancelled = false
+
+    if (finderDefaults.enable_search === false && !shebang) {
+      const merged = mergeDedup(filteredLocal, [])
+      setItems(merged)
+      setSelectedId(merged[0]?.id ?? null)
+      return
+    }
+
+    if (!norm(text) && !shebang && tags.length === 0) {
+      const merged = mergeDedup(filteredLocal, [])
+      setItems(merged)
+      setSelectedId(merged[0]?.id ?? null)
+      return
+    }
+
+    const t = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const tagValue = (keys: string[]) =>
+          tags.find((t) => keys.includes(t.key))?.value
+
+        const typeFilter = tagValue(['type', 'type_name'])
+        const typePrefix = tagValue(['type_prefix', 'prefix'])
+        const idFilter = tagValue(['id', 'artifact'])
+
+        const metaTokens = tags
+          .filter(
+            (t) =>
+              ![
+                'type',
+                'type_name',
+                'type_prefix',
+                'prefix',
+                'id',
+                'artifact',
+                'kind',
+              ].includes(t.key),
+          )
+          .map((t) => (t.value ? `${t.key}:${t.value}` : t.key))
+
+        const localItemsToUse = shebang ? [] : filteredLocal
+
+        const enableSearch = finderDefaults.enable_search !== false
+        const commandPromise =
+          shebang || !norm(text) || !enableSearch
+            ? Promise.resolve([] as LotusResultItem[])
+            : apiRef.current.lotus
+                .query(text, 30)
+                .then((data: LotusQueryResponse) =>
+                  (data.results || []).map((r) => ({
+                    ...r,
+                    source: 'server' as const,
+                  })),
+                )
+                .catch(() => [])
+
+        const providerPromise = (async () => {
+          const providerKey = shebang?.split(/[:.]/)[0] || ''
+          const configuredShebang = providerKey
+            ? finderDefaults.shebangs?.[providerKey]
+            : undefined
+          const normalizedShebang = (() => {
+            if (!configuredShebang) return null
+            if (typeof configuredShebang === 'string') {
+              return { provider: configuredShebang } as const
+            }
+            if (typeof configuredShebang === 'object') {
+              const provider = String((configuredShebang as any).provider || '')
+              if (!provider) return null
+              return {
+                provider,
+                kind: (configuredShebang as any).kind,
+              }
+            }
+            return null
+          })()
+
+          const shebangConfig = providerKey
+            ? normalizedShebang || SHEBANG_PROVIDERS[providerKey]
+            : null
+
+          const providerId =
+            shebangConfig?.provider || defaults.text_provider || 'search.text'
+
+          const isShebang = Boolean(shebangConfig)
+          const enableSearch = finderDefaults.enable_search !== false
+          if (!enableSearch && !isShebang) return [] as LotusResultItem[]
+          if (!norm(text) && !isShebang && metaTokens.length === 0 && !idFilter)
+            return [] as LotusResultItem[]
+
+          if (idFilter) {
+            const out = await apiRef.current.artifacts.list({
+              ids: [idFilter],
+              limit: 1,
+            })
+            const items = Array.isArray(out?.items) ? out.items : []
+            const scores = new Map<string, number>()
+            return buildArtifactItems(items, scores)
+          }
+
+          if (shebangConfig?.provider === 'nynxz-stash.search') {
+            const kindTag = tagValue(['kind'])
+            const kindFromShebang = shebang?.split(/[:.]/)[1]
+            const trimmed = text.trim()
+            const [firstToken, ...restTokens] = trimmed
+              .split(/\s+/)
+              .filter(Boolean)
+            const kindToken = ['scenes', 'images', 'performers'].includes(
+              (firstToken || '').toLowerCase(),
+            )
+              ? firstToken?.toLowerCase()
+              : undefined
+            const kind =
+              kindFromShebang ||
+              kindToken ||
+              kindTag ||
+              shebangConfig.kind ||
+              'scenes'
+            const stashQuery = kindToken ? restTokens.join(' ') : trimmed
+            if (!norm(stashQuery)) return []
+
+            const out = await apiRef.current.lotus.invoke(providerId, {
+              query: stashQuery,
+              kind,
+              page: 1,
+              per_page: 20,
+            })
+            const items = Array.isArray(out?.items) ? out.items : []
+
+            return items.map((item: any) => {
+              const mediaType =
+                item.kind === 'scenes'
+                  ? 'video'
+                  : item.kind === 'images'
+                    ? 'image'
+                    : 'web'
+              return buildResourceItem({
+                id: `stash:${item.kind}:${item.id}`,
+                title: item.title || item.id,
+                subtitle: `stash • ${item.kind}`,
+                description: item.date || '',
+                contentUrl: item.url || item.thumbnail,
+                previewUrl: item.thumbnail || item.url,
+                type: mediaType,
+              })
+            })
+          }
+
+          if (shebangConfig?.provider === 'nynxz-arxiv.search') {
+            if (!norm(text)) return []
+            const out = await apiRef.current.lotus.invoke(providerId, {
+              query: text,
+              start: 0,
+              max_results: 20,
+            })
+            const items = Array.isArray(out?.items) ? out.items : []
+            return items.map((item: any) => {
+              const contentUrl = item.pdf_url || item.arxiv_url
+              const authors = Array.isArray(item.authors)
+                ? item.authors.map((a: any) => a.name).join(', ')
+                : ''
+              return buildResourceItem({
+                id: `arxiv:${item.id}`,
+                title: item.title || item.id,
+                subtitle: authors ? `arXiv • ${authors}` : 'arXiv',
+                description: item.summary,
+                contentUrl,
+                type: 'document',
+              })
+            })
+          }
+
+          if (shebangConfig?.provider === 'nynxz-openverse.search') {
+            if (!norm(text)) return []
+            const out = await apiRef.current.lotus.invoke(providerId, {
+              query: text,
+              page: 1,
+              per_page: 20,
+            })
+            const items = Array.isArray(out?.items) ? out.items : []
+            return items.map((item: any) => {
+              const contentUrl = item.url || item.full_url || item.regular_url
+              return buildResourceItem({
+                id: `openverse:${item.id}`,
+                title: item.title || item.creator || item.id,
+                subtitle: item.creator
+                  ? `Openverse • ${item.creator}`
+                  : 'Openverse',
+                description: item.description || item.title,
+                contentUrl,
+                previewUrl: item.thumbnail,
+                type: 'image',
+              })
+            })
+          }
+
+          if (shebangConfig?.provider === 'embeddr-stocks.search') {
+            if (!norm(text)) return []
+            const out = await apiRef.current.lotus.invoke(providerId, {
+              query: text,
+              limit: 20,
+            })
+            const items = Array.isArray(out?.items) ? out.items : []
+            return items.map((item: any) => {
+              const symbol = item.symbol || item.id || ''
+              return buildResourceItem({
+                id: `stock:${symbol}`,
+                title: symbol,
+                subtitle: item.name ? `Stocks • ${item.name}` : 'Stocks',
+                description: item.exchange || '',
+                contentUrl: `stock:${symbol}`,
+                type: 'text',
+              })
+            })
+          }
+
+          if (!norm(text)) return []
+
+          const out = await apiRef.current.lotus.invoke(providerId, {
+            query: text,
+            limit: 30,
+          })
+          const items = Array.isArray(out?.items) ? out.items : []
+
+          if (!items.length) return []
+
+          const hasTitle = items.some((it: any) => Boolean(it?.title))
+          if (!hasTitle && items[0]?.id) {
+            const scores = new Map<string, number>(
+              items.map((it: any) => [String(it.id), it.score ?? 0]),
+            )
+            const ids = items.map((it: any) => String(it.id))
+            const outList = await apiRef.current.artifacts.list({
+              ids,
+              limit: ids.length,
+            })
+            let artifacts = Array.isArray(outList?.items) ? outList.items : []
+            const byId = new Map(
+              artifacts.map((art: any) => [String(art.id), art]),
+            )
+            artifacts = ids.map((id: string) => byId.get(id)).filter(Boolean)
+
+            if (typeFilter) {
+              artifacts = artifacts.filter(
+                (a: any) => a?.type_name === typeFilter,
+              )
+            }
+            if (typePrefix) {
+              artifacts = artifacts.filter((a: any) =>
+                String(a?.type_name || '').startsWith(typePrefix),
+              )
+            }
+
+            return buildArtifactItems(artifacts, scores)
+          }
+
+          return items.map((item: any) => ({
+            id: item.id || item.title,
+            kind: item.kind || 'resource',
+            source: 'server' as const,
+            title: item.title || item.id || 'Result',
+            subtitle: item.subtitle,
+            description: item.description,
+            score: item.score,
+            data: item.data || {},
+          }))
+        })()
+
+        const metadataPromise = (async () => {
+          if (!enableSearch) return [] as LotusResultItem[]
+          if (shebang || tags.length === 0) return [] as LotusResultItem[]
+          const metaQuery = [text, ...metaTokens].join(' ').trim()
+          if (!metaQuery) return []
+
+          const out = await embeddrApi.artifacts.search(
+            metaQuery,
+            20,
+            0,
+            typeFilter,
+          )
+          let artifacts = Array.isArray(out?.items) ? out.items : []
+
+          if (typePrefix) {
+            artifacts = artifacts.filter((a: any) =>
+              String(a?.type_name || '').startsWith(typePrefix),
+            )
+          }
+
+          const scores = new Map<string, number>()
+          return buildArtifactItems(artifacts, scores)
+        })()
+
+        const [serverItems, providerItems, metaItems] = await Promise.all([
+          commandPromise,
+          providerPromise,
+          metadataPromise,
+        ])
+
+        if (cancelled) return
+
+        const merged = mergeDedup(
+          mergeDedup(localItemsToUse, serverItems),
+          mergeDedup(providerItems, metaItems),
+        )
+          .sort((a, b) => {
+            const sa = (a.source === 'local' ? 1000 : 0) + (a.score ?? 0)
+            const sb = (b.source === 'local' ? 1000 : 0) + (b.score ?? 0)
+            return sb - sa
+          })
+          .slice(0, 60)
+
+        setItems(merged)
+        setSelectedId((cur) => cur ?? merged[0]?.id ?? null)
+      } catch (e: any) {
+        if (!cancelled) toast.error(`Search failed: ${e.message}`)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }, 140)
+
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [
+    parsedQuery,
+    open,
+    filteredLocal,
+    defaults.text_provider,
+    buildArtifactItems,
+    buildResourceItem,
+  ])
+
+  // Reset on open + focus input
+  React.useEffect(() => {
+    if (!open) return
+    setQuery('')
+    loadDefaults()
+    const merged = mergeDedup(filteredLocal, [])
+    setItems(merged)
+    setSelectedId(merged[0]?.id ?? null)
+
+    // focus input AFTER dialog mounts
+    const t = setTimeout(() => focusInput(), 0)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, loadDefaults])
+
+  const moveSelection = React.useCallback(
+    (delta: number) => {
+      if (!items.length) return
+      const next = Math.max(
+        0,
+        Math.min(items.length - 1, selectedIndex + delta),
+      )
+      const it = items[next]
+      if (it) setSelectedId(it.id)
+    },
+    [items, selectedIndex],
+  )
+
+  const dispatch = async (item: LotusResultItem) => {
+    if (item.data?.systemAction === 'open_settings') {
+      setSettingsOpen(true)
+      onOpenChange(false)
+      return
+    }
+
+    if (item.data?.systemAction === 'reset_layout') {
+      setWidgetConfig({})
+      toast.success('Layout reset to defaults')
+      onOpenChange(false)
+      return
+    }
+
+    if (item.kind === 'panel') {
+      const componentId = item.data?.componentId as string | undefined
+      const pluginId = item.data?.pluginId as string | undefined
+      const props = item.data?.props || {}
+      if (!componentId) return
+
+      api.windows.spawn(componentId, item.title, {
+        pluginId,
+        ...props,
+      })
+
+      onOpenChange(false)
+      return
+    }
+
+    if (item.kind === 'nav') {
+      const route = item.data?.route as string | undefined
+      if (route) {
+        navigate({ to: route })
+        onOpenChange(false)
+        return
+      }
+      toast.info('No route found for this item.')
+      return
+    }
+
+    if (
+      item.source === 'server' &&
+      (item.kind === 'action' || item.kind === 'feature')
+    ) {
+      try {
+        const out = (await embeddrApi.lotus.dispatch(
+          item.id,
+          item.kind as 'action',
+          item.data ?? {},
+        )) as any
+
+        onOpenChange(false)
+        if (out.navigate_to) navigate({ to: out.navigate_to })
+        if (out.execution_id) {
+          toast.success('Queued', {
+            description: `Execution: ${out.execution_id}`,
+          })
+        }
+        return
+      } catch (e: any) {
+        toast.error(`Dispatch failed: ${e.message}`)
+        return
+      }
+    }
+
+    if (item.kind === 'artifact') {
+      const artifactId = item.data?.artifact_id || item.id
+      if (!artifactId) return
+      apiRef.current.windows.spawn(
+        'embeddr-core-artifact-details-panel',
+        'Artifact Details',
+        { artifactId, defaultSize: { width: 520, height: 720 } },
+      )
+      onOpenChange(false)
+      return
+    }
+
+    if (item.kind === 'resource') {
+      const resource = item.data?.resource || {}
+      const resolved = resolvedResource || {}
+      const url =
+        resolved?.content_url || resource?.content_url || resource?.url
+      const previewUrl = resolved?.preview_url || resource?.preview_url
+      const title = resolved?.title || resource?.title || item.title
+      const type = resolved?.type || resource?.type || 'web'
+      if (!url) return toast.info('No resource URL available.')
+      apiRef.current.windows.spawn(
+        'embeddr-mediaframe-media-frame-panel',
+        'Media Frame',
+        {
+          initialItems: [
+            {
+              id: resource?.id || item.id,
+              url,
+              thumbUrl: previewUrl,
+              type,
+              title,
+            },
+          ],
+          initialMode: 'replace',
+          initialSelectIndex: 0,
+        },
+      )
+      onOpenChange(false)
+      return
+    }
+
+    if (item.kind === 'action' && item.source === 'local') {
+      const pluginId = item.data?.pluginId as string | undefined
+      const action = item.data?.action as string | undefined
+      if (!pluginId || !action) return toast.error('Invalid action payload.')
+
+      try {
+        await api.client.plugins.call(pluginId, 'actions/run', 'POST', {
+          action,
+          inputs: {},
+        })
+        toast.success('Queued', { description: `${pluginId}:${action}` })
+        onOpenChange(false)
+      } catch (e: any) {
+        toast.error(`Failed to run action: ${e.message}`)
+      }
+      return
+    }
+
+    toast.info('Not dispatchable yet.')
+  }
+
+  // ✅ Keyboard model:
+  // - Input always keeps focus.
+  // - ArrowDown moves selection into list (but focus stays on input).
+  // - ArrowUp at index 0 does nothing special; still at top, you’re effectively “back at input”.
+  // - Escape closes.
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      onOpenChange(false)
+      return
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      if (!items.length) return
+      // if nothing selected yet, pick first; else move down
+      if (!selectedId || rawSelectedIndex === -1) setSelectedId(items[0].id)
+      else moveSelection(+1)
+      return
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      if (!items.length) return
+      // move up, but if you're already at 0, stay there (input still focused)
+      if (selectedIndex <= 0 || rawSelectedIndex === -1) {
+        setSelectedId(items[0]?.id ?? null)
+        return
+      }
+      moveSelection(-1)
+      return
+    }
+
+    if (e.key === 'Enter') {
+      // let SearchBar call onSubmit; we just avoid double-run
+      return
+    }
+  }
+
+  const handleDialogKeyDown = (e: React.KeyboardEvent) => {
+    // Safety: if some child steals focus, still support Esc.
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      onOpenChange(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        onKeyDown={handleDialogKeyDown}
+        className={cn(
+          'max-w-4xl h-[60vh] p-0 gap-0 overflow-hidden flex! flex-col!',
+          'bg-background/70 backdrop-blur-xl border border-border/60 shadow-2xl',
+        )}
+      >
+        {/* Header */}
+        <div className="p-3 border-b border-border/60">
+          <LotusSearchBar
+            value={query}
+            onChange={setQuery}
+            onSubmit={() =>
+              resolvedSelectedItem && dispatch(resolvedSelectedItem)
+            }
+            loading={loading}
+            autoFocus
+            inputRef={inputRef}
+            onKeyDown={handleInputKeyDown}
+          />
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 min-h-0 grid grid-cols-2">
+          <div className="min-h-0 border-r border-border/60">
+            <LotusResultsList
+              items={items}
+              selectedId={selectedId}
+              onSelect={(it) => setSelectedId(it.id)}
+              onConfirm={dispatch}
+              onRequestFocusInput={focusInput}
+              keyboard={false} // ✅ input owns keyboard
+            />
+          </div>
+
+          <div className="min-h-0">
+            <LotusPreviewPane
+              item={resolvedSelectedItem}
+              onRun={() =>
+                resolvedSelectedItem && dispatch(resolvedSelectedItem)
+              }
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-3 py-2 border-t border-border/60 text-[10px] text-muted-foreground/70 flex items-center justify-between">
+          <span>
+            Tip: “!stash cats”, “!arxiv diffusion”, “!openverse mountains”,
+            “!stocks AAPL”
+          </span>
+          <span>{items.length} results</span>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}

@@ -26,12 +26,13 @@ export interface WorkflowArtifactMetadata {
 
 export interface WorkflowArtifact {
   id: string
-  type_name: 'workflow'
+  type_name: string
   created_at: string
   metadata_json: {
     name: string
     description?: string
     workflow: WorkflowArtifactMetadata
+    payload?: Record<string, any>
   }
 }
 
@@ -48,6 +49,7 @@ export interface Workflow {
     name: string
     description?: string
     workflow: WorkflowArtifactMetadata
+    payload?: Record<string, any>
   }
 }
 
@@ -72,27 +74,16 @@ function adaptToLegacy(artifact: WorkflowArtifact): Workflow {
 }
 
 export async function fetchWorkflows(): Promise<Array<Workflow>> {
-  // Updated to use generic Artifact Search instead of legacy /workflows endpoint
-  const params = new URLSearchParams({
-    type_prefix: 'action:',
-    limit: '100', // Reasonable limit for now
-  })
-  const response = await fetch(`${BACKEND_V2_URL}/artifacts/search?${params}`)
+  const response = await fetch(`${BACKEND_V2_URL}/workflows?limit=100`)
   if (!response.ok) {
     throw new Error('Failed to fetch workflows')
   }
-  const result = await response.json()
-  // Search endpoint returns { items: [...] } or just [...]
-  const artifacts: WorkflowArtifact[] = Array.isArray(result)
-    ? result
-    : result.items || []
-
+  const artifacts: WorkflowArtifact[] = await response.json()
   return artifacts.map(adaptToLegacy)
 }
 
 export async function getWorkflow(id: string | number): Promise<Workflow> {
-  // Use generic artifact endpoint
-  const response = await fetch(`${BACKEND_V2_URL}/artifacts/${id}`)
+  const response = await fetch(`${BACKEND_V2_URL}/workflows/${id}`)
   if (!response.ok) {
     throw new Error('Failed to fetch workflow')
   }
@@ -113,18 +104,13 @@ export async function createWorkflow(data: {
   template?: string
 }): Promise<Workflow> {
   const payload: any = {
-    type_name: 'action:comfy.workflow',
-    metadata_json: {
-      name: data.name,
-      description: data.description,
-      // Store graph directly in payload for new clean schema
-      payload: data.graph || {},
-      // Keep legacy structure for compatibility if needed, but prefer new
-      // workflow: { implementation: { payload: data.graph } }
-    },
+    name: data.name,
+    description: data.description,
+    template: data.template,
+    payload: data.graph,
   }
 
-  const response = await fetch(`${BACKEND_V2_URL}/artifacts`, {
+  const response = await fetch(`${BACKEND_V2_URL}/workflows`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -183,7 +169,7 @@ export async function getWorkflowHistory(id: string): Promise<any> {
 
 export async function updateWorkflowMetadata(
   id: string | number,
-  metadata: WorkflowArtifactMetadata,
+  metadata: Record<string, any>,
 ): Promise<Workflow> {
   // We need to fetch the current artifact to get the full metadata structure if we only have the workflow part...
   // But the V2 API `PUT /workflows/{id}` expects `WorkflowArtifactMetadata` (the definition part).
@@ -220,7 +206,12 @@ export async function syncWorkflows(): Promise<{ status: string }> {
 export async function runWorkflow(
   id: string | number,
   inputs: Record<string, any>,
-): Promise<{ prompt_id: string; outputs: Array<any> }> {
+): Promise<{
+  status: string
+  execution_id?: string
+  prompt_id?: string | null
+  outputs?: Array<any>
+}> {
   const response = await fetch(`${BACKEND_V2_URL}/workflows/${id}/run`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

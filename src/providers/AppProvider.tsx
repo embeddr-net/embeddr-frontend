@@ -11,6 +11,8 @@ import { SettingsProvider } from '@/providers/SettingsProvider'
 import { GenerationProvider } from '@/context/GenerationContext'
 import { PluginProvider } from '@/providers/PluginProvider'
 import { WebSocketProvider } from '@/providers/WebSocketProvider'
+import { CoreUIEventBridge } from './CoreUIEventBridge'
+import { LotusProvider } from '@/providers/LotusProvider'
 
 const queryClient = new QueryClient()
 
@@ -25,7 +27,12 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
               <ImageDialogProvider>
                 <WebSocketProvider>
                   <GenerationProvider>
-                    <PluginProvider>{children}</PluginProvider>
+                    <PluginProvider>
+                      <LotusProvider>
+                        <CoreUIEventBridge />
+                        {children}
+                      </LotusProvider>
+                    </PluginProvider>
                   </GenerationProvider>
                 </WebSocketProvider>
               </ImageDialogProvider>

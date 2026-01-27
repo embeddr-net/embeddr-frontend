@@ -301,7 +301,7 @@ export const ArtifactFileManager = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[40px]">
+              <TableHead className="w-10">
                 <Checkbox
                   checked={
                     artifacts.length > 0 &&
@@ -310,7 +310,7 @@ export const ArtifactFileManager = () => {
                   onCheckedChange={toggleSelectAll}
                 />
               </TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-12.5"></TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Created</TableHead>
@@ -539,7 +539,7 @@ export const ArtifactFileManager = () => {
                     <TableCell>
                       <div className="flex flex-col">
                         <span
-                          className="font-medium truncate max-w-[300px]"
+                          className="font-medium truncate max-w-75"
                           title={art.id}
                         >
                           {art.metadata_json?.name ||

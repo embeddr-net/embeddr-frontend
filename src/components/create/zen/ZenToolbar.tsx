@@ -38,7 +38,6 @@ interface ZenToolbarProps {
   hasPendingGenerations: boolean
   onExitZenMode: () => void
   hasZenInputs: boolean
-  onOpenSettingsDialog: () => void
 }
 
 export function ZenToolbar({
@@ -50,13 +49,13 @@ export function ZenToolbar({
   hasPendingGenerations,
   // onExitZenMode,
   // hasZenInputs,
-  onOpenSettingsDialog,
 }: ZenToolbarProps) {
   const [generateText] = useLocalStorage('zen-generate-text', 'Generate')
   const [generateTheme] = useLocalStorage('zen-generate-theme', 'default')
+  const emptySettings = React.useMemo(() => ({}), [])
   const [pluginSettings] = useLocalStorage<Record<string, Record<string, any>>>(
     'zen-plugin-settings',
-    {},
+    emptySettings,
   )
   const showTimer = pluginSettings['core.zen-mode']?.showTimer ?? true
 
@@ -94,19 +93,13 @@ export function ZenToolbar({
   }
 
   return (
-    <div className="absolute bottom-10 left-1 z-40 flex flex-col gap-2 p-2 bg-background/80 backdrop-blur-md border shadow-lg animate-in slide-in-from-left-4 duration-300">
+    <div
+      className="absolute left-1 z-40 flex flex-col gap-2 p-2 bg-background/80 backdrop-blur-md border shadow-lg animate-in slide-in-from-left-4 duration-300 rounded-lg overflow-hidden transition-[bottom]"
+      style={{
+        bottom: 'calc(0.25rem + var(--layout-safe-bottom, 0px))',
+      }}
+    >
       <TooltipProvider delayDuration={0}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={onOpenSettingsDialog}>
-              <Settings2 className="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">Global Settings</TooltipContent>
-        </Tooltip>
-
-        <Separator className="my-1" />
-
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

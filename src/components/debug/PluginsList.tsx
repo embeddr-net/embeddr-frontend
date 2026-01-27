@@ -1,11 +1,11 @@
-import { useState } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { embeddrApi } from '@/lib/api/v2/client'
+import { useMemo, useState } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { embeddrApi } from '@/lib/api/client'
 import {
   Card,
+  CardContent,
   CardHeader,
   CardTitle,
-  CardContent,
 } from '@embeddr/react-ui/components/card'
 import { Badge } from '@embeddr/react-ui/components/badge'
 import { Button } from '@embeddr/react-ui/components/button'
@@ -13,6 +13,8 @@ import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
 import { Skeleton } from '@embeddr/react-ui/components/skeleton'
 import { Input } from '@embeddr/react-ui/components/input'
 import { Label } from '@embeddr/react-ui/components/label'
+import { Textarea } from '@embeddr/react-ui/components/textarea'
+import { Switch } from '@embeddr/react-ui/components/switch'
 import {
   Select,
   SelectContent,
@@ -20,15 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@embeddr/react-ui/components/select'
-import {
-  Box,
-  Package,
-  Terminal,
-  Zap,
-  Play,
-  AlertTriangle,
-  Loader2,
-} from 'lucide-react'
+import { Play, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -38,115 +32,130 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@embeddr/react-ui/components/dialog'
+import type { LotusCapability } from '@/lib/api/v2/types'
 
-interface PluginAction {
-  name: string
-  label: string
-  description: string
-  command_args?: string
-  requires_confirmation: boolean
-  danger: boolean
-  inputs?: string[]
+type LotusActionCapability = LotusCapability & {
+  data?: {
+    action?: string
+    plugin?: string
+    input?: {
+      schema?: Record<string, any>
+    }
+    expose?: Record<string, boolean>
+    exec?: Record<string, any>
+  }
+}
+
+type ActionDialogState = {
+  capability: LotusActionCapability
+  inputs: Record<string, any>
+  confirm: boolean
+}
+
+const parseFieldValue = (schema: any, value: string | boolean) => {
+  if (schema?.type === 'boolean') {
+    return Boolean(value)
+  }
+  if (schema?.type === 'number' || schema?.type === 'integer') {
+    const parsed = Number(value)
+    return Number.isNaN(parsed) ? value : parsed
+  }
+  if (schema?.type === 'array' || schema?.type === 'object') {
+    if (typeof value === 'string' && value.trim().length) {
+      try {
+        return JSON.parse(value)
+      } catch {
+        return value
+      }
+    }
+  }
+  return value
 }
 
 export const PluginsList = () => {
-  const [selectedAction, setSelectedAction] = useState<{
-    pluginName: string
-    action: PluginAction
-    inputs: Record<string, string>
-  } | null>(null)
+  const [search, setSearch] = useState('')
+  const [selectedAction, setSelectedAction] =
+    useState<ActionDialogState | null>(null)
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['plugins'],
-    queryFn: () => embeddrApi.plugins.list(),
+    queryKey: ['lotus', 'capabilities', 'actions'],
+    queryFn: () => embeddrApi.lotus.list({ kind: 'action', limit: 500 }),
   })
 
-  // Fetch collections if needed for inputs
-  const { data: collections } = useQuery({
-    queryKey: ['collections'],
-    queryFn: () => embeddrApi.collections.list(),
-  })
+  const actions = useMemo(() => {
+    const items = (data?.items || []) as LotusActionCapability[]
+    return items.filter((cap) => {
+      const expose = cap.data?.expose
+      return !expose || expose.api !== false
+    })
+  }, [data])
 
-  // Mutation to execute action (CLI or API)
-  const executeActionMutation = useMutation({
-    mutationFn: async ({
-      pluginName,
-      action,
-      inputs,
-    }: {
-      pluginName: string
-      action: PluginAction
-      inputs: Record<string, string>
-    }) => {
-      // 1. Prefer API execution if inputs are complex or no command_args
-      if (!action.command_args || action.inputs?.length) {
-        // Transform inputs if needed (e.g. rename 'collection' to 'collection_id')
-        // But for now pass raw, plugin handles alias
-        return embeddrApi.plugins.execute(pluginName, action.name, inputs)
-      }
+  const grouped = useMemo(() => {
+    const map = new Map<string, LotusActionCapability[]>()
+    actions.forEach((cap) => {
+      const plugin = cap.plugin || cap.data?.plugin || 'unknown'
+      if (!map.has(plugin)) map.set(plugin, [])
+      map.get(plugin)?.push(cap)
+    })
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b))
+  }, [actions])
 
-      // 2. Fallback to CLI command
-      return embeddrApi.system.runCommand(action.command_args.split(' '))
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return grouped
+    return grouped
+      .map(([plugin, caps]) => {
+        const filteredCaps = caps.filter((cap) => {
+          const hay =
+            `${cap.id} ${cap.title} ${cap.description || ''}`.toLowerCase()
+          return hay.includes(q)
+        })
+        return [plugin, filteredCaps] as const
+      })
+      .filter(([, caps]) => caps.length > 0)
+  }, [grouped, search])
+
+  const invokeMutation = useMutation({
+    mutationFn: async ({ capability, inputs }: ActionDialogState) => {
+      return embeddrApi.lotus.invoke(capability.id, inputs)
     },
     onSuccess: (data) => {
-      // Handle different response shapes
-      if (data.success === false) {
-        // CLI failure
-        toast.error('Command failed', { description: data.stderr })
-      } else if (data.status === 'success' || data.success) {
-        // API or CLI success
-        const result = data.result
-          ? JSON.stringify(data.result, null, 2)
-          : data.stdout
-        toast.success('Action executed successfully', {
-          description: (
-            <pre className="mt-2 w-full rounded bg-slate-950 p-2 text-xs text-white overflow-x-auto">
-              {result}
-            </pre>
-          ),
-        })
-      } else {
-        // Unknown error state?
-        toast.success('Action executed', { description: JSON.stringify(data) })
-      }
+      toast.success('Action invoked', {
+        description: (
+          <pre className="mt-2 w-full rounded bg-slate-950 p-2 text-xs text-white overflow-x-auto">
+            {JSON.stringify(data, null, 2)}
+          </pre>
+        ),
+      })
       setSelectedAction(null)
     },
     onError: (err) => {
-      toast.error('Failed to execute action', {
-        description: err.message,
+      toast.error('Failed to invoke action', {
+        description: err instanceof Error ? err.message : String(err),
       })
-      // Don't close dialog on error so they can retry/fix inputs
     },
   })
 
-  const handleActionClick = (pluginName: string, action: PluginAction) => {
-    // Always open dialog if inputs are required OR confirmation required
-    if (
-      action.requires_confirmation ||
-      (action.inputs && action.inputs.length > 0)
-    ) {
-      setSelectedAction({ pluginName, action, inputs: {} })
-    } else {
-      // Immediate execution for simple safe CLI commands
-      executeActionMutation.mutate({ pluginName, action, inputs: {} })
-    }
+  const handleOpen = (capability: LotusActionCapability) => {
+    const schema = capability.data?.input?.schema || {}
+    const properties = schema.properties || {}
+    const defaults: Record<string, any> = {}
+
+    Object.entries(properties).forEach(([key, prop]: [string, any]) => {
+      if (prop.default !== undefined) defaults[key] = prop.default
+    })
+
+    setSelectedAction({ capability, inputs: defaults, confirm: false })
   }
 
-  const confirmAction = () => {
-    if (selectedAction) {
-      executeActionMutation.mutate({
-        pluginName: selectedAction.pluginName,
-        action: selectedAction.action,
-        inputs: selectedAction.inputs,
-      })
-    }
-  }
-
-  const handleInputChange = (key: string, value: string) => {
+  const updateInput = (key: string, schema: any, value: string | boolean) => {
     if (!selectedAction) return
     setSelectedAction({
       ...selectedAction,
-      inputs: { ...selectedAction.inputs, [key]: value },
+      inputs: {
+        ...selectedAction.inputs,
+        [key]: parseFieldValue(schema, value),
+      },
     })
   }
 
@@ -163,177 +172,201 @@ export const PluginsList = () => {
   if (error) {
     return (
       <div className="p-4 text-red-500">
-        Error loading plugins: {(error as Error).message}
+        Error loading Lotus actions: {(error as Error).message}
       </div>
     )
   }
 
-  const plugins = Array.isArray(data) ? data : (data as any)?.plugins || []
-
   return (
     <ScrollArea className="h-full">
-      <div className="space-y-2 p-2">
-        {plugins.map((plugin: any) => (
-          <Card key={plugin.name} className="py-2">
+      <div className="space-y-4 p-3">
+        <div className="flex items-center gap-3">
+          <Input
+            placeholder="Search Lotus actions..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          <Badge variant="secondary">{actions.length} actions</Badge>
+        </div>
+
+        {filtered.map(([plugin, caps]) => (
+          <Card key={plugin} className="py-2">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Package className="h-5 w-5 text-primary" />
-                  {plugin.name}
-                </CardTitle>
-                <Badge variant="secondary">v{plugin.version}</Badge>
+                <CardTitle className="text-base">{plugin}</CardTitle>
+                <Badge variant="outline">{caps.length}</Badge>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div className="space-y-2">
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Registered Intents
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {plugin.intents.map((intent: string) => (
-                      <Badge
-                        key={intent}
-                        variant="outline"
-                        className="flex items-center gap-1"
-                      >
-                        {intent === 'register_api' && (
-                          <Zap className="h-3 w-3" />
-                        )}
-                        {intent === 'register_cli' && (
-                          <Terminal className="h-3 w-3" />
-                        )}
-                        {intent === 'register_artifact_type' && (
-                          <Box className="h-3 w-3" />
-                        )}
-                        {intent}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Actions Section */}
-                {plugin.actions && plugin.actions.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t">
-                    <div className="text-sm font-medium text-muted-foreground">
-                      Actions
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                {caps.map((cap) => (
+                  <div
+                    key={cap.id}
+                    className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 p-3"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">
+                        {cap.title || cap.id}
+                      </span>
+                      {cap.description && (
+                        <span className="text-xs text-muted-foreground line-clamp-2">
+                          {cap.description}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        {cap.id}
+                      </span>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {plugin.actions.map((action: PluginAction) => (
-                        <div
-                          key={action.name}
-                          className="flex items-center justify-between p-2  border bg-muted/40"
-                        >
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">
-                              {action.label}
-                            </span>
-                            {action.description && (
-                              <span
-                                className="text-xs text-muted-foreground max-w-[200px] truncate"
-                                title={action.description}
-                              >
-                                {action.description}
-                              </span>
-                            )}
-                          </div>
-                          <Button
-                            size="sm"
-                            variant={
-                              action.danger ? 'destructive' : 'secondary'
-                            }
-                            onClick={() =>
-                              handleActionClick(plugin.name, action)
-                            }
-                            disabled={executeActionMutation.isPending}
-                          >
-                            {executeActionMutation.isPending &&
-                            selectedAction?.action.name === action.name ? (
-                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                            ) : action.danger ? (
-                              <AlertTriangle className="h-3 w-3 mr-1" />
-                            ) : (
-                              <Play className="h-3 w-3 mr-1" />
-                            )}
-                            Run
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
+                    <Button size="sm" onClick={() => handleOpen(cap)}>
+                      <Play className="mr-2 h-3 w-3" />
+                      Invoke
+                    </Button>
                   </div>
-                )}
+                ))}
               </div>
             </CardContent>
           </Card>
         ))}
-        {plugins.length === 0 && (
-          <div className="text-center text-muted-foreground">
-            No plugins loaded.
-          </div>
-        )}
       </div>
 
-      {/* Confirmation / Inputs Dialog */}
       <Dialog
         open={!!selectedAction}
         onOpenChange={(open) => !open && setSelectedAction(null)}
       >
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{selectedAction?.action.label}</DialogTitle>
+            <DialogTitle>{selectedAction?.capability.title}</DialogTitle>
             <DialogDescription>
-              {selectedAction?.action.description}
+              {selectedAction?.capability.description ||
+                selectedAction?.capability.id}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4 space-y-4">
-            {/* Dynamic Inputs */}
-            {selectedAction?.action.inputs?.map((inputName) => {
-              // Special handling for common input types based on name
-              // 'collection' -> Select Collection
-              if (inputName === 'collection' || inputName === 'collection_id') {
-                return (
-                  <div key={inputName} className="space-y-2">
-                    <Label>Select Collection</Label>
-                    <Select
-                      onValueChange={(val) => handleInputChange(inputName, val)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a collection..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {collections?.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.label} ({c.file_count})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )
-              }
-              // 'artifact:image' -> Artifact ID input (no fancy selector for now)
-              return (
-                <div key={inputName} className="space-y-2">
-                  <Label className="capitalize">
-                    {inputName.replace(/[:_]/g, ' ')}
-                  </Label>
-                  <Input
-                    placeholder={`Enter ${inputName}...`}
-                    onChange={(e) =>
-                      handleInputChange(inputName, e.target.value)
-                    }
-                  />
-                </div>
-              )
-            })}
+          <div className="space-y-4">
+            {selectedAction &&
+              (() => {
+                const schema =
+                  selectedAction.capability.data?.input?.schema || {}
+                const properties = schema.properties || {}
+                const required = schema.required || []
 
-            {!selectedAction?.action.inputs?.length &&
-              selectedAction?.action.command_args && (
-                <div className="p-2 bg-muted rounded text-xs font-mono">
-                  Running: embeddr {selectedAction.action.command_args}
-                </div>
-              )}
+                return Object.entries(properties).map(
+                  ([key, prop]: [string, any]) => {
+                    const value = selectedAction.inputs[key]
+                    const label = prop.title || key
+
+                    if (prop.enum) {
+                      return (
+                        <div key={key} className="space-y-2">
+                          <Label>{label}</Label>
+                          <Select
+                            value={value ?? ''}
+                            onValueChange={(val) => updateInput(key, prop, val)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={`Select ${label}`} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {prop.enum.map((opt: string) => (
+                                <SelectItem key={opt} value={opt}>
+                                  {opt}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )
+                    }
+
+                    if (prop.type === 'boolean') {
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-center justify-between"
+                        >
+                          <div>
+                            <Label>{label}</Label>
+                            {prop.description && (
+                              <div className="text-xs text-muted-foreground">
+                                {prop.description}
+                              </div>
+                            )}
+                          </div>
+                          <Switch
+                            checked={Boolean(value)}
+                            onCheckedChange={(checked) =>
+                              updateInput(key, prop, checked)
+                            }
+                          />
+                        </div>
+                      )
+                    }
+
+                    if (prop.type === 'object' || prop.type === 'array') {
+                      return (
+                        <div key={key} className="space-y-2">
+                          <Label>
+                            {label}
+                            {required.includes(key) && (
+                              <span className="text-destructive"> *</span>
+                            )}
+                          </Label>
+                          <Textarea
+                            value={
+                              typeof value === 'string'
+                                ? value
+                                : JSON.stringify(value ?? {}, null, 2)
+                            }
+                            onChange={(event) =>
+                              updateInput(key, prop, event.target.value)
+                            }
+                            className="min-h-24 font-mono text-xs"
+                          />
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div key={key} className="space-y-2">
+                        <Label>
+                          {label}
+                          {required.includes(key) && (
+                            <span className="text-destructive"> *</span>
+                          )}
+                        </Label>
+                        <Input
+                          value={value ?? ''}
+                          onChange={(event) =>
+                            updateInput(key, prop, event.target.value)
+                          }
+                          placeholder={prop.description || label}
+                          type={
+                            prop.type === 'number' || prop.type === 'integer'
+                              ? 'number'
+                              : 'text'
+                          }
+                        />
+                      </div>
+                    )
+                  },
+                )
+              })()}
+
+            {selectedAction?.capability.data?.exec?.requires_confirmation && (
+              <div className="flex items-center justify-between">
+                <Label>Confirm action</Label>
+                <Switch
+                  checked={selectedAction.confirm}
+                  onCheckedChange={(checked) =>
+                    setSelectedAction(
+                      selectedAction
+                        ? { ...selectedAction, confirm: checked }
+                        : selectedAction,
+                    )
+                  }
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -341,13 +374,15 @@ export const PluginsList = () => {
               Cancel
             </Button>
             <Button
-              onClick={confirmAction}
-              disabled={executeActionMutation.isPending}
+              onClick={() =>
+                selectedAction && invokeMutation.mutate(selectedAction)
+              }
+              disabled={invokeMutation.isPending || !selectedAction}
             >
-              {executeActionMutation.isPending && (
+              {invokeMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Execute
+              Invoke
             </Button>
           </DialogFooter>
         </DialogContent>

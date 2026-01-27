@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react'
 import { BASE_URL } from '@/lib/api/config'
 import { globalEventBus } from '@/lib/eventBus'
-import type { EmbeddrMessage } from '@embeddr/react-ui/types'
+import type { EmbeddrMessage } from '@embeddr/zen-ui'
 
 const WebSocketContext = createContext<{
   isConnected: boolean
@@ -19,8 +19,9 @@ export const WebSocketProvider = ({
   children: React.ReactNode
 }) => {
   const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isConnectedRef = useRef(false)
+  const shouldReconnectRef = useRef(true)
   const [isConnected, setIsConnected] = React.useState(false)
   const [lastMessage, setLastMessage] = React.useState<EmbeddrMessage | null>(
     null,
@@ -65,6 +66,7 @@ export const WebSocketProvider = ({
       wsRef.current = null
 
       // Reconnect
+      if (!shouldReconnectRef.current) return
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current)
       reconnectTimeoutRef.current = setTimeout(connect, 5000)
     }
@@ -100,7 +102,32 @@ export const WebSocketProvider = ({
   }
 
   useEffect(() => {
+    shouldReconnectRef.current = true
     connect() //TODO: Renable once ready
+
+    const handleUnload = () => {
+      shouldReconnectRef.current = false
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+      }
+      if (wsRef.current) {
+        wsRef.current.onopen = null
+        wsRef.current.onclose = null
+        wsRef.current.onerror = null
+        wsRef.current.onmessage = null
+        wsRef.current.close()
+        wsRef.current = null
+      }
+    }
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        handleUnload()
+      }
+    }
+
+    window.addEventListener('beforeunload', handleUnload)
+    document.addEventListener('visibilitychange', handleVisibility)
 
     // Listen for outbound requests from stores/components
     const sendHandler = (payload: any) => {
@@ -117,6 +144,7 @@ export const WebSocketProvider = ({
     const unsubscribeSend = globalEventBus.on('websocket:send', sendHandler)
 
     return () => {
+      shouldReconnectRef.current = false
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
       }
@@ -130,6 +158,8 @@ export const WebSocketProvider = ({
         wsRef.current.close()
         wsRef.current = null
       }
+      window.removeEventListener('beforeunload', handleUnload)
+      document.removeEventListener('visibilitychange', handleVisibility)
       unsubscribeSend()
     }
   }, [])

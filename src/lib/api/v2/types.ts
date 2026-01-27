@@ -70,3 +70,50 @@ export interface CollectionResponse {
   file_count: number
   metadata: Record<string, any>
 }
+
+export interface LotusCapability {
+  id: string
+  kind: string
+  title: string
+  description?: string
+  plugin?: string
+  version?: string
+  tags?: string[]
+  data?: Record<string, any>
+  slot?: string
+}
+
+export interface LotusCapabilityListResponse {
+  items: LotusCapability[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface Execution {
+  id: string
+  type: string
+  plugin_name: string
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'canceled'
+  priority: number
+  progress: number
+  message?: string
+  created_at: string
+  started_at?: string
+  finished_at?: string
+  resource_class: string
+  inputs?: Record<string, any>
+  outputs?: Record<string, any> | null
+  error?: string | null
+  parent_execution_id?: string | null
+}
+
+export interface ExecutionEvent {
+  id: string
+  execution_id: string
+  event_type: string
+  level: string
+  message?: string
+  payload?: Record<string, any> | null
+  created_at: string
+}

@@ -115,7 +115,7 @@ export function useUpdateWorkflowMetadata() {
       metadata,
     }: {
       id: string | number
-      metadata: WorkflowArtifactMetadata
+      metadata: Record<string, any>
     }) => updateWorkflowMetadata(id, metadata),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workflow'] }),
   })

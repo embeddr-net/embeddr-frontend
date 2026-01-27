@@ -19,19 +19,16 @@ interface ZenQueueProps {
 export function ZenQueue({
   isOpen: propIsOpen,
   onClose: propOnClose,
-  generations,
-  selectedGenerationId,
-  selectGeneration,
-  onRepeat,
 }: ZenQueueProps) {
-  const { windows, minimizeWindow, closeWindow } = useWindowStore()
-  const windowState = windows['zen-queue']
-  const isOpen = propIsOpen ?? (windowState ? !windowState.isMinimized : false)
-  // const onClose = propOnClose ?? (() => minimizeWindow('zen-queue'))
+  const closeWindow = useWindowStore((s) => s.closeWindow)
+  // Only subscribe to the minimized state of this window
+  const isMinimized = useWindowStore((s) => s.windows['zen-queue']?.isMinimized)
+
+  const isOpen = propIsOpen ?? isMinimized === false
   const onClose = propOnClose ?? (() => closeWindow('zen-queue'))
 
   // V2 Integration
-  const { data: executions, isLoading } = useExecutions({ limit: 50 })
+  // const { data: executions, isLoading } = useExecutions({ limit: 50 })
 
   return (
     <DraggablePanel
@@ -46,14 +43,14 @@ export function ZenQueue({
       <div className="flex flex-col h-full p-2.5">
         <ScrollArea className="h-full pr-3" type="always">
           <div className="space-y-1">
-            {isLoading && (
+            {/* {isLoading && (
               <div className="flex justify-center p-2">
                 <Loader2 className="animate-spin w-4 h-4 text-muted-foreground" />
               </div>
-            )}
+            )} */}
 
             {/* V2 Executions */}
-            {executions?.map((ex: any) => (
+            {/* {executions?.map((ex: any) => (
               <div
                 key={ex.id}
                 className="p-2 border  bg-card mb-2 flex flex-col gap-1 text-xs"
@@ -86,10 +83,10 @@ export function ZenQueue({
                   </div>
                 )}
               </div>
-            ))}
+            ))} */}
 
             {/* Legacy Generations (Temporary Mix) */}
-            {generations.map((gen) => (
+            {/* {generations.map((gen) => (
               <QueueItem
                 key={gen.id}
                 generation={gen}
@@ -98,7 +95,7 @@ export function ZenQueue({
                 onOpenImage={() => {}}
                 onRepeat={() => onRepeat(gen)}
               />
-            ))}
+            ))} */}
           </div>
         </ScrollArea>
       </div>

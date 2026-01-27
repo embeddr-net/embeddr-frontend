@@ -20,6 +20,7 @@ interface WindowStore {
   layouts: Record<string, Record<string, WindowState>>
   backdropWindowId: string | null // NEW: Tracks which window is in backdrop mode
   showZenToolbar: boolean // NEW: Tracks visibility of the Zen Toolbar
+  arePanelsHidden: boolean // New: Global visibility toggle
 
   openWindow: (wm: {
     id: string
@@ -37,6 +38,7 @@ interface WindowStore {
   setBackdrop: (id: string | null) => void // NEW: Setter for backdrop
   toggleZenToolbar: () => void // NEW: Toggle Zen Toolbar
   closeAll: () => void
+  toggleHidePanels: () => void
 
   // Layouts
   saveLayout: (name: string) => void
@@ -88,6 +90,7 @@ export const useWindowStore = create<WindowStore>()(
       layouts: {},
       backdropWindowId: null,
       showZenToolbar: true,
+      arePanelsHidden: false,
 
       toggleZenToolbar: () =>
         set((state) => ({ showZenToolbar: !state.showZenToolbar })),
@@ -239,6 +242,9 @@ export const useWindowStore = create<WindowStore>()(
         }),
 
       closeAll: () => set({ windows: {}, panelOrder: [] }),
+
+      toggleHidePanels: () =>
+        set((state) => ({ arePanelsHidden: !state.arePanelsHidden })),
 
       saveLayout: (name) =>
         set((state) => ({

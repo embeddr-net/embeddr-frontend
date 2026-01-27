@@ -50,6 +50,7 @@ import {
   // searchItems,
   // searchItemsByImageId,
 } from '@/lib/api'
+import type { LibraryPath } from '@/lib/api/endpoints/library'
 import { useArtifacts } from '@/lib/api/client-v2'
 import PostsScrollArea from '@/components/search/PostsScrollArea'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
@@ -245,7 +246,7 @@ export function ImageBrowser({
   return (
     <div className="flex h-full flex-col relative overflow-hidden">
       {/* Top Bar */}
-      <div className="shrink-0 flex items-center gap-2 p-2 border-b bg-background z-30">
+      <div className="shrink-0 flex items-center gap-2 py-2 border-b bg-background z-30">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -269,7 +270,7 @@ export function ImageBrowser({
             }
           }}
         >
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-35 h-9">
             <SelectValue placeholder="Library" />
           </SelectTrigger>
           <SelectContent>
@@ -279,7 +280,7 @@ export function ImageBrowser({
                 All Libraries
               </div>
             </SelectItem>
-            {libraries?.map((library) => (
+            {libraries?.map((library: LibraryPath) => (
               <SelectItem key={library.id} value={library.id.toString()}>
                 <div className="flex items-center w-full">
                   <Library className="mr-2 h-4 w-4" />
@@ -311,7 +312,7 @@ export function ImageBrowser({
             }
           }}
         >
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-35 h-9">
             <SelectValue placeholder="Collection" />
           </SelectTrigger>
           <SelectContent>
@@ -446,7 +447,7 @@ export function ImageBrowser({
 
       {/* Active Filters (Chips) - Only for special things like "Similar to #ID" */}
       {searchImageId && (
-        <div className="flex items-center gap-2 p-2 border-b bg-muted/20">
+        <div className="flex items-center gap-2 p-2 bg-muted/20">
           <div className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-md text-xs font-medium border border-primary/20">
             <ScanEye className="h-3 w-3" />
             <span>Similar to #{searchImageId}</span>

@@ -2,29 +2,25 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { toast } from 'sonner'
 import React, { useMemo } from 'react'
-import type { EmbeddrAPI, PluginDefinition } from '@embeddr/react-ui/types'
+import type { EmbeddrAPI, PluginDefinition } from '@embeddr/zen-ui'
 import { useGlobalStore } from '@/store/globalStore'
 import { useGeneration } from '@/context/GenerationContext'
 import { usePanelStore } from '@/store/panelStore'
 import { useWindowStore } from '@/store/windowStore'
+import { useWorkspaceStore } from '@/store/workspaceStore'
+import { useSettingsStore } from '@/store/settingsStore'
 import { registerWindowComponent } from '@/components/ui/windowRegistry'
 import { uploadItem } from '@/lib/api/endpoints/images'
 import { BACKEND_URL, BASE_URL, BACKEND_V2_URL } from '@/lib/api/config'
 import { globalEventBus } from '@/lib/eventBus'
-import { DynamicPluginComponent } from './DynamicLoader'
-import * as Icons from 'lucide-react'
-
-function lucideIconFromName(name: string) {
-  return (Icons as any)[name] || undefined
-}
-const LOCATION_MAP: Record<string, any> = {
-  ZEN_PANEL: 'zen-toolbox-tab',
-  SIDEBAR: 'zen-sidebar',
-  OVERLAY: 'zen-overlay',
-  HEADER: 'header-nav',
-
-  WINDOW: 'window', // registered, not shown automatically
-}
+import {
+  loadExternalPlugins as loadExternalPluginsZen,
+  registerPlugin as registerZenPlugin,
+  unregisterPlugin as unregisterZenPlugin,
+  usePluginRegistry,
+  type PluginLoaderAdapter,
+  type PluginManifest,
+} from '@embeddr/zen-ui'
 
 interface PluginState {
   plugins: Record<string, PluginDefinition>
@@ -57,181 +53,106 @@ export const usePluginStore = create<PluginState>()(
 
       loadExternalPlugins: async () => {
         try {
-          // Use v2 endpoint for plugins as v1 is deprecated/empty for plugins
-          const res = await fetch(`${BACKEND_V2_URL}/plugins`)
-          if (!res.ok) return
-          const plugins = await res.json()
+          const ensureRegistrySync = () => {
+            if ((window as any).__embeddrRegistrySync) return
+            ;(window as any).__embeddrRegistrySync =
+              usePluginRegistry.subscribe((state) => {
+                set({
+                  plugins: state.plugins,
+                  activePlugins: state.activePlugins,
+                  knownPlugins: state.knownPlugins,
+                  backendMetadata: state.backendMetadata,
+                })
+              })
+          }
 
-          // Store metadata for lookup during registration
-          const metadataMap: Record<string, any> = {}
-          plugins.forEach((p: any) => {
-            metadataMap[p.id] = p
-
-            // Pre-register frontend components if defined in backend manifest
-            if (p.frontend_components && p.frontend_components.length > 0) {
-              const virtualDef: PluginDefinition = {
-                id: p.id,
-                name: p.name || p.id,
-                version: p.version || '0.0.0',
-                description: '',
-                components: p.frontend_components.map((c: any) => ({
-                  id: c.name,
-                  location: LOCATION_MAP[c.location] || c.location,
-                  label: c.label || c.name,
-
-                  // ✅ keep metadata needed by host-owned windows
-                  exportName: c.component,
-                  props: c.props || {},
-
-                  // optional extras from backend
-                  icon: c.icon,
-                })),
-
-                actions: (p.frontend_actions || []).map((a: any) => ({
-                  id: a.name,
-                  location: a.location || 'zen-toolbox-action',
-                  label: a.label || a.name,
-                  // icon: map string -> lucide component (see below)
-                  icon: a.icon ? lucideIconFromName(a.icon) : undefined,
-
-                  // If action has a component, your toolbox UI will render accordion content.
-                  component: a.component
-                    ? (apiProps: any) =>
-                        React.createElement(DynamicPluginComponent, {
-                          pluginId: p.id,
-                          componentName: a.component,
-                          api: apiProps.api,
-                          ...(a.props || {}),
-                        })
-                    : undefined,
-
-                  // If you want button-only actions later:
-                  handler: !a.component
-                    ? async (api: any) => {
-                        // Option A: call server-side action by name (recommended)
-                        // await api.actions.runServerAction({ pluginId: p.id, action: a.name })
-                      }
-                    : undefined,
-                })),
+          const adapter: PluginLoaderAdapter = {
+            list: async () => {
+              const res = await fetch(`${BACKEND_V2_URL}/plugins`)
+              if (!res.ok) return []
+              const plugins = await res.json()
+              return plugins as PluginManifest[]
+            },
+            resolveScriptUrl: (manifest) => {
+              const plugin = manifest as any
+              let scriptUrl = plugin.url
+              if (!scriptUrl) return ''
+              if (BASE_URL.startsWith('http')) {
+                const url = new URL(BASE_URL)
+                scriptUrl = `${url.origin}${plugin.url}`
               }
-              get().registerPlugin(virtualDef)
-            }
-          })
-          set({ backendMetadata: metadataMap })
-          ;(window as any).Embeddr = {
-            ...(window as any).Embeddr,
-            registerPlugin: (plugin: PluginDefinition) => {
-              console.log(
-                '[Store] Global registerPlugin called for:',
-                plugin.id,
-              )
-              get().registerPlugin(plugin)
+              return scriptUrl
+            },
+            resolveCssUrl: (manifest) => {
+              const plugin = manifest as any
+              let scriptUrl = plugin.url
+              if (!scriptUrl) return null
+              if (BASE_URL.startsWith('http')) {
+                const url = new URL(BASE_URL)
+                scriptUrl = `${url.origin}${plugin.url}`
+              }
+              if (scriptUrl.includes('index.js')) {
+                return scriptUrl.replace('index.js', 'style.css')
+              }
+              if (scriptUrl.endsWith('.umd.js')) {
+                return scriptUrl.replace('.umd.js', '.css')
+              }
+              if (scriptUrl.endsWith('.js')) {
+                return scriptUrl.replace('.js', '.css')
+              }
+              return `${scriptUrl}.css`
             },
           }
 
-          for (const plugin of plugins) {
-            const script = document.createElement('script')
-            // If plugin.url is relative, prepend BACKEND_URL if needed,
-            // but usually it's served from the same origin or we need a full URL.
-            // The API returns /plugins/filename.js.
-            // If we are on localhost:3000 and backend is localhost:8003, we need full URL.
-            // We use BASE_URL which is the root of the backend (e.g. http://localhost:8003).
-
-            let scriptUrl = plugin.url
-            if (BASE_URL.startsWith('http')) {
-              const url = new URL(BASE_URL)
-              scriptUrl = `${url.origin}${plugin.url}`
-            }
-
-            // Add cache buster
-            scriptUrl += `?t=${Date.now()}`
-
-            script.src = scriptUrl
-            script.async = true
-            script.onload = () => {
-              console.log(
-                `[PluginStore] Successfully loaded script for ${plugin.id}: ${scriptUrl}`,
-              )
-            }
-            script.onerror = (e) => {
-              console.error(
-                `[PluginStore] FAILED to load script for ${plugin.id}: ${scriptUrl}`,
-                e,
-              )
-            }
-            document.body.appendChild(script)
-
-            // Try to load CSS if it exists
-            // Vite usually outputs style.css if cssCodeSplit is false (default for lib mode?)
-            // But we set cssCodeSplit: false in build-plugins.js now.
-            // The CSS file name is usually style.css or index.css or based on entry name.
-            // In lib mode with fileName 'index.js', it might be 'style.css'.
-            // Let's try to load style.css from the same directory.
-            const cssUrl = scriptUrl.replace('index.js', 'style.css')
-            const link = document.createElement('link')
-            link.rel = 'stylesheet'
-            link.href = cssUrl
-            // We don't know if it exists, but adding it won't hurt much (404)
-            // Ideally the API should tell us what files are in the plugin dir.
-            document.head.appendChild(link)
-          }
+          ensureRegistrySync()
+          await loadExternalPluginsZen({ adapter })
         } catch (e) {
           console.error('Failed to load external plugins', e)
         }
       },
 
       registerPlugin: (plugin) => {
-        console.log('[PluginStore] Registering plugin:', plugin.id)
-
-        // Merge backend metadata if available (intents, etc)
-        const metadata = get().backendMetadata[plugin.id]
-        if (metadata && metadata.intents) {
-          plugin.intents = metadata.intents
-        }
-
-        set((state) => {
-          if (state.plugins[plugin.id]) {
-            // Plugin definition update (optional, but good for HMR)
-            return {
-              plugins: { ...state.plugins, [plugin.id]: plugin },
-            }
-          }
-
-          const isKnown = state.knownPlugins.includes(plugin.id)
-          const isActive = state.activePlugins.includes(plugin.id)
-
-          return {
-            plugins: { ...state.plugins, [plugin.id]: plugin },
-            knownPlugins: isKnown
-              ? state.knownPlugins
-              : [...state.knownPlugins, plugin.id],
-            activePlugins: isActive
-              ? state.activePlugins
-              : [...state.activePlugins, plugin.id],
-          }
+        registerZenPlugin(plugin)
+        const registry = usePluginRegistry.getState()
+        set({
+          plugins: registry.plugins,
+          activePlugins: registry.activePlugins,
+          knownPlugins: registry.knownPlugins,
+          backendMetadata: registry.backendMetadata,
         })
       },
 
       unregisterPlugin: (pluginId) => {
-        set((state) => {
-          const { [pluginId]: _, ...rest } = state.plugins
-          return {
-            plugins: rest,
-            activePlugins: state.activePlugins.filter((id) => id !== pluginId),
-          }
+        unregisterZenPlugin(pluginId)
+        const registry = usePluginRegistry.getState()
+        set({
+          plugins: registry.plugins,
+          activePlugins: registry.activePlugins,
+          knownPlugins: registry.knownPlugins,
+          backendMetadata: registry.backendMetadata,
         })
       },
 
       activatePlugin: (pluginId) => {
-        set((state) => ({
-          activePlugins: [...state.activePlugins, pluginId],
-        }))
+        usePluginRegistry.getState().activatePlugin(pluginId)
+        const registry = usePluginRegistry.getState()
+        set({
+          plugins: registry.plugins,
+          activePlugins: registry.activePlugins,
+          knownPlugins: registry.knownPlugins,
+          backendMetadata: registry.backendMetadata,
+        })
       },
 
       deactivatePlugin: (pluginId) => {
-        set((state) => ({
-          activePlugins: state.activePlugins.filter((id) => id !== pluginId),
-        }))
+        usePluginRegistry.getState().deactivatePlugin(pluginId)
+        const registry = usePluginRegistry.getState()
+        set({
+          plugins: registry.plugins,
+          activePlugins: registry.activePlugins,
+          knownPlugins: registry.knownPlugins,
+          backendMetadata: registry.backendMetadata,
+        })
       },
 
       getComponents: (location) => {
@@ -280,6 +201,8 @@ export const usePluginStore = create<PluginState>()(
   ),
 )
 // Helper to extend API with plugin context
+const extendedApiCache = new WeakMap<EmbeddrAPI, Map<string, EmbeddrAPI>>()
+
 export const extendApiForPlugin = (
   api: EmbeddrAPI,
   pluginId: string,
@@ -291,7 +214,13 @@ export const extendApiForPlugin = (
     )
     return api
   }
-  return {
+
+  const pluginCache = extendedApiCache.get(api)
+  if (pluginCache?.has(pluginId)) {
+    return pluginCache.get(pluginId) as EmbeddrAPI
+  }
+
+  const extended = {
     ...api,
     utils: {
       ...api.utils,
@@ -301,14 +230,22 @@ export const extendApiForPlugin = (
       },
     },
   }
+
+  if (pluginCache) {
+    pluginCache.set(pluginId, extended)
+  } else {
+    extendedApiCache.set(api, new Map([[pluginId, extended]]))
+  }
+
+  return extended
 }
 
 // Hook to provide the API to plugins
 export const useEmbeddrAPI = (): EmbeddrAPI => {
   const globalStore = useGlobalStore()
   const generation = useGeneration()
-  const panelStore = usePanelStore()
-  const windowStore = useWindowStore()
+  // Avoid subscribing to panel store to reduce API object churn
+  // const windowStore = useWindowStore() // Removed to prevent re-renders on every window move
 
   // Memoize stable parts of the API
   const events = useMemo(
@@ -350,6 +287,292 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
         console.warn('getPluginUrl called without plugin context')
         return `${BACKEND_URL}/${path.startsWith('/') ? path.slice(1) : path}`
       },
+    }),
+    [],
+  )
+
+  const artifacts = useMemo(() => {
+    const list = async (input: {
+      limit?: number
+      offset?: number
+      type_name?: string
+      sort?: 'new' | 'random'
+      ids?: string[]
+    }) => {
+      const q = new URLSearchParams()
+      if (input.limit !== undefined) q.append('limit', `${input.limit}`)
+      if (input.offset !== undefined) q.append('offset', `${input.offset}`)
+      if (input.type_name) q.append('type_name', input.type_name)
+      if (input.sort) q.append('sort', input.sort)
+      if (input.ids?.length) input.ids.forEach((id) => q.append('ids', id))
+
+      const res = await fetch(`${BACKEND_V2_URL}/artifacts/?${q.toString()}`)
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to list artifacts')
+      }
+
+      return res.json()
+    }
+
+    const getContentUrl = (id: string) =>
+      `${BACKEND_V2_URL}/artifacts/${id}/content`
+
+    const resolve = async (input: {
+      id: string
+      variant?: 'preview' | 'original'
+    }) => {
+      const params = new URLSearchParams()
+      if (input.variant) params.append('variant', input.variant)
+      const qs = params.toString()
+      const res = await fetch(
+        `${BACKEND_V2_URL}/artifacts/${input.id}/resolve${qs ? `?${qs}` : ''}`,
+      )
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to resolve artifact')
+      }
+      return res.json()
+    }
+
+    const create = async (input: {
+      type_name: string
+      uri?: string
+      metadata_json?: Record<string, any>
+      override_capabilities?: Array<string>
+      base_type_name?: string
+      confirm?: boolean
+    }) => {
+      const res = await fetch(
+        `${BACKEND_V2_URL}/lotus/embeddr-core.artifact.create`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        },
+      )
+
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to create artifact')
+      }
+
+      return res.json()
+    }
+
+    const update = async (
+      id: string,
+      input: {
+        metadata_json?: Record<string, any>
+        override_capabilities?: Array<string>
+        uri?: string
+        type_name?: string
+        base_type_name?: string
+      },
+    ) => {
+      const res = await fetch(`${BACKEND_V2_URL}/artifacts/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      })
+
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to update artifact')
+      }
+
+      return res.json()
+    }
+
+    const remove = async (id: string) => {
+      const res = await fetch(`${BACKEND_V2_URL}/artifacts/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to delete artifact')
+      }
+
+      return res.json()
+    }
+
+    const uploadInit = async (input: {
+      artifact_id: string
+      filename?: string
+      content_type?: string
+      size?: number
+      confirm?: boolean
+    }) => {
+      const res = await fetch(
+        `${BACKEND_V2_URL}/lotus/embeddr-core.artifact.upload.init`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        },
+      )
+
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to init upload')
+      }
+
+      return res.json()
+    }
+
+    const uploadComplete = async (input: {
+      upload_id: string
+      confirm?: boolean
+    }) => {
+      const res = await fetch(
+        `${BACKEND_V2_URL}/lotus/embeddr-core.artifact.upload.complete`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        },
+      )
+
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to complete upload')
+      }
+
+      return res.json()
+    }
+
+    const uploadFile = async (input: { artifact_id: string; file: File }) => {
+      const init = await uploadInit({
+        artifact_id: input.artifact_id,
+        filename: input.file.name,
+        content_type: input.file.type,
+        size: input.file.size,
+        confirm: true,
+      })
+
+      const uploadPath = init.upload_path as string
+      const formData = new FormData()
+      formData.append('file', input.file)
+
+      const uploadRes = await fetch(
+        `${BACKEND_V2_URL.replace('/api/v2', '')}${uploadPath}`,
+        {
+          method: 'POST',
+          body: formData,
+        },
+      )
+
+      if (!uploadRes.ok) {
+        const txt = await uploadRes.text()
+        throw new Error(txt || 'Upload failed')
+      }
+
+      const uploaded = await uploadRes.json()
+      const complete = await uploadComplete({
+        upload_id: init.upload_id,
+        confirm: true,
+      })
+
+      return { init, uploaded, complete }
+    }
+
+    const get = async (id: string) => {
+      const res = await fetch(`${BACKEND_V2_URL}/artifacts/${id}`)
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to get artifact')
+      }
+      return res.json()
+    }
+
+    return {
+      list,
+      get,
+      getContentUrl,
+      resolve,
+      create,
+      update,
+      delete: remove,
+      uploadInit,
+      uploadComplete,
+      uploadFile,
+    }
+  }, [])
+
+  const resources = useMemo(() => {
+    const resolve = async (input: {
+      artifactId?: string
+      url?: string
+      hintType?: string
+      adapterId?: string
+      artifactPayload?: Record<string, any>
+    }) => {
+      const { artifactId, url, hintType, adapterId, artifactPayload } = input
+
+      if (artifactPayload?.content_url && artifactPayload?.preview_url) {
+        return {
+          ...artifactPayload,
+          id: artifactPayload.id ?? artifactId,
+          type: artifactPayload.type ?? hintType,
+          content_url: artifactPayload.content_url,
+          preview_url: artifactPayload.preview_url,
+          url: artifactPayload.url ?? url,
+        }
+      }
+
+      if (artifactId && !url) {
+        return {
+          id: artifactId,
+          type: hintType || 'image',
+          content_url: `${BACKEND_V2_URL}/artifacts/${artifactId}/content`,
+          preview_url: `${BACKEND_V2_URL}/artifacts/${artifactId}/preview`,
+        }
+      }
+
+      const res = await fetch(`${BACKEND_V2_URL}/resources/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          artifact_id: artifactId,
+          url,
+          hint_type: hintType,
+          adapter_id: adapterId,
+        }),
+      })
+      if (res.ok) return res.json()
+
+      if (url) {
+        return {
+          id: artifactId,
+          type: hintType || 'image',
+          content_url: url,
+          preview_url: url,
+          url,
+        }
+      }
+
+      return {
+        id: artifactId,
+        type: hintType || 'image',
+      }
+    }
+
+    return { resolve }
+  }, [])
+
+  const settings = useMemo(
+    () => ({
+      get: <T = any>(key: string, defaultValue?: T) =>
+        useSettingsStore.getState().getSetting(key, defaultValue),
+      set: (key: string, value: any) =>
+        useSettingsStore.getState().setSetting(key, value),
+      getPlugin: <T = any>(pluginId: string, key: string, defaultValue?: T) =>
+        useSettingsStore
+          .getState()
+          .getPluginSetting(pluginId, key, defaultValue),
+      setPlugin: (pluginId: string, key: string, value: any) =>
+        useSettingsStore.getState().setPluginSetting(pluginId, key, value),
     }),
     [],
   )
@@ -424,27 +647,178 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
         },
       },
       ui: {
-        activePanelId: panelStore.activePanelId,
+        get activePanelId() {
+          return usePanelStore.getState().activePanelId
+        },
         isPanelActive: (panelId: string) =>
-          panelStore.activePanelId === panelId,
+          usePanelStore.getState().activePanelId === panelId,
+      },
+      workspaces: {
+        getState: () => useWorkspaceStore.getState(),
+        subscribe: (listener: (state: any) => void) =>
+          useWorkspaceStore.subscribe(listener),
+        list: () => useWorkspaceStore.getState().listWorkspaces(),
+        getActiveId: () => useWorkspaceStore.getState().activeWorkspaceId,
+        ensureDefault: () =>
+          useWorkspaceStore.getState().ensureDefaultWorkspace(),
+        create: (
+          name: string,
+          options?: { fromCurrent?: boolean; isTemplate?: boolean },
+        ) => useWorkspaceStore.getState().createWorkspace(name, options),
+        save: (id: string) => useWorkspaceStore.getState().saveWorkspace(id),
+        saveActive: () => useWorkspaceStore.getState().saveActiveWorkspace(),
+        apply: (id: string) =>
+          useWorkspaceStore.getState().setActiveWorkspace(id),
+        rename: (id: string, name: string) =>
+          useWorkspaceStore.getState().renameWorkspace(id, name),
+        clone: (id: string, name?: string) =>
+          useWorkspaceStore.getState().cloneWorkspace(id, name),
+        remove: (id: string) =>
+          useWorkspaceStore.getState().deleteWorkspace(id),
+        setTemplate: (id: string, isTemplate: boolean) =>
+          useWorkspaceStore.getState().setTemplate(id, isTemplate),
       },
       windows: {
         open: (id: string, title: string, componentId: string, props?: any) => {
-          windowStore.openWindow({ id, title, componentId, props })
+          useWindowStore
+            .getState()
+            .openWindow({ id, title, componentId, props })
         },
 
         spawn: (componentId: string, title: string, props?: any) => {
           const id = crypto.randomUUID()
-          windowStore.openWindow({ id, title, componentId, props })
+          useWindowStore
+            .getState()
+            .openWindow({ id, title, componentId, props })
           return id
         },
 
         register: (id: string, component: any) => {
           registerWindowComponent(id, component)
         },
+        getState: () => useWindowStore.getState(),
+        list: () => Object.values(useWindowStore.getState().windows),
       },
       toast: toastApi,
+      settings: settings,
       utils: utils,
+      executions: {
+        create: async (input: {
+          plugin_name: string
+          job_type?: string
+          inputs?: Record<string, any>
+          action_id?: string
+          parameters?: Record<string, any>
+        }) => {
+          const jobType = input.job_type || input.action_id
+          const inputs = input.inputs || input.parameters || {}
+          const res = await fetch(`${BACKEND_V2_URL}/executions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              plugin_name: input.plugin_name,
+              job_type: jobType,
+              inputs,
+            }),
+          })
+          if (!res.ok) {
+            const txt = await res.text()
+            throw new Error(txt || 'Execution failed')
+          }
+          return res.json()
+        },
+        get: async (executionId: string) => {
+          const res = await fetch(`${BACKEND_V2_URL}/executions/${executionId}`)
+          if (!res.ok) {
+            const txt = await res.text()
+            throw new Error(txt || 'Execution lookup failed')
+          }
+          return res.json()
+        },
+        list: async (input?: {
+          plugin_name?: string
+          status?: string
+          limit?: number
+          offset?: number
+        }) => {
+          const params = new URLSearchParams()
+          if (input?.plugin_name) params.set('plugin_name', input.plugin_name)
+          if (input?.status) params.set('status', input.status)
+          if (input?.limit != null) params.set('limit', String(input.limit))
+          if (input?.offset != null) params.set('offset', String(input.offset))
+          const qs = params.toString()
+          const res = await fetch(
+            `${BACKEND_V2_URL}/executions${qs ? `?${qs}` : ''}`,
+          )
+          if (!res.ok) {
+            const txt = await res.text()
+            throw new Error(txt || 'Execution list failed')
+          }
+          return res.json()
+        },
+      },
+      lotus: {
+        invoke: async (capId: string, input?: Record<string, any>) => {
+          const res = await fetch(`${BACKEND_V2_URL}/lotus/${capId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input ?? {}),
+          })
+          if (!res.ok) {
+            const txt = await res.text()
+            throw new Error(txt || 'Lotus invoke failed')
+          }
+          return res.json()
+        },
+        query: async (q: string, limit = 20) => {
+          const params = new URLSearchParams({ q, limit: String(limit) })
+          const res = await fetch(
+            `${BACKEND_V2_URL}/lotus/query?${params.toString()}`,
+          )
+          if (!res.ok) {
+            const txt = await res.text()
+            throw new Error(txt || 'Lotus query failed')
+          }
+          return res.json()
+        },
+        list: async (input?: {
+          kind?: string
+          plugin?: string
+          slot?: string
+          limit?: number
+          offset?: number
+        }) => {
+          const params = new URLSearchParams()
+          if (input?.kind) params.append('kind', input.kind)
+          if (input?.plugin) params.append('plugin', input.plugin)
+          if (input?.slot) params.append('slot', input.slot)
+          if (input?.limit !== undefined)
+            params.append('limit', String(input.limit))
+          if (input?.offset !== undefined)
+            params.append('offset', String(input.offset))
+          const qs = params.toString()
+          const res = await fetch(
+            `${BACKEND_V2_URL}/lotus/list${qs ? `?${qs}` : ''}`,
+          )
+          if (!res.ok) {
+            const txt = await res.text()
+            throw new Error(txt || 'Lotus list failed')
+          }
+          return res.json()
+        },
+      },
+      plugins: {
+        list: async () => {
+          const res = await fetch(`${BACKEND_V2_URL}/plugins`)
+          if (!res.ok) {
+            const txt = await res.text()
+            throw new Error(txt || 'Failed to list plugins')
+          }
+          return res.json()
+        },
+      },
+      artifacts,
+      resources,
       client: {
         plugins: {
           call: async <T = any>(
@@ -486,9 +860,9 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       generation.generate,
       generation.setWorkflowInput,
       generation.selectWorkflow,
-      panelStore.activePanelId,
       events,
       toastApi,
+      settings,
       utils,
       comfy,
     ],

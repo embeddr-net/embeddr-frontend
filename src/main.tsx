@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom'
 import * as EmbeddrUI from '@embeddr/react-ui'
 import * as Lucide from 'lucide-react'
 import * as ReactQuery from '@tanstack/react-query'
+import * as Recharts from 'recharts'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 
 // Import the generated route tree
@@ -18,6 +19,7 @@ import './styles.css'
 ;(window as any).EmbeddrUI = EmbeddrUI
 ;(window as any).Lucide = Lucide
 ;(window as any).ReactQuery = ReactQuery
+;(window as any).Recharts = Recharts
 ;(window as any).Embeddr = {
   eventBus: globalEventBus,
 }

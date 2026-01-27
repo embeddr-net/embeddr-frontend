@@ -1,11 +1,18 @@
 import React, { useMemo } from 'react'
-import { useParams } from '@tanstack/react-router'
 import { usePluginStore } from '@/plugins/store'
-import { useEmbeddrAPI } from '@/plugins/store' // Assuming this hook exists or I can construct it
-import { Card } from '@embeddr/react-ui/components/card'
+import { useEmbeddrAPI } from '@/plugins/store'
 import { AlertTriangle } from 'lucide-react'
+import { DynamicPluginComponent } from '@/plugins/DynamicLoader'
 
-const PluginPage = () => {
+interface PluginPageProps {
+  pluginId?: string
+  pageId?: string
+}
+
+const PluginPage = ({
+  pluginId: propPluginId,
+  pageId: propPageId,
+}: PluginPageProps) => {
   // We need to get the route definition to use useParams properly with type safety,
   // but since we are in a separate component, we might need to import the Route or use a generic useParams.
   // However, TanStack Router's useParams usually requires the route id.
@@ -17,21 +24,25 @@ const PluginPage = () => {
   // or just rely on the fact that we are rendered by that route.
 
   // Let's use a loose approach for now or accept props if passed by the route wrapper.
-  const params = useParams({ from: '/plugins/$pluginId' })
-  const { pluginId } = params
+  const pluginId = propPluginId
+  const pageId = propPageId
 
-  const { plugins, getComponents } = usePluginStore()
+  const { plugins } = usePluginStore()
   const api = useEmbeddrAPI() // I need to verify if this hook exists and is exported
 
-  const plugin = plugins[pluginId]
+  const plugin = pluginId ? plugins[pluginId] : undefined
 
   const pageComponent = useMemo(() => {
     if (!plugin) return null
     // Find a component with location 'page'
-    // The store has getComponents helper but it returns for all plugins.
-    // We want for this specific plugin.
-    return plugin.components?.find((c) => c.location === 'page')
-  }, [plugin])
+    const pages = plugin.components?.filter((c) => c.location === 'page') || []
+    if (pageId) {
+      return pages.find(
+        (c) => c.id === pageId || (c as any).exportName === pageId,
+      )
+    }
+    return pages[0]
+  }, [plugin, pageId])
 
   if (!plugin) {
     return (
@@ -62,12 +73,84 @@ const PluginPage = () => {
   }
 
   const Component = pageComponent.component
+  const exportName = (pageComponent as any).exportName as string | undefined
+  const pageProps = (pageComponent as any).props || {}
+
+  if (!Component && !exportName) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center space-y-2">
+          <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto" />
+          <h2 className="text-xl font-semibold">Invalid Page Component</h2>
+          <p className="text-muted-foreground">
+            The plugin "{plugin.name}" page component could not be resolved.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="h-full w-full overflow-hidden flex flex-col">
-      <Component api={api} />
+    <div className="h-full w-full overflow-hidden flex flex-col p-1">
+      <div className="h-full border">
+        {Component ? (
+          <PluginPageErrorBoundary pluginName={plugin.name} pageId={pageId}>
+            <Component api={api} pluginId={pluginId} {...pageProps} />
+          </PluginPageErrorBoundary>
+        ) : (
+          <PluginPageErrorBoundary pluginName={plugin.name} pageId={pageId}>
+            <DynamicPluginComponent
+              pluginId={pluginId!}
+              componentName={exportName!}
+              api={api}
+              {...pageProps}
+            />
+          </PluginPageErrorBoundary>
+        )}
+      </div>
     </div>
   )
 }
 
 export default PluginPage
+
+class PluginPageErrorBoundary extends React.Component<
+  { pluginName: string; pageId?: string; children: React.ReactNode },
+  { error?: Error }
+> {
+  constructor(props: {
+    pluginName: string
+    pageId?: string
+    children: React.ReactNode
+  }) {
+    super(props)
+    this.state = { error: undefined }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { error }
+  }
+
+  render() {
+    const { error } = this.state
+    if (error) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center space-y-2">
+            <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto" />
+            <h2 className="text-xl font-semibold">Plugin Page Error</h2>
+            <p className="text-muted-foreground">
+              {this.props.pluginName} page
+              {this.props.pageId ? ` (${this.props.pageId})` : ''} failed to
+              render.
+            </p>
+            <pre className="text-xs text-muted-foreground whitespace-pre-wrap max-w-xl">
+              {error.message}
+            </pre>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}

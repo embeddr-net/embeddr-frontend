@@ -66,7 +66,7 @@ const PostCard = memo(
 
     const handleUseInCreate = () => {
       selectGlobalImage(post)
-      navigate({ to: '/create' })
+      navigate({ to: '/lotus' })
     }
 
     const handleViewLineage = () => {
@@ -89,7 +89,7 @@ const PostCard = memo(
         <ContextMenuTrigger>
           <div
             className={cn(
-              'border bg-card/40 text-card-foreground shadow-sm overflow-hidden group/post border-foreground/10 p-0! gap-0! cursor-pointer transition-all hover:border hover:border-primary',
+              'border bg-card/40 text-card-foreground shadow-sm overflow-hidden group/post border-foreground/10 p-0! gap-0! cursor-pointer transition-all hover:border hover:border-primary rounded-md',
               isSelected && 'border-foreground/40',
             )}
             onClick={(e) => onSelect?.(post, e)}

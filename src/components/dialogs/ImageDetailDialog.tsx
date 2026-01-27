@@ -82,7 +82,7 @@ export function ImageDetailDialog({
                   <video
                     src={
                       image.image_url ||
-                      `${BACKEND_URL}/images/${image.id}/file`
+                      `${BACKEND_URL}/artifacts/${image.id}/content`
                     }
                     className="max-w-full max-h-full object-contain shadow-sm"
                     controls
@@ -93,7 +93,7 @@ export function ImageDetailDialog({
                   <img
                     src={
                       image.image_url ||
-                      `${BACKEND_URL}/images/${image.id}/file`
+                      `${BACKEND_URL}/artifacts/${image.id}/content`
                     }
                     className="max-w-full max-h-full object-contain shadow-sm"
                     alt={image.prompt}
@@ -145,7 +145,7 @@ export function ImageDetailDialog({
                               }}
                             >
                               <img
-                                src={`${BACKEND_URL}/images/${p.id}/file`}
+                                src={`${BACKEND_URL}/artifacts/${p.id}/content`}
                                 className="w-full h-full object-cover"
                                 alt=""
                               />
@@ -171,14 +171,14 @@ export function ImageDetailDialog({
                               className="aspect-square  overflow-hidden border bg-muted cursor-pointer hover:ring-2 ring-primary/50 transition-all"
                               onClick={() => {
                                 setLoading(true)
-                                fetch(`${BACKEND_URL}/images/${c.id}`)
+                                fetch(`${BACKEND_URL}/artifacts/${c.id}`)
                                   .then((res) => res.json())
                                   .then((data) => setImage(data))
                                   .finally(() => setLoading(false))
                               }}
                             >
                               <img
-                                src={`${BACKEND_URL}/images/${c.id}/file`}
+                                src={`${BACKEND_URL}/artifacts/${c.id}/content`}
                                 className="w-full h-full object-cover"
                                 alt=""
                               />

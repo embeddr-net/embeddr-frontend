@@ -36,7 +36,7 @@ import { Route } from '@/routes/search'
 import { TagsFilter } from '@/components/search/TagsFilter'
 import PostsScrollArea from '@/components/search/PostsScrollArea'
 import { fetchCollections, fetchItems, fetchTags, searchItems } from '@/lib/api'
-import { embeddrApi } from '@/lib/api/v2/client'
+import { embeddrApi } from '@/lib/api/client'
 import type { Artifact } from '@/lib/api/v2/types'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 
@@ -107,7 +107,10 @@ const ExplorePage = () => {
     string | null
   >(null)
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null)
-  const [mediaType, setMediaType] = useState<'image' | 'video' | 'all'>('all')
+  const [selectedSourceType, setSelectedSourceType] = useState<string | null>(
+    null,
+  )
+  const [mediaType, setMediaType] = useState<'image' | 'video' | 'all'>('image')
   const [showArchived, setShowArchived] = useState<boolean | null>(false)
   const [useReranker, setUseReranker] = useLocalStorage(
     'explore-use-reranker',
@@ -279,6 +282,7 @@ const ExplorePage = () => {
         selectedTags,
         mediaType,
         showArchived,
+        selectedSourceType,
       ],
       queryFn: async ({ pageParam }) => {
         if (selectedCollectionId) {
@@ -315,6 +319,8 @@ const ExplorePage = () => {
           media_type: mediaType === 'all' ? undefined : mediaType,
           sort: sort,
           is_archived: showArchived || false,
+          // @ts-ignore - Backend support for source filtering pending or via metadata
+          source: selectedSourceType,
         })
         return res.items.map(mapArtifactToImage)
       },
@@ -403,33 +409,32 @@ const ExplorePage = () => {
     ],
     queryFn: async () => {
       if (searchImageId) {
-        const res = await embeddrApi.artifacts.findSimilar(
+        const res = (await embeddrApi.artifacts.findSimilarCap(
           searchImageId.toString(),
           50,
           selectedModel,
-        )
+        )) as { items: Array<{ id: string | number }> }
         if (res.items.length === 0) return []
 
-        const ids = res.items.map((i) => i.id)
+        const ids = res.items.map((item) => item.id)
         const artifacts = await Promise.all(
-          ids.map((id) => embeddrApi.artifacts.get(id)),
+          ids.map((id) => embeddrApi.artifacts.get(String(id))),
         )
         return artifacts.map(mapArtifactToImage)
       }
 
       // Use V2 Semantic Search
-      const res = await embeddrApi.artifacts.semanticSearch(
+      const res = (await embeddrApi.artifacts.semanticSearchCap(
         activeSearchQuery,
         50,
-        useReranker,
         selectedModel,
-      )
+      )) as { items: Array<{ id: string | number }> }
       // Plugin returns { items: [{ id, score }] }. We need to fetch full artifacts or just headers?
       // UI needs images. We should Hydrate them.
       // Fetch details for the IDs.
       if (res.items.length === 0) return []
 
-      const ids = res.items.map((i) => i.id)
+      const ids = res.items.map((item) => item.id)
 
       // We don't have a bulk fetch by ID endpoint in V2 yet (artifacts.list doesn't take IDs array in my edit).
       // We can iterate fetch (slow) or better: update backend list to accept ids or use search endpoint in V2 artifacts.py
@@ -439,7 +444,7 @@ const ExplorePage = () => {
       // Let's implement a 'getByIds' or 'list' with IDs in client/backend.
       // For now, let's use parallel fetch.
       const artifacts = await Promise.all(
-        ids.map((id) => embeddrApi.artifacts.get(id)),
+        ids.map((id) => embeddrApi.artifacts.get(String(id))),
       )
       return artifacts.map(mapArtifactToImage)
     },
@@ -577,6 +582,8 @@ const ExplorePage = () => {
         setMediaType={setMediaType}
         showArchived={showArchived}
         setShowArchived={setShowArchived}
+        selectedSourceType={selectedSourceType}
+        setSelectedSourceType={setSelectedSourceType}
         useReranker={useReranker}
         setUseReranker={setUseReranker}
         navigate={navigate}
@@ -600,7 +607,7 @@ const ExplorePage = () => {
           className="h-full flex flex-col w-full! min-h-0 gap-1! space-y-0!"
         >
           {/* SEARCH BAR DIV */}
-          <div className="flex items-center shrink-0 border border-foreground/10 p-1 bg-card/20 gap-1">
+          <div className="flex items-center shrink-0 border border-foreground/10 p-1 bg-card/20 gap-1 rounded-md">
             <Button
               variant="outline"
               size="icon"
@@ -697,7 +704,10 @@ const ExplorePage = () => {
             </div>
           )}
 
-          <TabsContent value="search" className="flex-1 m-0 overflow-hidden">
+          <TabsContent
+            value="search"
+            className="flex-1 m-0 overflow-hidden rounded-md"
+          >
             {activeTab === 'search' &&
               (isSearchLoading ? (
                 <div className="flex items-center justify-center h-full flex-col">

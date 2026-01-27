@@ -54,9 +54,13 @@ export function ZenSettings({
   setSeedModes,
   setWorkflowInput,
 }: ZenSettingsProps) {
-  const { windows, minimizeWindow } = useWindowStore()
-  const windowState = windows['zen-settings']
-  const isOpen = propIsOpen ?? (windowState ? !windowState.isMinimized : false)
+  const minimizeWindow = useWindowStore((s) => s.minimizeWindow)
+  // Only subscribe to the minimized state of this window
+  const isMinimized = useWindowStore(
+    (s) => s.windows['zen-settings']?.isMinimized,
+  )
+
+  const isOpen = propIsOpen ?? isMinimized === false
   const onClose = propOnClose ?? (() => minimizeWindow('zen-settings'))
 
   return (

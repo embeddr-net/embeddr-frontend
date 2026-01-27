@@ -16,6 +16,7 @@ import {
   Plug,
   GitBranch,
   SearchIcon,
+  FlowerIcon,
 } from 'lucide-react'
 import { IconRobot } from '@tabler/icons-react'
 import { ModeToggle } from './ThemeToggle'
@@ -25,11 +26,22 @@ import { useSystemStatus } from '@/hooks/useSystemStatus'
 import { useWebSocket } from '@/providers/WebSocketProvider'
 import { useGenerationStore } from '@/store/generationStore'
 import { usePluginStore } from '@/plugins/store'
+import { useSettingsStore } from '@/store/settingsStore'
+import { usePluginLogos } from '@/hooks/usePluginLogos'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@embeddr/react-ui/components/popover'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@embeddr/react-ui/components/dropdown-menu'
+import { useLotus } from '@/providers/LotusProvider'
 
 const mode = import.meta.env.MODE
 
@@ -60,20 +72,11 @@ const ConnectionStatus = () => {
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
-          size="sm"
-          className="relative h-8 gap-2 px-2"
+          size="icon-sm"
+          className="relative  gap-2 px-2"
           title={`WebSocket: ${connectionStatus}`}
         >
           <div className={cn('h-3 w-3 rounded-full', statusColor)} />
-          <span className="text-xs font-mono hidden md:inline-block uppercase">
-            {connectionStatus}
-          </span>
-          {queueStatus?.remaining !== undefined &&
-            queueStatus.remaining > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-                {queueStatus.remaining}
-              </span>
-            )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="space-y-2 cursor-pointer hover:bg-card/60 w-60">
@@ -99,30 +102,36 @@ const ConnectionStatus = () => {
 export default function Header() {
   const { status } = useSystemStatus()
   const { getComponents } = usePluginStore()
+  const showPluginLogos = useSettingsStore((s) => s.showPluginLogos)
+  const { logos } = usePluginLogos()
   const navigate = useNavigate()
+  const { setSettingsOpen } = useLotus()
   const currentPath = window.location.pathname
+  const pluginPages = getComponents('page')
   const links: Array<NavLink> = [
     { to: '/', label: 'Home', icon: HomeIcon },
     { to: '/search', label: 'Search', icon: SearchIcon },
-    {
-      to: '/actions',
-      label: 'Actions',
-      icon: GitBranch,
-    },
+    { to: '/features', label: 'Features', icon: Database },
     // {
+    //   to: '/actions',
+    //   label: 'Actions',
+    //   icon: GitBranch,
+    // },
+    // // {
     //   to: '/datasets',
     //   label: 'Datasets',
     //   icon: DraftingCompassIcon,
     // },
+    // {
+    //   to: '/resources',
+    //   label: 'Resources',
+    //   icon: Database,
+    // },
+    // {
     {
-      to: '/resources',
-      label: 'Resources',
-      icon: Database,
-    },
-    {
-      to: '/workflows_v2',
-      label: 'Workflows',
-      icon: DraftingCompassIcon,
+      to: '/lotus',
+      label: 'Lotus',
+      icon: FlowerIcon,
     },
   ]
 
@@ -136,9 +145,7 @@ export default function Header() {
     })
   })
 
-  if (status?.mcp) {
-    links.push({ to: '/comfy', label: 'MCP', icon: IconRobot })
-  }
+  // MCP route removed while workflows are refactored.
 
   // links.push({ to: '/umap', label: 'UMAP', icon: ChartNetworkIcon })
 
@@ -192,19 +199,29 @@ export default function Header() {
         <div className="ml-auto flex items-center space-x-1">
           <div className="hidden lg:block w-48 mr-2 px-2 border-r border-border"></div>
           <SystemResourceBar variant="compact" />
-          <ConnectionStatus />
           {mode && mode !== 'production' && (
-            <Button
-              variant="link"
-              size="sm"
-              className="bg-amber-500 text-gray-800"
+            <Link
+              to="/debug"
+              search={{ tab: 'library' }}
+              activeProps={{
+                'data-active': 'true',
+                className: 'bg-primary/20!',
+              }}
             >
-              {mode && mode}
-            </Button>
+              <Button
+                variant="link"
+                size="sm"
+                className="bg-amber-500 text-gray-800"
+              >
+                {mode && mode}
+              </Button>
+            </Link>
           )}
 
+          <ConnectionStatus />
           <Link
-            to="/debug"
+            to="/settings"
+            search={{ tab: 'general' }}
             activeProps={{
               'data-active': 'true',
               className: 'bg-primary/20!',
@@ -214,6 +231,48 @@ export default function Header() {
               <CircleQuestionMarkIcon className="h-4 w-4" />
             </Button>
           </Link>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-sm" title="Plugin Pages">
+                <Plug className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Plugin Pages</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {pluginPages.length === 0 && (
+                <DropdownMenuItem disabled>No plugin pages</DropdownMenuItem>
+              )}
+              {pluginPages.map(({ pluginId, def }) => {
+                const pageId = def.id || def.name || def.exportName
+                if (!pageId) return null
+                const label = def.label || pageId || pluginId
+                const logoUrl = showPluginLogos ? logos?.[pluginId] : null
+                return (
+                  <DropdownMenuItem
+                    key={`${pluginId}:${pageId}`}
+                    onClick={() =>
+                      navigate({
+                        to: `/plugins/${pluginId}/${pageId}`,
+                      })
+                    }
+                  >
+                    <span className="flex items-center gap-2">
+                      {logoUrl ? (
+                        <img
+                          src={logoUrl}
+                          alt={`${pluginId} logo`}
+                          className="h-4 w-4 rounded-sm object-contain"
+                        />
+                      ) : null}
+                      <span>{label}</span>
+                    </span>
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* <Link
             to="/help"
@@ -227,6 +286,14 @@ export default function Header() {
             </Button>
           </Link> */}
 
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+          {/* 
           <Link
             to="/settings"
             search={{ tab: 'library' }}
@@ -238,7 +305,7 @@ export default function Header() {
             <Button variant="ghost" size="icon-sm">
               <Settings className="h-4 w-4" />
             </Button>
-          </Link>
+          </Link> */}
           <ModeToggle />
         </div>
       </div>

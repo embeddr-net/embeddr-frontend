@@ -13,8 +13,9 @@ import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { WorkflowSelector } from '@/components/comfy/WorkflowSelector'
 import { NodeSelector } from '@/components/comfy/NodeSelector'
-import { useRunWorkflow, useWorkflow } from '@/hooks/useWorkflows'
+import { useWorkflow } from '@/hooks/useWorkflows'
 import { fetchLocalImage } from '@/lib/api/endpoints/images'
+import { invokeLotus } from '@/lib/api/endpoints/lotus'
 
 interface WorkflowRunnerDialogProps {
   open: boolean
@@ -37,7 +38,6 @@ export function WorkflowRunnerDialog({
   const [workflowId, setWorkflowId] = useState<string | number | null>(null)
   const [nodeId, setNodeId] = useState<string | null>(null)
   const [isRunning, setIsRunning] = useState(false)
-  const runWorkflow = useRunWorkflow()
   const { data: workflow } = useWorkflow(workflowId)
 
   const handleRun = async () => {
@@ -86,16 +86,21 @@ export function WorkflowRunnerDialog({
 
       // 2. Run workflow
       toast.info('Running workflow...')
-      const result = await runWorkflow.mutateAsync({
-        id: workflowId,
+      const result = await invokeLotus('embeddr-comfyui.run_workflow', {
+        workflow_id: workflowId,
         inputs,
+        client_id: 'embeddr-workflow-runner',
       })
 
+      if (result?.status === 'error') {
+        toast.error(result?.message || 'Workflow failed')
+        return
+      }
+
       // 3. Handle result
-      const outputImages = result.outputs.filter((o: any) => o.type === 'image')
-      const outputIds = result.outputs.filter(
-        (o: any) => o.type === 'embeddr_id',
-      )
+      const outputs = Array.isArray(result?.outputs) ? result.outputs : []
+      const outputImages = outputs.filter((o: any) => o.type === 'image')
+      const outputIds = outputs.filter((o: any) => o.type === 'embeddr_id')
 
       if (outputIds.length > 0) {
         const lastId = outputIds[outputIds.length - 1].value

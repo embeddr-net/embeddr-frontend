@@ -20,10 +20,13 @@ export function ZenImageBrowser({
   onSelect,
   onMultiSelect,
 }: ZenImageBrowserProps) {
-  const { windows, minimizeWindow, closeWindow } = useWindowStore()
-  const windowState = windows['zen-images']
-  const isOpen = propIsOpen ?? (windowState ? !windowState.isMinimized : false)
-  // const onClose = propOnClose ?? (() => minimizeWindow('zen-images'))
+  const closeWindow = useWindowStore((s) => s.closeWindow)
+  // Only subscribe to the minimized state of this window
+  const isMinimized = useWindowStore(
+    (s) => s.windows['zen-images']?.isMinimized,
+  )
+
+  const isOpen = propIsOpen ?? isMinimized === false
   const onClose = propOnClose ?? (() => closeWindow('zen-images'))
 
   const [isMultiSelect, setIsMultiSelect] = useState(false)

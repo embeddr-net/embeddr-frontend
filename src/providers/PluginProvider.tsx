@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef } from 'react'
-import { EmbeddrProvider, PluginContext } from '@embeddr/react-ui/context'
+import { EmbeddrProvider, PluginContext } from '@embeddr/zen-ui'
 import { useEmbeddrAPI, usePluginStore } from '@/plugins/store'
 import { DEFAULT_PLUGINS } from '@/plugins/defaults'
 
@@ -17,6 +17,7 @@ export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({
   } = usePluginStore()
 
   const initializedPlugins = useRef<Set<string>>(new Set())
+  const autoActivated = useRef<Set<string>>(new Set())
   const cleanupFns = useRef<Record<string, () => void>>({})
 
   // 1. Register default plugins and load external ones (ONCE)
@@ -56,6 +57,15 @@ export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     })
   }, [plugins, api]) // Re-run when plugins list changes or api changes (but guarded)
+
+  useEffect(() => {
+    const targetId = 'embeddr-umap'
+    if (!plugins[targetId]) return
+    if (activePlugins.includes(targetId)) return
+    if (autoActivated.current.has(targetId)) return
+    autoActivated.current.add(targetId)
+    activatePlugin(targetId)
+  }, [plugins, activePlugins, activatePlugin])
 
   // 3. Cleanup on unmount
   useEffect(() => {

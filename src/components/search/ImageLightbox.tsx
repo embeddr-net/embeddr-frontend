@@ -22,11 +22,11 @@ export function ImageLightbox({ image, onClose }: ImageLightboxProps) {
 
   if (!image) return null
 
-  const imageUrl = `${BACKEND_URL}/images/${image.id}/file`
+  const imageUrl = `${BACKEND_URL}/api/v2/artifacts/${image.id}/content`
 
   const handleUseInCreate = () => {
     selectImage(image)
-    navigate({ to: '/create' })
+    navigate({ to: '/lotus' })
     onClose()
   }
 

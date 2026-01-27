@@ -31,12 +31,12 @@ const MessageItem = ({ msg }: { msg: LogMessage }) => {
   const isComfy = msg.payload.source === 'comfyui'
 
   return (
-    <div className="border bg-card text-xs font-mono group hover:border-primary/20 transition-colors">
+    <div className="border bg-card text-xs font-mono group hover:border-primary/20 transition-colors rounded-md">
       <div
         className="flex items-center gap-3 p-2 cursor-pointer select-none"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="flex flex-col items-center justify-center min-w-[2.5rem] text-[10px] text-muted-foreground/70 leading-tight">
+        <div className="flex flex-col items-center justify-center min-w-10 text-[10px] text-muted-foreground/70 leading-tight">
           <span>{msg.timestamp.toLocaleTimeString().split(' ')[0]}</span>
           <span>
             .{msg.timestamp.getMilliseconds().toString().padStart(3, '0')}
@@ -73,7 +73,7 @@ const MessageItem = ({ msg }: { msg: LogMessage }) => {
 
       {expanded && (
         <div className="border-t bg-muted/30 p-2 overflow-x-auto">
-          <pre className="text-[10px] text-muted-foreground/80 leading-relaxed whitespace-pre-wrap break-all">
+          <pre className="text-[10px] text-card-foreground/80 leading-relaxed whitespace-pre-wrap break-all">
             {JSON.stringify(msg.payload.data, null, 2)}
           </pre>
         </div>
@@ -122,8 +122,8 @@ export const WebSocketMonitor = () => {
   })
 
   return (
-    <Card className="flex-1 w-full flex flex-col overflow-hidden h-full">
-      <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-muted/20">
+    <Card className="flex-1 w-full flex flex-col overflow-hidden h-full py-0!">
+      <CardHeader className="py-2 pb-2! px-4 flex flex-row items-center justify-between border-b bg-muted/20">
         <div className="flex items-center gap-2">
           <Terminal className="w-4 h-4 text-muted-foreground ml-1" />
           <CardTitle className="text-sm font-medium">
@@ -188,12 +188,8 @@ export const WebSocketMonitor = () => {
           </select>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 p-0 overflow-hidden relative">
-        <ScrollArea
-          className="h-full w-full pr-2"
-          variant="left-border"
-          type="always"
-        >
+      <CardContent className="flex-1 p-2 relative">
+        <ScrollArea className="h-full w-full pr-2" type="always">
           <div className="flex flex-col p-2 gap-1">
             {filteredMessages.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-8 text-muted-foreground/50 gap-2">

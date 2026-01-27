@@ -1,16 +1,23 @@
 import React, { useEffect, useState } from 'react'
-import { Button, EmbeddrProvider } from '@embeddr/react-ui'
+import { Button } from '@embeddr/react-ui'
+import { EmbeddrProvider } from '@embeddr/zen-ui'
 import { toast } from 'sonner'
 import {
   ZenImageBrowser,
   ZenQueue,
   ZenSettings,
-  ZenSettingsDialog,
-  ZenToolbar,
   ZenToolbox,
   // ZenDatasetPanel,
 } from './zen'
 import { useGeneration } from '@/context/GenerationContext'
+import {
+  Box,
+  Database,
+  Image as ImageIcon,
+  List,
+  Settings2,
+} from 'lucide-react'
+import { useCommandBarStore } from '@/store/commandBarStore'
 import { useGlobalStore } from '@/store/globalStore'
 import {
   extendApiForPlugin,
@@ -28,25 +35,11 @@ import {
 } from '@/components/ui/windowRegistry'
 import { PanelManager } from '@/components/ui/PanelManager'
 import { PluginWindowBootstrap } from '@/plugins/PluginWindowBootstrap'
+import { useLotus } from '@/providers/LotusProvider'
+import { OnboardingDialog } from '@/components/onboarding/OnboardingDialog'
+import { useNavigate } from '@tanstack/react-router'
 
-// New Components
-
-// Logic component to sync plugin state with window store
-// function PluginWindowRegistration({
-//   pluginId,
-//   def,
-// }: {
-//   pluginId: string
-//   def: any
-// }) {
-//   useEffect(() => {
-//     // Register component for WindowManager
-//     const fullId = `${pluginId}-${def.id}`
-//     registerWindowComponent(fullId, def.component)
-//   }, [pluginId, def.id, def.component])
-
-//   return null
-// }
+// ... existing imports
 
 interface ZenInterfaceProps {
   leftSidebarOpen: boolean
@@ -55,10 +48,7 @@ interface ZenInterfaceProps {
   setRightSidebarOpen: (open: boolean) => void
 }
 
-export function ZenInterface({
-  setLeftSidebarOpen,
-  setRightSidebarOpen,
-}: ZenInterfaceProps) {
+export function ZenInterface(_props: ZenInterfaceProps) {
   const {
     generate,
     isGenerating,
@@ -73,83 +63,77 @@ export function ZenInterface({
   } = useGeneration()
 
   const { selectedImage, selectImage } = useGlobalStore()
-  const { setActivePanel } = usePanelStore()
+  const navigate = useNavigate()
+  const setActivePanel = usePanelStore((s) => s.setActivePanel)
+  const activePanelId = usePanelStore((s) => s.activePanelId)
 
   // Plugin System
   const api = useEmbeddrAPI()
-  const { getComponents, getActions } = usePluginStore()
+  const getComponents = usePluginStore((s) => s.getComponents)
+  const getActions = usePluginStore((s) => s.getActions)
 
-  console.log(
-    '[ZenInterface] Rendered with selectedWorkflow:',
-    selectedWorkflow,
-  )
-  console.log(usePluginStore.getState().activatePlugin)
-  console.log(usePluginStore.getState().knownPlugins)
-  console.log(Object.keys(usePluginStore.getState().plugins))
+  // Debug logging - kept but stabilized
+  const overlayComps = getComponents('zen-overlay')
+  const windowComps = getComponents('window')
 
-  console.log(
-    '[ZenInterface] overlay components:',
-    usePluginStore.getState().getComponents('zen-overlay'),
-  )
-  console.log(
-    '[ZenInterface] window components:',
-    usePluginStore.getState().getComponents('window'),
-  )
+  useEffect(() => {
+    /* ... existing logging ... */
+  }, [selectedWorkflow, overlayComps, windowComps])
 
-  const winComps = usePluginStore.getState().getComponents('window')
-
-  console.log(
-    '[ZenInterface] window defs:',
-    winComps.map((c) => ({
-      pluginId: c.pluginId,
-      defId: c.def?.id,
-      exportName: c.def?.exportName,
-      location: c.def?.location,
-      componentId: `${c.pluginId}-${c.def?.id}`,
-    })),
-  )
   // Global click handler to clear active panel
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement
       const isPanel = target.closest('.embeddr-draggable-panel')
-      if (!isPanel) {
+      if (!isPanel && activePanelId !== null) {
         setActivePanel(null)
       }
     }
 
     window.addEventListener('mousedown', handleGlobalClick)
     return () => window.removeEventListener('mousedown', handleGlobalClick)
-  }, [setActivePanel])
+  }, [setActivePanel, activePanelId])
 
-  const {
-    windows: storeWindows,
-    minimizeWindow,
-    restoreWindow,
-    openWindow,
-    closeWindow,
-    showZenToolbar, // Use store state
-  } = useWindowStore()
+  const minimizeWindow = useWindowStore((s) => s.minimizeWindow)
+  const restoreWindow = useWindowStore((s) => s.restoreWindow)
+  const openWindow = useWindowStore((s) => s.openWindow)
+  const closeWindow = useWindowStore((s) => s.closeWindow)
+  const showZenToolbar = useWindowStore((s) => s.showZenToolbar)
 
-  // Derive panels state from window store
-  const panels = {
-    settings:
-      !!storeWindows['zen-settings'] &&
-      !storeWindows['zen-settings'].isMinimized,
-    queue:
-      !!storeWindows['zen-queue'] && !storeWindows['zen-queue'].isMinimized,
-    toolbox:
-      !!storeWindows['zen-toolbox'] && !storeWindows['zen-toolbox'].isMinimized,
-    images:
-      !!storeWindows['zen-images'] && !storeWindows['zen-images'].isMinimized,
-    datasets:
-      !!storeWindows['zen-datasets'] &&
-      !storeWindows['zen-datasets'].isMinimized,
-  }
+  // Derive panels state from window store - use per-field selectors to avoid getSnapshot warnings
+  const settingsOpen = useWindowStore(
+    (s) =>
+      !!s.windows['zen-settings'] && !s.windows['zen-settings'].isMinimized,
+  )
+  const queueOpen = useWindowStore(
+    (s) => !!s.windows['zen-queue'] && !s.windows['zen-queue'].isMinimized,
+  )
+  const toolboxOpen = useWindowStore(
+    (s) => !!s.windows['zen-toolbox'] && !s.windows['zen-toolbox'].isMinimized,
+  )
+  const imagesOpen = useWindowStore(
+    (s) => !!s.windows['zen-images'] && !s.windows['zen-images'].isMinimized,
+  )
+  const datasetsOpen = useWindowStore(
+    (s) =>
+      !!s.windows['zen-datasets'] && !s.windows['zen-datasets'].isMinimized,
+  )
 
+  const panels = React.useMemo(
+    () => ({
+      settings: settingsOpen,
+      queue: queueOpen,
+      toolbox: toolboxOpen,
+      images: imagesOpen,
+      datasets: datasetsOpen,
+    }),
+    [settingsOpen, queueOpen, toolboxOpen, imagesOpen, datasetsOpen],
+  )
+
+  const emptySeedModes = React.useMemo(() => ({}), [])
   const [seedModes, setSeedModes] = useLocalStorage<
     Record<string, 'fixed' | 'increment' | 'randomize'>
-  >('zen-seed-modes', {})
+  >('zen-seed-modes', emptySeedModes)
 
   const [workflowSearch, setWorkflowSearch] = useState('')
   const [generateOnChange, setGenerateOnChange] = useState(false)
@@ -158,21 +142,26 @@ export function ZenInterface({
     field: string
   } | null>(null)
 
+  const emptyOpenPlugins = React.useMemo(() => ({}), [])
   const [openPlugins, setOpenPlugins] = useLocalStorage<
     Record<string, boolean>
-  >('zen-open-plugins', {})
+  >('zen-open-plugins', emptyOpenPlugins)
 
-  const [hiddenWorkflows, setHiddenWorkflows] = useLocalStorage<Array<string>>(
-    'zen-hidden-workflows',
-    [],
-  )
-
-  const [pinnedWorkflows, setPinnedWorkflows] = useLocalStorage<Array<string>>(
-    'zen-pinned-workflows',
-    [],
-  )
+  const {
+    hiddenWorkflows,
+    setHiddenWorkflows,
+    pinnedWorkflows,
+    setPinnedWorkflows,
+    setSettingsOpen,
+    setSettingsTab,
+  } = useLotus()
 
   const [notifications] = useLocalStorage('zen-notifications', true)
+  const [onboardingDismissed, setOnboardingDismissed] = useLocalStorage(
+    'zen-onboarding-dismissed',
+    false,
+  )
+  const [onboardingOpen, setOnboardingOpen] = useState(false)
   const wasGenerating = React.useRef(isGenerating)
   const lastToastTime = React.useRef(0)
 
@@ -187,39 +176,66 @@ export function ZenInterface({
     wasGenerating.current = isGenerating
   }, [isGenerating, notifications])
 
-  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
-
-  const togglePanel = (key: string) => {
-    // If it's a window-managed panel, use the window store
-    if (['toolbox', 'settings', 'queue', 'images', 'datasets'].includes(key)) {
-      const windowId = `zen-${key}`
-      const win = storeWindows[windowId]
-      if (!win) {
-        const titles: Record<string, string> = {
-          toolbox: 'Toolbox',
-          settings: 'Settings',
-          queue: 'Queue',
-          images: 'Images',
-          datasets: 'Datasets',
+  useEffect(() => {
+    if (onboardingDismissed) return
+    let cancelled = false
+    const checkArtifacts = async () => {
+      try {
+        const res = await api.artifacts.list({ limit: 1, offset: 0 })
+        const count =
+          (res?.items && res.items.length) ||
+          (res as any)?.total ||
+          (res as any)?.count ||
+          0
+        if (!cancelled && count === 0) {
+          setOnboardingOpen(true)
         }
-        openWindow({
-          id: windowId,
-          title: titles[key],
-          componentId: `core-${key === 'images' ? 'image-browser' : key}`,
-        })
-      } else if (win.isMinimized) {
-        restoreWindow(windowId)
-      } else {
-        closeWindow(windowId)
+      } catch (err) {
+        console.warn('[Onboarding] Failed to check artifacts', err)
       }
-      return
     }
-  }
+    checkArtifacts()
+    return () => {
+      cancelled = true
+    }
+  }, [api, onboardingDismissed])
+
+  const togglePanel = React.useCallback(
+    (key: string) => {
+      // If it's a window-managed panel, use the window store
+      if (
+        ['toolbox', 'settings', 'queue', 'images', 'datasets'].includes(key)
+      ) {
+        const windowId = `zen-${key}`
+        const win = useWindowStore.getState().windows[windowId]
+        if (!win) {
+          const titles: Record<string, string> = {
+            toolbox: 'Toolbox',
+            settings: 'Settings',
+            queue: 'Queue',
+            images: 'Images',
+            datasets: 'Datasets',
+          }
+          openWindow({
+            id: windowId,
+            title: titles[key],
+            componentId: `core-${key === 'images' ? 'image-browser' : key}`,
+          })
+        } else if (win.isMinimized) {
+          restoreWindow(windowId)
+        } else {
+          closeWindow(windowId)
+        }
+        return
+      }
+    },
+    [openWindow, restoreWindow, closeWindow],
+  )
 
   const setPanel = (key: string, value: boolean) => {
     if (['toolbox', 'settings', 'queue', 'images', 'datasets'].includes(key)) {
       const windowId = `zen-${key}`
-      const win = storeWindows[windowId]
+      const win = useWindowStore.getState().windows[windowId]
       if (value) {
         if (!win) {
           const titles: Record<string, string> = {
@@ -336,7 +352,7 @@ export function ZenInterface({
     toast.success('Restored inputs from generation')
   }
 
-  const handleGenerate = async () => {
+  const handleGenerate = React.useCallback(async () => {
     // Process seeds
     zenInputs.forEach((input: any) => {
       const isSeed =
@@ -360,7 +376,7 @@ export function ZenInterface({
     })
 
     generate()
-  }
+  }, [zenInputs, seedModes, workflowInputs, setWorkflowInput, generate])
 
   const handleUseGlobalImage = () => {
     if (!selectedImage || !selectedWorkflow) return
@@ -392,6 +408,10 @@ export function ZenInterface({
 
       selectImage(null)
     }
+  }
+
+  const handleOnboardingComplete = () => {
+    setOnboardingDismissed(true)
   }
 
   // Handle keyboard shortcuts and events
@@ -436,44 +456,77 @@ export function ZenInterface({
     }
   }, [selectedWorkflow, api.events])
 
+  const setPageControls = useCommandBarStore((s) => s.setPageControls)
+
+  useEffect(() => {
+    if (!showZenToolbar) {
+      setPageControls(null)
+      return
+    }
+
+    setPageControls(
+      <div className="flex items-center gap-1">
+        <Button
+          variant={panels.toolbox ? 'secondary' : 'ghost'}
+          size="icon-sm"
+          onClick={() => togglePanel('toolbox')}
+          title="Toolbox"
+        >
+          <Box className="w-4 h-4" />
+        </Button>
+        <Button
+          variant={panels.settings ? 'secondary' : 'ghost'}
+          size="icon-sm"
+          onClick={() => togglePanel('settings')}
+          title="Settings"
+        >
+          <Settings2 className="w-4 h-4" />
+        </Button>
+        <Button
+          variant={panels.queue ? 'secondary' : 'ghost'}
+          size="icon-sm"
+          onClick={() => togglePanel('queue')}
+          title="Queue"
+        >
+          <List className="w-4 h-4" />
+        </Button>
+        <Button
+          variant={panels.images ? 'secondary' : 'ghost'}
+          size="icon-sm"
+          onClick={() => togglePanel('images')}
+          title="Images"
+        >
+          <ImageIcon className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => navigate({ to: '/features' })}
+          title="Resources"
+        >
+          <Database className="w-4 h-4" />
+        </Button>
+      </div>,
+    )
+    return () => setPageControls(null)
+  }, [showZenToolbar, panels, togglePanel, setPageControls, navigate])
+
   return (
     <EmbeddrProvider api={api}>
       {/* <Button
         onClick={() => {
           console.log('Hello')
-          api.windows.spawn('embeddr-llm-llm-artifact', 'Artifact test', {
-            artifactId: '3750283b-c854-4e7d-bd46-973ee9d48983',
-            pluginId: 'embeddr-llm',
-          })
+          api.windows.spawn(
+            'embeddr-mediaframe-media-frame-panel',
+            'Media Frame Test',
+            {
+              pluginId: 'embeddr-mediaframe',
+            },
+          )
         }}
       >
         Spawn LLM Artifact Window
       </Button> */}
-      {showZenToolbar && (
-        <ZenToolbar
-          panels={panels}
-          togglePanel={togglePanel}
-          isGenerating={isGenerating}
-          handleGenerate={handleGenerate}
-          selectedWorkflow={selectedWorkflow}
-          hasPendingGenerations={generations.some(
-            (g) => g.status === 'pending' || g.status === 'processing',
-          )}
-          hasZenInputs={zenInputs.length > 0}
-          onExitZenMode={() => {
-            setLeftSidebarOpen(true)
-            setRightSidebarOpen(true)
-          }}
-          onOpenSettingsDialog={() => setSettingsDialogOpen(true)}
-        />
-      )}
-
-      <ZenSettingsDialog
-        open={settingsDialogOpen}
-        onOpenChange={setSettingsDialogOpen}
-        hiddenWorkflows={hiddenWorkflows}
-        setHiddenWorkflows={setHiddenWorkflows}
-      />
 
       <ZenToolbox
         workflows={workflows}
@@ -525,6 +578,16 @@ export function ZenInterface({
       {/* Plugin Registration */}
       <PluginWindowBootstrap />
       <PanelManager />
+
+      <OnboardingDialog
+        open={onboardingOpen}
+        onOpenChange={setOnboardingOpen}
+        onComplete={handleOnboardingComplete}
+        onOpenSettingsTab={(tab) => {
+          setSettingsTab(tab)
+          setSettingsOpen(true)
+        }}
+      />
     </EmbeddrProvider>
   )
 }

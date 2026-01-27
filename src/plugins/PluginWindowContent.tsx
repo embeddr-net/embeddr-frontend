@@ -1,5 +1,6 @@
 import React from 'react'
 import { DynamicPluginComponent } from './DynamicLoader'
+import { PluginErrorBoundary } from './PluginErrorBoundary'
 
 export function PluginWindowContent(props: {
   pluginId: string
@@ -9,11 +10,13 @@ export function PluginWindowContent(props: {
 }) {
   const { pluginId, componentName, api, ...rest } = props
   return (
-    <DynamicPluginComponent
-      pluginId={pluginId}
-      componentName={componentName}
-      api={api}
-      {...rest}
-    />
+    <PluginErrorBoundary pluginId={pluginId} componentName={componentName}>
+      <DynamicPluginComponent
+        pluginId={pluginId}
+        componentName={componentName}
+        api={api}
+        {...rest}
+      />
+    </PluginErrorBoundary>
   )
 }

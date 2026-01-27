@@ -71,7 +71,7 @@ const PostsScrollArea = ({
 
   return (
     <ScrollArea
-      className="h-full pr-3.5"
+      className="h-full pr-3.5 rounded-md overflow-hidden"
       type="always"
       viewportRef={scrollViewportRef}
     >

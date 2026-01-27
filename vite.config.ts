@@ -32,6 +32,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@embeddr/api': fileURLToPath(
+        new URL('../embeddr-api/src', import.meta.url),
+      ),
     },
   },
 })

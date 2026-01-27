@@ -160,7 +160,7 @@ export function FloatingToolbar({
                 <div className="p-2 border-b bg-muted/50 text-xs font-medium text-muted-foreground">
                   Workflows
                 </div>
-                <ScrollArea className="h-[300px]" variant="left-border">
+                <ScrollArea className="h-75" variant="left-border">
                   <div className="p-1 space-y-1">
                     {workflows.map((w) => (
                       <Button
@@ -248,7 +248,7 @@ export function FloatingToolbar({
                     {generations.length}
                   </span>
                 </div>
-                <ScrollArea className="h-[300px]" variant="left-border">
+                <ScrollArea className="h-75" variant="left-border">
                   <div className="p-2 space-y-1">
                     {generations.map((gen) => (
                       <QueueItem

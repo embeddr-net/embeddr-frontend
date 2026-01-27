@@ -22,6 +22,13 @@ import {
   DialogTrigger,
 } from '@embeddr/react-ui/components/dialog'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@embeddr/react-ui/components/select'
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -39,8 +46,12 @@ import {
   Plus,
   X,
   Search,
+  HardDrive,
+  Cloud,
+  Server,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getProviderInfo } from '@/lib/providers'
 import { FilterConfigPanel } from '@/components/search/FilterConfigPanel'
 import { ImageDetailsSidebar } from '@/components/panels/ImageDetailsSidebar'
 import type { PromptImage } from '@/lib/api'
@@ -89,6 +100,10 @@ interface SidebarProps {
   useReranker: boolean
   setUseReranker: (val: boolean) => void
 
+  // New Providers Filter
+  selectedSourceType: string | null
+  setSelectedSourceType: (val: string | null) => void
+
   // Navigation
   navigate: (args: any) => void
 }
@@ -127,6 +142,8 @@ export function ExploreSidebar({
   setShowArchived,
   useReranker,
   setUseReranker,
+  selectedSourceType,
+  setSelectedSourceType,
   navigate,
 }: SidebarProps) {
   const [newCollectionName, setNewCollectionName] = useState('')
@@ -237,12 +254,60 @@ export function ExploreSidebar({
               value="filters"
               className="flex-1 m-0 overflow-hidden flex flex-col min-h-0"
             >
-              {/* Search Bar for Filters */}
-              <div className="p-2 border-b border-border bg-muted/10 shrink-0">
+              {/* Top Filters */}
+              <div className="p-3 border-b border-border bg-muted/10 shrink-0 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Kind
+                    </Label>
+                    <Select
+                      value={mediaType}
+                      onValueChange={(value: any) => setMediaType(value)}
+                    >
+                      <SelectTrigger className="h-7 text-xs bg-background/50">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Media</SelectItem>
+                        <SelectItem value="image">Images</SelectItem>
+                        <SelectItem value="video">Videos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Provider
+                    </Label>
+                    <Select
+                      value={selectedSourceType || 'all'}
+                      onValueChange={(value) => {
+                        setSelectedSourceType(value === 'all' ? null : value)
+                        if (value !== 'all') {
+                          // Clear other selections when filtering by provider
+                          setSelectedLibraryId(null)
+                          setSelectedCollectionId(null)
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-7 text-xs bg-background/50">
+                        <SelectValue placeholder="All Sources" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sources</SelectItem>
+                        <SelectItem value="local">Local Drive</SelectItem>
+                        <SelectItem value="s3">Cloud Storage</SelectItem>
+                        <SelectItem value="stash">Stash</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Filter Input */}
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
-                    placeholder="Filter libraries, collections, sources..."
+                    placeholder="Filter folders & lists..."
                     className="h-8 pl-8 text-xs"
                     value={filterQuery}
                     onChange={(e) => setFilterQuery(e.target.value)}
@@ -270,7 +335,7 @@ export function ExploreSidebar({
                   <AccordionItem value="libraries" className="border-b-0">
                     <div className="flex items-center justify-between py-1 pr-2 group">
                       <AccordionTrigger className="py-2 hover:no-underline flex-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider justify-start gap-2">
-                        Libraries
+                        Folder Library
                       </AccordionTrigger>
                       <Button
                         variant="ghost"
@@ -294,7 +359,8 @@ export function ExploreSidebar({
                             variant={
                               selectedLibraryId === null &&
                               selectedCollectionId === null &&
-                              selectedSourceId === null
+                              selectedSourceId === null &&
+                              selectedSourceType === null
                                 ? 'secondary'
                                 : 'ghost'
                             }
@@ -303,51 +369,73 @@ export function ExploreSidebar({
                               setSelectedLibraryId(null)
                               setSelectedCollectionId(null)
                               setSelectedSourceId(null)
+                              setSelectedSourceType(null)
                             }}
                           >
                             <span className="flex items-center gap-2 truncate">
-                              <FolderPlus className="h-3.5 w-3.5 text-muted-foreground" />
+                              <Layers className="h-3.5 w-3.5 text-muted-foreground" />
                               All Images
                             </span>
                           </Button>
                         )}
-                        {filteredLibraries.map((folder) => (
-                          <Button
-                            key={folder.id}
-                            variant={
-                              selectedLibraryId === folder.id
-                                ? 'secondary'
-                                : 'ghost'
-                            }
-                            className="w-full justify-between font-normal h-8 text-sm px-2"
-                            onClick={() => {
-                              setSelectedLibraryId(folder.id)
-                              setSelectedCollectionId(null)
-                              setSelectedSourceId(null)
-                              if (
-                                activeTab === 'search' &&
-                                !activeSearchQuery &&
-                                !searchImageId
-                              ) {
-                                setActiveTab('new')
+                        {filteredLibraries.map((folder) => {
+                          const provider = getProviderInfo(folder)
+                          const Icon = provider.icon
+
+                          // If source type filter is active, only show matching libraries
+                          if (
+                            selectedSourceType &&
+                            provider.id !== selectedSourceType
+                          ) {
+                            return null
+                          }
+
+                          return (
+                            <Button
+                              key={folder.id}
+                              variant={
+                                selectedLibraryId === folder.id
+                                  ? 'secondary'
+                                  : 'ghost'
                               }
-                            }}
-                          >
-                            <span
-                              className="flex items-center gap-2 truncate"
-                              title={folder.uri}
+                              className="w-full justify-between font-normal h-8 text-sm px-2 group/btn"
+                              onClick={() => {
+                                setSelectedLibraryId(folder.id)
+                                setSelectedCollectionId(null)
+                                // DO NOT clear source filter here, as user might want to stay in "Stash" mode
+                                // setSelectedSourceType(null)
+                                if (
+                                  activeTab === 'search' &&
+                                  !activeSearchQuery &&
+                                  !searchImageId
+                                ) {
+                                  setActiveTab('new')
+                                }
+                              }}
                             >
-                              <FolderPlus className="h-3.5 w-3.5 text-muted-foreground" />
-                              {folder.label || folder.uri.split('/').pop()}
-                            </span>
-                            <Badge
-                              variant="secondary"
-                              className="text-[10px] h-4 px-1"
-                            >
-                              {folder.file_count}
-                            </Badge>
-                          </Button>
-                        ))}
+                              <span
+                                className="flex items-center gap-2 truncate"
+                                title={folder.uri}
+                              >
+                                <Icon
+                                  className={cn('h-3.5 w-3.5', provider.color)}
+                                />
+                                {folder.label || folder.uri.split('/').pop()}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-muted-foreground opacity-50 font-mono uppercase tracking-tighter">
+                                  {provider.label}
+                                </span>
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] h-4 px-1"
+                                >
+                                  {folder.file_count}
+                                </Badge>
+                              </div>
+                            </Button>
+                          )
+                        })}
                         {filteredLibraries.length === 0 && !!filterQuery && (
                           <div className="text-xs text-muted-foreground p-2">
                             No libraries match
@@ -497,68 +585,74 @@ export function ExploreSidebar({
                   <Separator className="my-1" />
 
                   {/* SOURCES SECTION */}
-                  <AccordionItem value="sources" className="border-b-0">
-                    <div className="flex items-center justify-between py-1 pr-2">
-                      <AccordionTrigger className="py-2 hover:no-underline flex-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider justify-start gap-2">
-                        Sources
-                      </AccordionTrigger>
-                    </div>
-                    <AccordionContent className="pb-2">
-                      <div className="space-y-0.5 pl-1">
-                        {filteredSources.map((source: any) => (
-                          <Button
-                            key={source.id}
-                            variant={
-                              selectedSourceId === source.id
-                                ? 'secondary'
-                                : 'ghost'
-                            }
-                            className="w-full justify-start font-normal h-auto min-h-8 py-1.5 text-sm px-2"
-                            onClick={() => {
-                              setSelectedSourceId(source.id)
-                              setSelectedLibraryId(null)
-                              setSelectedCollectionId(null)
-                              if (
-                                activeTab === 'search' &&
-                                !activeSearchQuery &&
-                                !searchImageId
-                              ) {
-                                setActiveTab('new')
-                              }
-                            }}
-                          >
-                            <div className="flex flex-col items-start gap-0.5 truncate w-full">
-                              <span className="flex items-center gap-2 truncate w-full font-medium">
-                                <Folder className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                <span className="truncate break-all whitespace-pre-wrap text-start">
-                                  {source.metadata?.post_title ||
-                                    source.label ||
-                                    (source.uri &&
-                                      source.uri.split('/').pop()) ||
-                                    source.id}
-                                </span>
-                              </span>
-                              {source.metadata?.source_url && (
-                                <span className="text-[10px] text-muted-foreground truncate w-full pl-6">
-                                  {new URL(source.metadata.source_url).hostname}
-                                </span>
-                              )}
-                            </div>
-                          </Button>
-                        ))}
-                        {!filteredSources.length && !!filterQuery && (
-                          <div className="p-2 text-xs text-muted-foreground">
-                            No sources match
-                          </div>
-                        )}
-                        {!sourceCollections?.length && !filterQuery && (
-                          <div className="p-2 text-xs text-muted-foreground text-center">
-                            No sources found
-                          </div>
-                        )}
+                  {((sourceCollections && sourceCollections.length > 0) ||
+                    !!filterQuery) && (
+                    <AccordionItem value="sources" className="border-b-0">
+                      <div className="flex items-center justify-between py-1 pr-2">
+                        <AccordionTrigger className="py-2 hover:no-underline flex-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider justify-start gap-2">
+                          Import Sources
+                        </AccordionTrigger>
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
+                      <AccordionContent className="pb-2">
+                        <div className="space-y-0.5 pl-1">
+                          {filteredSources.map((source: any) => (
+                            <Button
+                              key={source.id}
+                              variant={
+                                selectedSourceId === source.id
+                                  ? 'secondary'
+                                  : 'ghost'
+                              }
+                              className="w-full justify-start font-normal h-auto min-h-8 py-1.5 text-sm px-2"
+                              onClick={() => {
+                                setSelectedSourceId(source.id)
+                                setSelectedLibraryId(null)
+                                setSelectedCollectionId(null)
+                                if (
+                                  activeTab === 'search' &&
+                                  !activeSearchQuery &&
+                                  !searchImageId
+                                ) {
+                                  setActiveTab('new')
+                                }
+                              }}
+                            >
+                              <div className="flex flex-col items-start gap-0.5 truncate w-full">
+                                <span className="flex items-center gap-2 truncate w-full font-medium">
+                                  <Folder className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                  <span className="truncate break-all whitespace-pre-wrap text-start">
+                                    {source.metadata?.post_title ||
+                                      source.label ||
+                                      (source.uri &&
+                                        source.uri.split('/').pop()) ||
+                                      source.id}
+                                  </span>
+                                </span>
+                                {source.metadata?.source_url && (
+                                  <span className="text-[10px] text-muted-foreground truncate w-full pl-6">
+                                    {
+                                      new URL(source.metadata.source_url)
+                                        .hostname
+                                    }
+                                  </span>
+                                )}
+                              </div>
+                            </Button>
+                          ))}
+                          {!filteredSources.length && !!filterQuery && (
+                            <div className="p-2 text-xs text-muted-foreground">
+                              No sources match
+                            </div>
+                          )}
+                          {!sourceCollections?.length && !filterQuery && (
+                            <div className="p-2 text-xs text-muted-foreground text-center">
+                              No sources found
+                            </div>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
                 </Accordion>
               </ScrollArea>
             </TabsContent>

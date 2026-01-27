@@ -41,7 +41,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@embeddr/react-ui/components/context-menu'
-import type { EmbeddrAPI } from '@embeddr/react-ui/types'
+import type { EmbeddrAPI } from '@embeddr/zen-ui'
 import { cn } from '@/lib/utils'
 import { DraggablePanel } from '@/components/ui/DraggablePanel'
 import { toast } from 'sonner'
@@ -50,6 +50,8 @@ import { useGlobalStore } from '@/store/globalStore'
 import { extendApiForPlugin, usePluginStore } from '@/plugins/store'
 import { windowRegistry } from '@/components/ui/windowRegistry'
 import { DynamicPluginComponent } from '@/plugins/DynamicLoader'
+import { usePluginLogos } from '@/hooks/usePluginLogos'
+import { lucideIconFromName } from '@/lib/lucide'
 
 interface ZenToolboxProps {
   isOpen?: boolean
@@ -93,19 +95,20 @@ export function ZenToolbox({
   const { mutate: executeAction } = useCreateExecution()
   const { selectedImage } = useGlobalStore()
   const { plugins } = usePluginStore()
-  const {
-    windows,
-    spawnWindow,
-    layouts,
-    saveLayout,
-    loadLayout,
-    deleteLayout,
-    minimizeWindow,
-    closeWindow,
-  } = useWindowStore()
+  const { logos } = usePluginLogos()
 
-  const windowState = windows['zen-toolbox']
-  const isOpen = propIsOpen ?? (windowState ? !windowState.isMinimized : false)
+  const spawnWindow = useWindowStore((s) => s.spawnWindow)
+  const layouts = useWindowStore((s) => s.layouts)
+  const saveLayout = useWindowStore((s) => s.saveLayout)
+  const loadLayout = useWindowStore((s) => s.loadLayout)
+  const deleteLayout = useWindowStore((s) => s.deleteLayout)
+  const closeWindow = useWindowStore((s) => s.closeWindow)
+  const windows = useWindowStore((s) => s.windows)
+
+  const isMinimized = useWindowStore(
+    (s) => s.windows['zen-toolbox']?.isMinimized,
+  )
+  const isOpen = propIsOpen ?? isMinimized === false
   const onClose = propOnClose ?? (() => closeWindow('zen-toolbox'))
   // const onClose = propOnClose ?? (() => minimizeWindow('zen-toolbox'))
 
@@ -263,7 +266,7 @@ export function ZenToolbox({
                       <Button
                         size="sm"
                         className={cn(
-                          'w-full justify-start text-xs font-normal bg-card text-foreground group relative',
+                          'w-full justify-start text-xs font-normal bg-card text-foreground group relative rounded',
                           selectedWorkflow?.id === w.id &&
                             'bg-muted font-medium',
                         )}
@@ -333,19 +336,35 @@ export function ZenToolbox({
                     const instances = Object.values(windows).filter(
                       (w) => w.componentId === componentId,
                     )
+                    const logoUrl = logos?.[pluginId]
+                    const PanelIcon = lucideIconFromName(def.icon)
 
                     return (
                       <div
                         key={componentId}
-                        className="flex items-center justify-between p-2 border bg-card"
+                        className="flex items-center justify-between p-2 border bg-card rounded-md"
                       >
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium">
-                            {def.label}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {pluginId}
-                          </span>
+                        <div className="flex items-center gap-2">
+                          {logoUrl ? (
+                            <img
+                              src={logoUrl}
+                              alt={`${pluginId} logo`}
+                              className="h-4 w-4 rounded-sm"
+                            />
+                          ) : (
+                            <PlugZap className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          {PanelIcon ? (
+                            <PanelIcon className="h-4 w-4 text-muted-foreground" />
+                          ) : null}
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">
+                              {def.label}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {pluginId}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-2">

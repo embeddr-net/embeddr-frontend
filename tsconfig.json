@@ -1,11 +1,13 @@
 {
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": [
     "node_modules",
     "dist",
     "**/*.test.ts",
     "**/*.test.tsx",
-    "src/test"
+    "src/test",
+    "../.archive/**",
+    "**/.archive/**"
   ],
   "compilerOptions": {
     "target": "ES2022",

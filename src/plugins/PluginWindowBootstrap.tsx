@@ -1,8 +1,9 @@
 import React from 'react'
 import { registerWindowComponent } from '@/components/ui/windowRegistry'
 import { DynamicPluginComponent } from '@/plugins/DynamicLoader'
+import { PluginErrorBoundary } from './PluginErrorBoundary'
 import { shallow } from 'zustand/shallow'
-import { usePluginStore } from './store'
+import { extendApiForPlugin, useEmbeddrAPI, usePluginStore } from './store'
 
 function buildOverlay(plugins: any, activePlugins: string[]) {
   const out: Array<{ pluginId: string; def: any }> = []
@@ -12,7 +13,11 @@ function buildOverlay(plugins: any, activePlugins: string[]) {
     if (!p?.components) continue
 
     for (const comp of p.components) {
-      if (comp.location === 'zen-overlay' || comp.location === 'window') {
+      if (
+        comp.location === 'zen-overlay' ||
+        comp.location === 'window' ||
+        comp.location === 'OVERLAY'
+      ) {
         out.push({ pluginId, def: comp })
       }
     }
@@ -25,12 +30,13 @@ function signature(overlay: Array<{ pluginId: string; def: any }>) {
   return overlay
     .map(
       ({ pluginId, def }) =>
-        `${pluginId}:${def.id}:${def.exportName || def.component || ''}`,
+        `${pluginId}:${def.id || def.name}:${def.exportName || def.component || ''}`,
     )
     .sort()
     .join('|')
 }
 export function PluginWindowBootstrap() {
+  const api = useEmbeddrAPI()
   const plugins = usePluginStore((s) => s.plugins)
   const activePlugins = usePluginStore((s) => s.activePlugins)
 
@@ -44,7 +50,9 @@ export function PluginWindowBootstrap() {
 
   React.useEffect(() => {
     for (const { pluginId, def } of overlay) {
-      const componentId = `${pluginId}-${def.id}`
+      const componentKey = def.id || def.name
+      if (!componentKey) continue
+      const componentId = `${pluginId}-${componentKey}`
       if (registered.current.has(componentId)) continue
 
       const componentName = def.exportName || def.component
@@ -53,13 +61,16 @@ export function PluginWindowBootstrap() {
       registered.current.add(componentId)
 
       registerWindowComponent(componentId, (props: any) => (
-        <DynamicPluginComponent
-          pluginId={pluginId}
-          componentName={componentName}
-          windowId={props.id}
-          {...(def.props || {})}
-          {...props}
-        />
+        <PluginErrorBoundary pluginId={pluginId} componentName={componentName}>
+          <DynamicPluginComponent
+            pluginId={pluginId}
+            componentName={componentName}
+            api={extendApiForPlugin(api, pluginId)}
+            windowId={props.id}
+            {...(def.props || {})}
+            {...props}
+          />
+        </PluginErrorBoundary>
       ))
     }
   }, [sig])
