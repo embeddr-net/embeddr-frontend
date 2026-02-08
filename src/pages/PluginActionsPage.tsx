@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchPlugins } from '@/lib/api' // Assuming runActionArtifact generic can run plugin actions via runner?
 // Actually we might need a direct endpoint to run a plugin action if it's not wrapped in an ActionArtifact.
 // But wait, ActionRunner runs ActionGraphs.
-// To run a raw plugin action, we usually need to construct a temporary graph OR use a direct endpoint /api/v1/actions/run-plugin?
+// To run a raw plugin action, we usually need to construct a temporary graph or use a direct endpoint.
 // Let's check api actions.py/plugin.py.
 
 // If no direct endpoint exists, we can perhaps assume we add one or use a "one-node" graph approach?
@@ -25,7 +25,7 @@ import { Spinner } from '@embeddr/react-ui/components/spinner'
 import { Play, Terminal } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { BACKEND_V2_URL } from '@/lib/api/config'
+import { BACKEND_URL } from '@/lib/api/config'
 
 // Ideally we fetch actions from all plugins.
 // Plugins endpoint returns list of plugins, each has `.actions`.
@@ -92,7 +92,7 @@ const ActionCard = ({ action }: { action: any }) => {
     try {
       // We need an endpoint to run a raw plugin action.
       // If it doesn't exist, we might fail.
-      // Let's assume hitting /api/v2/actions/run_plugin if exists, or using a specialized method.
+      // Try a direct execution endpoint if available.
       // Since we don't have that endpoint confirmed, we'll try to find one or mock it.
       // Wait, usually the "Action Runner" runs graphs.
       // Can we run a "graph" with 1 node? Yes.
@@ -103,7 +103,7 @@ const ActionCard = ({ action }: { action: any }) => {
       // The ActionRunner logic: `plugin.execute(...)`.
 
       // Let's use `createExecution` if available?
-      // Assuming `useMutation` calling `POST /api/v2/executions/run-action`
+      // Assuming the execution endpoint accepts this payload.
 
       const payload = {
         plugin_name: action.pluginName,
@@ -116,7 +116,7 @@ const ActionCard = ({ action }: { action: any }) => {
       // I'll simulate it via a client request to a likely endpoint,
       // and if implementation is missing, I'll add it to the backend next.
 
-      const res = await fetch(`${BACKEND_V2_URL}/actions/exec/plugin`, {
+      const res = await fetch(`${BACKEND_URL}/actions/exec/plugin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

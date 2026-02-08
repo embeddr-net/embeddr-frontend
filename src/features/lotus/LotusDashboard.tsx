@@ -6,9 +6,7 @@ import { toast } from 'sonner'
 import { useEmbeddrAPI } from '@/plugins/store'
 import { embeddrApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
-import { useWorkflows } from '@/hooks/useWorkflows'
 import { listLotusClients } from '@/lib/api/endpoints/lotus'
-import type { LotusResultItem } from './types'
 import { LotusStoragePanel } from './components/LotusStoragePanel'
 import { LotusOverviewPanel } from './components/LotusOverviewPanel'
 import { LotusConfigsTab } from './components/tabs/LotusConfigsTab'
@@ -16,11 +14,9 @@ import { LotusDefaultsTab } from './components/tabs/LotusDefaultsTab'
 import { LotusFinderTab } from './components/tabs/LotusFinderTab'
 import { LotusCapabilitiesTab } from './components/tabs/LotusCapabilitiesTab'
 import { LotusFeaturesTab } from './components/tabs/LotusFeaturesTab'
-import { LotusWorkflowsTab } from './components/tabs/LotusWorkflowsTab'
 import {
   LayoutDashboard,
   HardDrive,
-  Workflow,
   Settings,
   Search,
   Cpu,
@@ -29,6 +25,7 @@ import {
 import { useCommandBarStore } from '@/store/commandBarStore'
 import { globalEventBus } from '@/lib/eventBus'
 import { useWebSocket } from '@/providers/WebSocketProvider'
+import { fetchSecurityOverview } from '@/lib/api/endpoints/security'
 
 type ConfigGetResponse = {
   ok: boolean
@@ -52,11 +49,6 @@ type ConfigSetResponse = {
   }
 }
 
-type WorkflowRegistryConfig = {
-  ingestion_workflow_id?: string | null
-  default_workflow_ids?: string[]
-}
-
 type FinderDefaultsConfig = {
   enable_search?: boolean
   shebangs?: Record<string, any>
@@ -68,6 +60,18 @@ type BlobRegistryResponse = {
   provider_resolvers: Record<string, string>
   default_provider?: string | null
   default_resolver?: string | null
+}
+
+type AutomationsResponse = {
+  items: Array<{
+    id: string
+    name: string
+    description?: string | null
+    is_active: boolean
+    trigger_event: string
+    trigger_conditions: Record<string, any>
+  }>
+  total: number
 }
 
 export function LotusDashboard() {
@@ -106,25 +110,22 @@ export function LotusDashboard() {
     queryFn: () => embeddrApi.system.getBlobRegistry(),
   })
 
+  const artifactRegistryQuery = useQuery({
+    queryKey: ['system', 'artifact-registry'],
+    queryFn: () => embeddrApi.system.getArtifactRegistry(),
+  })
+
+  const artifactTypeCountsQuery = useQuery({
+    queryKey: ['system', 'artifact-type-counts'],
+    queryFn: () => embeddrApi.system.getArtifactTypeCounts(),
+  })
+
   const searchDefaultsQuery = useQuery({
     queryKey: ['lotus', 'search-defaults'],
     queryFn: async () => {
       const data = await api.lotus.invoke('embeddr-core.config.get', {
         plugin_name: 'embeddr-core',
         config_id: 'embeddr-core.search.config',
-        scope: 'global',
-        include_capability: true,
-      })
-      return data as ConfigGetResponse
-    },
-  })
-
-  const workflowRegistryQuery = useQuery({
-    queryKey: ['lotus', 'workflow-registry'],
-    queryFn: async () => {
-      const data = await api.lotus.invoke('embeddr-core.config.get', {
-        plugin_name: 'embeddr-core',
-        config_id: 'embeddr-core.workflow.registry',
         scope: 'global',
         include_capability: true,
       })
@@ -145,20 +146,32 @@ export function LotusDashboard() {
     },
   })
 
-  const { data: workflows } = useWorkflows()
+  const automationsQuery = useQuery({
+    queryKey: ['system', 'automation', 'list'],
+    queryFn: () => embeddrApi.system.listAutomations(),
+    staleTime: 15_000,
+  })
 
-  const lotusWorkflowQuery = useQuery({
-    queryKey: ['lotus', 'workflow-results'],
-    queryFn: () =>
-      api.lotus.query('workflow', 50) as Promise<{
-        results: LotusResultItem[]
-      }>,
+  const ingestionPipelineQuery = useQuery<{
+    pipeline_id?: string | null
+  }>({
+    queryKey: ['system', 'ingestion', 'pipeline'],
+    queryFn: async () =>
+      (await embeddrApi.system.getIngestionPipeline()) as {
+        pipeline_id?: string | null
+      },
+    staleTime: 15_000,
   })
 
   const lotusClientsQuery = useQuery({
     queryKey: ['lotus', 'clients'],
     queryFn: () => listLotusClients(),
     refetchOnWindowFocus: false,
+  })
+
+  const securityOverviewQuery = useQuery({
+    queryKey: ['security', 'overview'],
+    queryFn: () => fetchSecurityOverview(),
   })
 
   useEffect(() => {
@@ -181,8 +194,7 @@ export function LotusDashboard() {
   const [textProvider, setTextProvider] = useState('')
   const [similarProvider, setSimilarProvider] = useState('')
   const [activeTab, setActiveTab] = useState('overview')
-  const [ingestionWorkflowId, setIngestionWorkflowId] = useState('')
-  const [defaultWorkflowIdsText, setDefaultWorkflowIdsText] = useState('[]')
+  const [ingestionPipelineId, setIngestionPipelineId] = useState('')
   const [defaultBlobProvider, setDefaultBlobProvider] = useState('')
   const [defaultBlobResolver, setDefaultBlobResolver] = useState('')
   const [finderEnableSearch, setFinderEnableSearch] = useState(true)
@@ -236,18 +248,6 @@ export function LotusDashboard() {
           size="icon-sm"
           className={cn(
             'h-6 w-6',
-            activeTab === 'workflows' && 'bg-accent text-accent-foreground',
-          )}
-          onClick={() => setActiveTab('workflows')}
-          title="Workflows"
-        >
-          <Workflow className="w-3.5 h-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className={cn(
-            'h-6 w-6',
             activeTab === 'configs' && 'bg-accent text-accent-foreground',
           )}
           onClick={() => setActiveTab('configs')}
@@ -292,15 +292,9 @@ export function LotusDashboard() {
   }, [searchDefaultsQuery.data])
 
   useEffect(() => {
-    const value = workflowRegistryQuery.data?.value as
-      | WorkflowRegistryConfig
-      | undefined
-    if (!value) return
-    setIngestionWorkflowId(value.ingestion_workflow_id || '')
-    setDefaultWorkflowIdsText(
-      JSON.stringify(value.default_workflow_ids || [], null, 2),
-    )
-  }, [workflowRegistryQuery.data])
+    const pipelineId = ingestionPipelineQuery.data?.pipeline_id ?? ''
+    setIngestionPipelineId(pipelineId)
+  }, [ingestionPipelineQuery.data])
 
   useEffect(() => {
     const value = finderDefaultsQuery.data?.value as
@@ -340,39 +334,16 @@ export function LotusDashboard() {
     },
   })
 
-  const saveWorkflowRegistry = useMutation({
+  const saveIngestionPipeline = useMutation({
     mutationFn: async () => {
-      let defaultIds: string[] = []
-      if (defaultWorkflowIdsText.trim()) {
-        try {
-          const parsed = JSON.parse(defaultWorkflowIdsText)
-          if (Array.isArray(parsed)) {
-            defaultIds = parsed.map((id) => String(id))
-          } else {
-            throw new Error('Default workflow ids must be a JSON array')
-          }
-        } catch (err) {
-          throw new Error('Default workflow ids must be valid JSON')
-        }
-      }
-
-      const data = await api.lotus.invoke('embeddr-core.config.set', {
-        plugin_name: 'embeddr-core',
-        config_id: 'embeddr-core.workflow.registry',
-        scope: 'global',
-        value: {
-          ingestion_workflow_id: ingestionWorkflowId || null,
-          default_workflow_ids: defaultIds,
-        },
-      })
-      return data as ConfigSetResponse
+      return embeddrApi.system.setIngestionPipeline(ingestionPipelineId || null)
     },
     onSuccess: () => {
-      toast.success('Workflow registry saved')
-      workflowRegistryQuery.refetch()
+      toast.success('Ingestion pipeline saved')
+      ingestionPipelineQuery.refetch()
     },
     onError: (err: any) => {
-      toast.error(err?.message || 'Failed to save workflow registry')
+      toast.error(err?.message || 'Failed to save ingestion pipeline')
     },
   })
 
@@ -447,7 +418,6 @@ export function LotusDashboard() {
     { value: 'features', label: 'Features' },
     { value: 'storage', label: 'Storage' },
     { value: 'configs', label: 'Configs' },
-    { value: 'workflows', label: 'Workflows' },
     { value: 'defaults', label: 'Defaults' },
     { value: 'finder', label: 'Finder' },
     { value: 'capabilities', label: 'Capabilities' },
@@ -492,29 +462,11 @@ export function LotusDashboard() {
       )
   }, [capabilities])
 
-  const workflowOptions = useMemo(() => {
-    const map = new Map<string, { id: string; name: string }>()
-    ;(workflows || []).forEach((workflow) => {
-      map.set(String(workflow.id), {
-        id: String(workflow.id),
-        name: workflow.name || String(workflow.id),
-      })
-    })
-
-    const lotusResults = lotusWorkflowQuery.data?.results || []
-    lotusResults
-      .filter((item) => item.kind === 'artifact' || item.kind === 'action')
-      .forEach((item) => {
-        if (!map.has(item.id)) {
-          map.set(item.id, {
-            id: item.id,
-            name: item.title || item.subtitle || item.id,
-          })
-        }
-      })
-
-    return Array.from(map.values())
-  }, [workflows, lotusWorkflowQuery.data])
+  const pipelineOptions = useMemo(() => {
+    const data = automationsQuery.data as AutomationsResponse | undefined
+    const items = data?.items || []
+    return items.map((item) => ({ id: item.id, name: item.name }))
+  }, [automationsQuery.data])
 
   const tabLabel = tabs.find((t) => t.value === activeTab)?.label || 'Dashboard'
 
@@ -556,31 +508,36 @@ export function LotusDashboard() {
       {/* Main Content Area */}
       <div className="flex-1 min-h-0 relative p-1">
         {activeTab === 'overview' && (
-          <LotusOverviewPanel
-            capabilities={capabilities}
-            plugins={pluginsQuery.data || []}
-            stats={{
-              artifacts: artifactsQuery.data?.total ?? 0,
-              plugins: pluginsQuery.data?.length ?? 0,
-              automations: automationStatus.total,
-              providers: providerCount,
-            }}
-            clientCount={lotusClientsQuery.data?.count}
-            clientDetails={lotusClientsQuery.data?.details}
-            onManage={(section) => {
-              if (section === 'storage') {
-                setActiveTab('storage')
-              } else if (section === 'defaults') {
-                setActiveTab('defaults')
-              } else if (section === 'compute') {
-                setActiveTab('workflows')
-              } else if (section === 'llm' || section === 'embedding') {
-                setActiveTab('configs')
-              } else {
-                setActiveTab('capabilities')
-              }
-            }}
-          />
+          <div className="h-full min-h-0">
+            <LotusOverviewPanel
+              capabilities={capabilities}
+              plugins={pluginsQuery.data || []}
+              stats={{
+                artifacts: artifactsQuery.data?.total ?? 0,
+                plugins: pluginsQuery.data?.length ?? 0,
+                automations: automationStatus.total,
+                providers: providerCount,
+              }}
+              operator={securityOverviewQuery.data?.current_user || null}
+              artifactRegistry={artifactRegistryQuery.data}
+              artifactTypeCounts={artifactTypeCountsQuery.data}
+              clientCount={lotusClientsQuery.data?.count}
+              clientDetails={lotusClientsQuery.data?.details}
+              onManage={(section) => {
+                if (section === 'storage') {
+                  setActiveTab('storage')
+                } else if (section === 'defaults') {
+                  setActiveTab('defaults')
+                } else if (section === 'compute') {
+                  setActiveTab('workflows')
+                } else if (section === 'llm' || section === 'embedding') {
+                  setActiveTab('configs')
+                } else {
+                  setActiveTab('capabilities')
+                }
+              }}
+            />
+          </div>
         )}
 
         {activeTab !== 'overview' && activeTab === 'features' && (
@@ -607,12 +564,9 @@ export function LotusDashboard() {
                 <LotusConfigsTab configCapabilities={configCapabilities} />
               )}
 
-              {activeTab === 'workflows' && <LotusWorkflowsTab />}
-
               {activeTab === 'defaults' && (
                 <LotusDefaultsTab
                   blobProviders={blobProviders}
-                  blobResolvers={blobResolvers}
                   providerResolvers={providerResolvers}
                   defaultBlobProvider={defaultBlobProvider}
                   setDefaultBlobProvider={setDefaultBlobProvider}
@@ -622,13 +576,11 @@ export function LotusDashboard() {
                   onSaveBlobDefaults={() => saveBlobDefaults.mutate()}
                   automationTotal={automationStatus.total}
                   automationActive={automationStatus.active}
-                  ingestionWorkflowId={ingestionWorkflowId}
-                  setIngestionWorkflowId={setIngestionWorkflowId}
-                  workflowOptions={workflowOptions}
-                  defaultWorkflowIdsText={defaultWorkflowIdsText}
-                  setDefaultWorkflowIdsText={setDefaultWorkflowIdsText}
-                  saveWorkflowRegistryPending={saveWorkflowRegistry.isPending}
-                  onSaveWorkflowRegistry={() => saveWorkflowRegistry.mutate()}
+                  ingestionPipelineId={ingestionPipelineId}
+                  setIngestionPipelineId={setIngestionPipelineId}
+                  pipelineOptions={pipelineOptions}
+                  saveIngestionPipelinePending={saveIngestionPipeline.isPending}
+                  onSaveIngestionPipeline={() => saveIngestionPipeline.mutate()}
                   textProvider={textProvider}
                   setTextProvider={setTextProvider}
                   similarProvider={similarProvider}

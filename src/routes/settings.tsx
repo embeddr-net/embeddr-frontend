@@ -3,7 +3,7 @@ import { z } from 'zod'
 import SettingsPage from '@/pages/SettingsPage'
 
 const settingsSearchSchema = z.object({
-  tab: z.string().optional().default('general'),
+  tab: z.string().optional().default('profile'),
 })
 
 export const Route = createFileRoute('/settings')({

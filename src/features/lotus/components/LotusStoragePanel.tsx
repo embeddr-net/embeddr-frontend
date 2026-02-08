@@ -18,7 +18,7 @@ import {
 import { Input } from '@embeddr/react-ui/components/input'
 import { Switch } from '@embeddr/react-ui/components/switch'
 import { toast } from 'sonner'
-import type { ResourceAdapterInfo } from '@/lib/api/v2/client'
+import type { ResourceAdapterInfo } from '@/lib/api/client'
 import { embeddrApi } from '@/lib/api/client'
 import { useEmbeddrAPI } from '@/plugins/store'
 import type { LotusResultItem } from '../types'

@@ -25,12 +25,12 @@ export function LotusFinderTab({
   saveFinderDefaultsPending: boolean
 }) {
   return (
-    <Card className="border-muted/60 bg-transparent">
-      <CardHeader>
+    <Card className="embeddr-lotus-finder embeddr-lotus-finder-card border-muted/60 bg-transparent">
+      <CardHeader className="embeddr-lotus-finder-header">
         <CardTitle className="text-sm">Finder Defaults</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4 text-xs">
-        <div className="flex items-center justify-between">
+      <CardContent className="embeddr-lotus-finder-body flex flex-col gap-4 text-xs">
+        <div className="embeddr-lotus-finder-toggle-row flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-[11px] text-muted-foreground">
               Enable server search by default
@@ -41,24 +41,26 @@ export function LotusFinderTab({
             </span>
           </div>
           <Switch
+            className="embeddr-lotus-finder-toggle"
             checked={finderEnableSearch}
             onCheckedChange={setFinderEnableSearch}
           />
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="embeddr-lotus-finder-inputs flex flex-col gap-2">
           <span className="text-[11px] text-muted-foreground">
             Shebang shortcuts (JSON)
           </span>
           <Textarea
             value={finderShebangsText}
             onChange={(event) => setFinderShebangsText(event.target.value)}
-            className="min-h-30 font-mono text-[11px]"
+            className="embeddr-lotus-finder-textarea min-h-30 font-mono text-[11px]"
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="embeddr-lotus-finder-actions flex items-center gap-2">
           <Button
+            className="embeddr-lotus-finder-save"
             onClick={onSaveFinderDefaults}
             disabled={saveFinderDefaultsPending}
           >

@@ -11,7 +11,6 @@ import { ClientsMonitor } from '@/components/debug/ClientsMonitor'
 import { PluginsList } from '@/components/debug/PluginsList'
 import { RoutesInspector } from '@/components/debug/RoutesInspector'
 import { CliConsole } from '@/components/debug/CliConsole'
-import { ScraperDebugger } from '@/components/debug/ScraperDebugger'
 import { MaintenanceManager } from '@/components/debug/MaintenanceManager'
 import ExecutionQueue from '@/components/debug/ExecutionQueue'
 import { VectorIndexDebug } from '@/components/debug/VectorIndexDebug'
@@ -31,11 +30,11 @@ const DebugPage = () => {
       label: 'Execution Queue',
       component: <ExecutionQueue />,
     },
-    // {
-    //   value: 'clients',
-    //   label: 'Connected Clients',
-    //   component: <ClientsMonitor />,
-    // },
+    {
+      value: 'clients',
+      label: 'Connected Clients',
+      component: <ClientsMonitor />,
+    },
     { value: 'plugins', label: 'Plugins', component: <PluginsList /> },
     { value: 'routes', label: 'Routes', component: <RoutesInspector /> },
     // { value: 'cli', label: 'CLI', component: <CliConsole /> },

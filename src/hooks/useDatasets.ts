@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BACKEND_URL } from '@/lib/api'
+import { fetchWithAuth } from '@/lib/api/fetch'
 
 export interface Dataset {
   id: number
@@ -24,7 +25,7 @@ export interface DatasetItem {
 }
 
 async function fetchDatasets(): Promise<Array<Dataset>> {
-  const response = await fetch(`${BACKEND_URL}/datasets`)
+  const response = await fetchWithAuth(`${BACKEND_URL}/datasets`)
   if (!response.ok) {
     throw new Error('Failed to fetch datasets')
   }
@@ -32,7 +33,7 @@ async function fetchDatasets(): Promise<Array<Dataset>> {
 }
 
 async function getDataset(id: number): Promise<Dataset> {
-  const response = await fetch(`${BACKEND_URL}/datasets/${id}`)
+  const response = await fetchWithAuth(`${BACKEND_URL}/datasets/${id}`)
   if (!response.ok) {
     throw new Error('Failed to fetch dataset')
   }

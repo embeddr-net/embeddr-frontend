@@ -99,13 +99,14 @@ export const WebSocketMonitor = () => {
 
   // Use globalEventBus directly for debugging to bypass hook complexity within the UI library
   useEffect(() => {
-    const handler = (msg: EmbeddrMessage) => {
+    const handler = (msg: unknown) => {
       if (paused) return
+      const payload = msg as EmbeddrMessage
       setMessages((prev) => [
         {
           id: Math.random().toString(36).substring(7),
           timestamp: new Date(),
-          payload: msg,
+          payload,
         },
         ...prev.slice(0, 49),
       ])

@@ -10,6 +10,7 @@ import { useEmbeddrAPI } from '@/plugins/store'
 import { useLotus } from '@/providers/LotusProvider'
 import { useSettingsStore } from '@/store/settingsStore'
 import type { LotusResultItem } from './types'
+import type { Artifact, PaginatedResponse } from '@/lib/api/types'
 import { LotusSearchBar } from './LotusSearchBar'
 import { LotusPreviewPane } from './LotusPreviewPane'
 import { LotusResultsList } from './LotusResultsList'
@@ -60,13 +61,6 @@ function mergeDedup(a: LotusResultItem[], b: LotusResultItem[]) {
   return Array.from(map.values())
 }
 
-const SHEBANG_PROVIDERS: Record<string, { provider: string; kind?: string }> = {
-  stash: { provider: 'nynxz-stash.search', kind: 'scenes' },
-  arxiv: { provider: 'nynxz-arxiv.search' },
-  openverse: { provider: 'nynxz-openverse.search' },
-  stocks: { provider: 'embeddr-stocks.search' },
-}
-
 function parseFinderQuery(raw: string): ParsedFinderQuery {
   const trimmed = raw.trim()
   let shebang: string | null = null
@@ -93,6 +87,15 @@ function parseFinderQuery(raw: string): ParsedFinderQuery {
       const key = (parts[0] || '').trim().toLowerCase()
       const value = (parts[1] || '').trim()
       if (key) tags.push({ key, value: value || undefined })
+    } else if (token.startsWith('$') && token.length > 1) {
+      const tag = token.slice(1)
+      const parts = tag.split(/[:=]/, 2)
+      const rawKey = (parts[0] || '').trim().toLowerCase()
+      const rawValue = (parts[1] || '').trim()
+      if (rawKey) {
+        if (rawValue) tags.push({ key: rawKey, value: rawValue })
+        else tags.push({ key: 'sort', value: rawKey })
+      }
     } else {
       remaining.push(token)
     }
@@ -488,9 +491,7 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
             return null
           })()
 
-          const shebangConfig = providerKey
-            ? normalizedShebang || SHEBANG_PROVIDERS[providerKey]
-            : null
+          const shebangConfig = providerKey ? normalizedShebang : null
 
           const providerId =
             shebangConfig?.provider || defaults.text_provider || 'search.text'
@@ -511,126 +512,56 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
             return buildArtifactItems(items, scores)
           }
 
-          if (shebangConfig?.provider === 'nynxz-stash.search') {
-            const kindTag = tagValue(['kind'])
-            const kindFromShebang = shebang?.split(/[:.]/)[1]
-            const trimmed = text.trim()
-            const [firstToken, ...restTokens] = trimmed
-              .split(/\s+/)
-              .filter(Boolean)
-            const kindToken = ['scenes', 'images', 'performers'].includes(
-              (firstToken || '').toLowerCase(),
-            )
-              ? firstToken?.toLowerCase()
-              : undefined
-            const kind =
-              kindFromShebang ||
-              kindToken ||
-              kindTag ||
-              shebangConfig.kind ||
-              'scenes'
-            const stashQuery = kindToken ? restTokens.join(' ') : trimmed
-            if (!norm(stashQuery)) return []
-
-            const out = await apiRef.current.lotus.invoke(providerId, {
-              query: stashQuery,
-              kind,
-              page: 1,
-              per_page: 20,
-            })
-            const items = Array.isArray(out?.items) ? out.items : []
-
-            return items.map((item: any) => {
-              const mediaType =
-                item.kind === 'scenes'
-                  ? 'video'
-                  : item.kind === 'images'
-                    ? 'image'
-                    : 'web'
-              return buildResourceItem({
-                id: `stash:${item.kind}:${item.id}`,
-                title: item.title || item.id,
-                subtitle: `stash • ${item.kind}`,
-                description: item.date || '',
-                contentUrl: item.url || item.thumbnail,
-                previewUrl: item.thumbnail || item.url,
-                type: mediaType,
-              })
-            })
-          }
-
-          if (shebangConfig?.provider === 'nynxz-arxiv.search') {
-            if (!norm(text)) return []
-            const out = await apiRef.current.lotus.invoke(providerId, {
-              query: text,
-              start: 0,
-              max_results: 20,
-            })
-            const items = Array.isArray(out?.items) ? out.items : []
-            return items.map((item: any) => {
-              const contentUrl = item.pdf_url || item.arxiv_url
-              const authors = Array.isArray(item.authors)
-                ? item.authors.map((a: any) => a.name).join(', ')
-                : ''
-              return buildResourceItem({
-                id: `arxiv:${item.id}`,
-                title: item.title || item.id,
-                subtitle: authors ? `arXiv • ${authors}` : 'arXiv',
-                description: item.summary,
-                contentUrl,
-                type: 'document',
-              })
-            })
-          }
-
-          if (shebangConfig?.provider === 'nynxz-openverse.search') {
-            if (!norm(text)) return []
-            const out = await apiRef.current.lotus.invoke(providerId, {
-              query: text,
-              page: 1,
-              per_page: 20,
-            })
-            const items = Array.isArray(out?.items) ? out.items : []
-            return items.map((item: any) => {
-              const contentUrl = item.url || item.full_url || item.regular_url
-              return buildResourceItem({
-                id: `openverse:${item.id}`,
-                title: item.title || item.creator || item.id,
-                subtitle: item.creator
-                  ? `Openverse • ${item.creator}`
-                  : 'Openverse',
-                description: item.description || item.title,
-                contentUrl,
-                previewUrl: item.thumbnail,
-                type: 'image',
-              })
-            })
-          }
-
-          if (shebangConfig?.provider === 'embeddr-stocks.search') {
-            if (!norm(text)) return []
-            const out = await apiRef.current.lotus.invoke(providerId, {
-              query: text,
-              limit: 20,
-            })
-            const items = Array.isArray(out?.items) ? out.items : []
-            return items.map((item: any) => {
-              const symbol = item.symbol || item.id || ''
-              return buildResourceItem({
-                id: `stock:${symbol}`,
-                title: symbol,
-                subtitle: item.name ? `Stocks • ${item.name}` : 'Stocks',
-                description: item.exchange || '',
-                contentUrl: `stock:${symbol}`,
-                type: 'text',
-              })
-            })
-          }
-
           if (!norm(text)) return []
 
-          const out = await apiRef.current.lotus.invoke(providerId, {
+          const kindTag = tagValue(['kind', 'type'])
+          const resolvedKind = (() => {
+            const raw = (kindTag || shebangConfig?.kind || '').toLowerCase()
+            if (!raw) return undefined
+            if (raw === 'scene') return 'scenes'
+            if (raw === 'image') return 'images'
+            if (raw === 'performer') return 'performers'
+            if (raw === 'gallery') return 'galleries'
+            if (raw === 'studio') return 'studios'
+            return raw
+          })()
+
+          const sortKey = tagValue(['sort', 'order'])
+          const directionTag = tagValue(['dir', 'direction'])
+          const sortDirection = directionTag
+            ? directionTag.toUpperCase()
+            : undefined
+
+          const payloadExtras: Record<string, any> = {}
+          const reservedKeys = new Set([
+            'type',
+            'type_name',
+            'type_prefix',
+            'prefix',
+            'id',
+            'artifact',
+            'kind',
+            'sort',
+            'order',
+            'dir',
+            'direction',
+          ])
+          tags.forEach((t) => {
+            if (reservedKeys.has(t.key)) return
+            if (t.value !== undefined) payloadExtras[t.key] = t.value
+            else payloadExtras[t.key] = true
+          })
+
+          const basePayload: Record<string, any> = {
             query: text,
+            ...(resolvedKind ? { kind: resolvedKind } : {}),
+            ...(sortKey ? { sort: sortKey } : {}),
+            ...(sortDirection ? { direction: sortDirection } : {}),
+            ...payloadExtras,
+          }
+
+          const out = await apiRef.current.lotus.invoke(providerId, {
+            ...basePayload,
             limit: 30,
           })
           const items = Array.isArray(out?.items) ? out.items : []
@@ -667,16 +598,90 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
             return buildArtifactItems(artifacts, scores)
           }
 
-          return items.map((item: any) => ({
-            id: item.id || item.title,
-            kind: item.kind || 'resource',
-            source: 'server' as const,
-            title: item.title || item.id || 'Result',
-            subtitle: item.subtitle,
-            description: item.description,
-            score: item.score,
-            data: item.data || {},
-          }))
+          const resolverUrlForItem = (item: any) => {
+            const candidate =
+              item.arxiv_url ||
+              item.pdf_url ||
+              item.url ||
+              item.content_url ||
+              item.id
+
+            if (candidate && typeof candidate === 'string') {
+              if (candidate.startsWith('arxiv://')) return candidate
+              const absMatch = candidate.match(/arxiv\.org\/abs\/([^?#]+)/i)
+              if (absMatch?.[1]) return `arxiv://${absMatch[1]}`
+
+              const pdfMatch = candidate.match(/arxiv\.org\/pdf\/([^?#]+)/i)
+              if (pdfMatch?.[1]) {
+                const id = pdfMatch[1].replace(/\.pdf$/i, '')
+                return `arxiv://${id}`
+              }
+            }
+
+            return undefined
+          }
+
+          return items.map((item: any) => {
+            const subtitle =
+              item.subtitle ||
+              item.kind ||
+              (item.authors ? `Authors: ${item.authors}` : undefined)
+
+            const description =
+              item.description || item.summary || item.details || item.date
+
+            const resolverUrl = resolverUrlForItem(item)
+            const url =
+              resolverUrl ||
+              item.url ||
+              item.content_url ||
+              item.pdf_url ||
+              item.arxiv_url ||
+              item.full_url ||
+              item.regular_url
+            const previewUrl =
+              item.preview_url || item.thumbnail || item.thumb || item.cover
+            const inferredType =
+              item.type || item.media_type || (resolverUrl ? 'document' : 'web')
+
+            const allowedKinds = new Set([
+              'resource',
+              'artifact',
+              'action',
+              'feature',
+              'panel',
+              'nav',
+            ])
+            const normalizedKind = allowedKinds.has(item.kind)
+              ? item.kind
+              : 'resource'
+
+            return {
+              id: item.id || item.title,
+              kind: normalizedKind,
+              source: 'server' as const,
+              title: item.title || item.id || 'Result',
+              subtitle,
+              description,
+              score: item.score,
+              data: {
+                ...(item.data || {}),
+                preview_url: previewUrl,
+                resource:
+                  item.resource ||
+                  (url
+                    ? {
+                        url,
+                        content_url: url,
+                        preview_url: previewUrl,
+                        type: inferredType,
+                        title: item.title,
+                        kind: item.kind,
+                      }
+                    : undefined),
+              },
+            }
+          })
         })()
 
         const metadataPromise = (async () => {
@@ -685,12 +690,12 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
           const metaQuery = [text, ...metaTokens].join(' ').trim()
           if (!metaQuery) return []
 
-          const out = await embeddrApi.artifacts.search(
+          const out = (await embeddrApi.artifacts.search(
             metaQuery,
             20,
             0,
             typeFilter,
-          )
+          )) as PaginatedResponse<Artifact>
           let artifacts = Array.isArray(out?.items) ? out.items : []
 
           if (typePrefix) {
@@ -817,10 +822,15 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
       (item.kind === 'action' || item.kind === 'feature')
     ) {
       try {
+        const data = item.data ?? {}
+        if (!data.plugin_name || !data.action_name) {
+          toast.error('Capability missing plugin or action name.')
+          return
+        }
         const out = (await embeddrApi.lotus.dispatch(
           item.id,
           item.kind as 'action',
-          item.data ?? {},
+          data,
         )) as any
 
         onOpenChange(false)
@@ -852,6 +862,20 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
     if (item.kind === 'resource') {
       const resource = item.data?.resource || {}
       const resolved = resolvedResource || {}
+      const panelId =
+        resolved?.panel_id ||
+        resolved?.panelId ||
+        resource?.panel_id ||
+        resource?.panelId
+      if (panelId) {
+        apiRef.current.events?.emit?.('ui:open_panel', {
+          panel_id: panelId,
+          title: resolved?.title || resource?.title || item.title,
+          props: resolved?.panel_props || resource?.panel_props || {},
+        })
+        onOpenChange(false)
+        return
+      }
       const url =
         resolved?.content_url || resource?.content_url || resource?.url
       const previewUrl = resolved?.preview_url || resource?.preview_url

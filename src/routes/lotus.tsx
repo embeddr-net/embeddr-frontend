@@ -1,5 +1,4 @@
 // lotus.route.tsx (single-file route, adds click-to-dispatch)
-// Keeps your inline types and BACKEND_V2_URL usage.
 
 import React from 'react'
 import { createFileRoute } from '@tanstack/react-router'

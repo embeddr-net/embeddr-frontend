@@ -1,9 +1,10 @@
-import { BACKEND_V2_URL, BACKEND_URL } from '../config'
+import { BACKEND_URL } from '../config'
+import { fetchWithAuth } from '@/lib/api/fetch'
 import type { Collection, PromptImage } from '../types'
 
 export async function fetchCollections(): Promise<Array<Collection>> {
   // return []
-  const response = await fetch(`${BACKEND_V2_URL}/collections`)
+  const response = await fetchWithAuth(`${BACKEND_URL}/collections`)
   if (!response.ok) {
     throw new Error('Failed to fetch collections')
   }
@@ -11,7 +12,7 @@ export async function fetchCollections(): Promise<Array<Collection>> {
 }
 
 export async function getCollection(id: string): Promise<Collection> {
-  const response = await fetch(`${BACKEND_V2_URL}/collections/${id}`)
+  const response = await fetch(`${BACKEND_URL}/collections/${id}`)
   if (!response.ok) {
     throw new Error('Failed to fetch collection: ${response.statusText}')
   }
@@ -22,7 +23,7 @@ export async function createCollection(data: {
   name: string
   description?: string
 }): Promise<Collection> {
-  const response = await fetch(`${BACKEND_V2_URL}/collections`, {
+  const response = await fetch(`${BACKEND_URL}/collections`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -37,7 +38,7 @@ export async function createCollection(data: {
 }
 
 export async function deleteCollection(id: number): Promise<void> {
-  const response = await fetch(`${BACKEND_V2_URL}/collections/${id}`, {
+  const response = await fetch(`${BACKEND_URL}/collections/${id}`, {
     method: 'DELETE',
   })
 
@@ -51,7 +52,7 @@ export async function addItemToCollection(
   imageId: number,
 ): Promise<void> {
   const response = await fetch(
-    `${BACKEND_V2_URL}/collections/${collectionId}/items`,
+    `${BACKEND_URL}/collections/${collectionId}/items`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -69,7 +70,7 @@ export async function removeItemFromCollection(
   imageId: number,
 ): Promise<void> {
   const response = await fetch(
-    `${BACKEND_V2_URL}/collections/${collectionId}/items/${imageId}`,
+    `${BACKEND_URL}/collections/${collectionId}/items/${imageId}`,
     {
       method: 'DELETE',
     },

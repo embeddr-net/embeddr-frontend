@@ -6,24 +6,29 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  useWebSocket,
 } from '@embeddr/react-ui'
 import { Activity, Monitor, Send, User } from 'lucide-react'
 import { Input } from '@embeddr/react-ui/components/input'
 import { toast } from 'sonner'
 import { BACKEND_URL } from '@/lib/api/config'
+import { useUserStore } from '@/store/userStore'
+import { useWebSocket } from '@/providers/WebSocketProvider'
 
 export const ClientsMonitor = () => {
-  const { clients, myClientId, refreshClients } = useWebSocket()
+  const { clients, myClientId, refreshClients, sessions } = useWebSocket()
   const [selectedClient, setSelectedClient] = useState<string | null>(null)
   const [message, setMessage] = useState('')
+  const apiKey = useUserStore((state) => state.apiKey)
 
   const sendMessage = async () => {
     if (!selectedClient || !message) return
     try {
       await fetch(`${BACKEND_URL}/system/debug/message`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(apiKey ? { 'X-API-Key': apiKey } : {}),
+        },
         body: JSON.stringify({
           client_id: selectedClient,
           message: { type: 'debug_message', data: message },
@@ -62,6 +67,7 @@ export const ClientsMonitor = () => {
           <div className="flex flex-col p-2 gap-1">
             {clients.map((client) => {
               const isMe = client === myClientId
+              const session = sessions.find((item) => item.client_id === client)
               return (
                 <div
                   key={client}
@@ -74,7 +80,9 @@ export const ClientsMonitor = () => {
                 >
                   <User className={`w-3 h-3 ${isMe ? 'text-green-500' : ''}`} />
                   <span className="truncate flex-1">
-                    {client.substring(0, 8)}...
+                    {session?.username
+                      ? `${session.username} (${client.substring(0, 8)}...)`
+                      : `${client.substring(0, 8)}...`}
                   </span>
                   {isMe && (
                     <Badge
@@ -104,6 +112,32 @@ export const ClientsMonitor = () => {
                 <div className="text-xs font-mono text-muted-foreground">
                   ID: {selectedClient}
                 </div>
+                {sessions.find((item) => item.client_id === selectedClient) && (
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    {(() => {
+                      const session = sessions.find(
+                        (item) => item.client_id === selectedClient,
+                      )
+                      if (!session) return null
+                      return (
+                        <>
+                          {session.username && (
+                            <div>user: {session.username}</div>
+                          )}
+                          {session.user_id && (
+                            <div>user_id: {session.user_id}</div>
+                          )}
+                          {session.address && <div>ip: {session.address}</div>}
+                          {session.user_agent && (
+                            <div className="truncate">
+                              ua: {session.user_agent}
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Input

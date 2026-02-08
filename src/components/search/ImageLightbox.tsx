@@ -5,11 +5,11 @@ import {
   DialogTitle,
 } from '@embeddr/react-ui/components/dialog'
 import { Button } from '@embeddr/react-ui/components/button'
-import { ArrowDownToLine, ExternalLink, X } from 'lucide-react'
+import { ExternalLink, X } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import type { PromptImage } from '@/lib/api/types'
-import { BACKEND_URL } from '@/lib/api'
 import { useGlobalStore } from '@/store/globalStore'
+import { embeddrApi } from '@/lib/api/client'
 
 interface ImageLightboxProps {
   image: PromptImage | null
@@ -22,7 +22,7 @@ export function ImageLightbox({ image, onClose }: ImageLightboxProps) {
 
   if (!image) return null
 
-  const imageUrl = `${BACKEND_URL}/api/v2/artifacts/${image.id}/content`
+  const imageUrl = embeddrApi.artifacts.getContentUrl(image.id)
 
   const handleUseInCreate = () => {
     selectImage(image)

@@ -97,8 +97,7 @@ export function UploadDialog({ open, onOpenChange, files }: UploadDialogProps) {
       const formData = new FormData()
       formData.append('file', file)
 
-      // Use explicit api/v1 prefix as BACKEND_URL is root
-      const res = await fetch(`${BACKEND_URL}/api/v1/images/check`, {
+      const res = await fetch(`${BACKEND_URL}/images/check`, {
         method: 'POST',
         body: formData,
       })
@@ -211,7 +210,7 @@ export function UploadDialog({ open, onOpenChange, files }: UploadDialogProps) {
           if (parentId) {
             // Use dedicated endpoint to add relation if image already exists?
             // Or maybe we skip for now as user just wants upload logic
-            // Ideally: POST /api/v2/artifacts/{parentId}/relations { target_id: existing.id }
+            // Ideally: POST /artifacts/{parentId}/relations { target_id: existing.id }
           }
 
           setFileStatuses((prev) =>
@@ -229,7 +228,7 @@ export function UploadDialog({ open, onOpenChange, files }: UploadDialogProps) {
         if (libraryId) formData.append('library_id', libraryId.toString())
         if (parentId) formData.append('parent_ids', parentId)
 
-        const res = await fetch(`${BACKEND_URL}/api/v1/images/upload`, {
+        const res = await fetch(`${BACKEND_URL}/images/upload`, {
           method: 'POST',
           body: formData,
         })

@@ -1,5 +1,3 @@
-import { BACKEND_V2_URL } from '../config'
-
 export interface SpiderArgument {
   name: string
   label?: string
@@ -32,35 +30,14 @@ export interface CrawlResponse {
   log_file: string
 }
 
-const PLUGIN_BASE = `${BACKEND_V2_URL}/plugins/embeddr-scraper`
-
 export const scraperApi = {
   getSpiders: async (): Promise<SpiderDefinition[]> => {
-    // Use Plugin Proxy for listing spiders
-    const r = await fetch(`${PLUGIN_BASE}/spiders`)
-    if (!r.ok) throw new Error('Failed to fetch spiders via Proxy')
-    const data = await r.json()
-    // Support both old array of strings and new array of objects format
-    if (Array.isArray(data.spiders) && typeof data.spiders[0] === 'string') {
-      return data.spiders.map((s: string) => ({ name: s }))
-    }
-    // New metadata format returns { spiders: [{name: ...}] }
-    return data.spiders
+    throw new Error('Scraper frontend support has been removed.')
   },
-
-  // Calling runSpider directly is deprecated in favor of Spine execution,
-  // but we keep it type-compatible if needed, or throw error.
-  // The UI should use POST /executions
-  runSpider: async (
-    _spiderName: string,
-    _args: Record<string, string> = {},
-  ): Promise<CrawlResponse> => {
-    throw new Error('Direct Scraper access is deprecated. Use Execution Spine.')
+  runSpider: async (): Promise<CrawlResponse> => {
+    throw new Error('Scraper frontend support has been removed.')
   },
-
-  getLog: async (filename: string): Promise<string> => {
-    const r = await fetch(`${PLUGIN_BASE}/logs/${filename}`)
-    if (!r.ok) throw new Error('Log file not found')
-    return r.text()
+  getLog: async (): Promise<string> => {
+    throw new Error('Scraper frontend support has been removed.')
   },
 }

@@ -17,6 +17,8 @@ import {
   Minimize2,
   MoreVertical,
   Maximize,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -116,6 +118,36 @@ const WindowRenderer = ({ id }: { id: string }) => {
   )
   if (!windowState) return null
 
+  React.useEffect(() => {
+    console.debug('[Panels] WindowRenderer mount', {
+      id,
+      componentId: windowState.componentId,
+      isMinimized: windowState.isMinimized,
+      groupHostId: windowState.groupHostId,
+      position: windowState.position,
+      size: windowState.size,
+    })
+    return () => {
+      console.debug('[Panels] WindowRenderer unmount', { id })
+    }
+  }, [id])
+
+  React.useEffect(() => {
+    console.debug('[Panels] WindowRenderer state', {
+      id,
+      isMinimized: windowState.isMinimized,
+      groupHostId: windowState.groupHostId,
+      position: windowState.position,
+      size: windowState.size,
+    })
+  }, [
+    id,
+    windowState.isMinimized,
+    windowState.groupHostId,
+    windowState.position,
+    windowState.size,
+  ])
+
   const isHidden = arePanelsHidden && windowState.id !== backdropWindowId
 
   let content = null
@@ -142,6 +174,10 @@ const WindowRenderer = ({ id }: { id: string }) => {
   if (!content) return null
 
   if (isHidden) {
+    console.debug('[Panels] WindowRenderer hidden', {
+      id,
+      backdropWindowId,
+    })
     return <div style={{ display: 'none' }}>{content}</div>
   }
 
@@ -165,11 +201,15 @@ export const PanelManager: React.FC = () => {
           // Always show backdrop
           if (w.id === s.backdropWindowId) return true
           // Otherwise standard minimized check
-          return !w.isMinimized
+          return !w.isMinimized && !w.groupHostId
         })
         .map((w) => w.id),
     ),
   )
+
+  React.useEffect(() => {
+    console.debug('[Panels] openWindowIds', openWindowIds)
+  }, [openWindowIds])
 
   // We explicitly subscribe to minimized windows for the restore bar
   const minimizedWindows = useWindowStore(
@@ -221,6 +261,10 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
       updateWindow: s.updateWindow,
       setBackdrop: s.setBackdrop,
       backdropWindowId: s.backdropWindowId,
+      windows: s.windows,
+      setActiveTab: s.setActiveTab,
+      detachTab: s.detachTab,
+      moveTab: s.moveTab,
     })),
   )
   const baseApi = useEmbeddrAPI()
@@ -240,6 +284,10 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
     updateWindow,
     setBackdrop,
     backdropWindowId,
+    windows,
+    setActiveTab,
+    detachTab,
+    moveTab,
   } = windowApi
 
   const isBackdrop = windowState.id === backdropWindowId
@@ -252,18 +300,22 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
       ? 1000 + baseOrder
       : 20 + baseOrder
 
+  const tabs = windowState.tabs || [windowState.id]
+  const activeTabId = windowState.activeTabId || windowState.id
+  const activeWindow = windows[activeTabId] || windowState
+
   const resolved = React.useMemo<Resolved>(() => {
     // Prefer explicit spawn props if present
-    const explicitPid = windowState.props?.pluginId
-    const explicitName = windowState.props?.componentName
+    const explicitPid = activeWindow.props?.pluginId
+    const explicitName = activeWindow.props?.componentName
     if (explicitPid && explicitName) {
       return { pluginId: explicitPid, componentName: explicitName }
     }
-    return resolveFromComponentId(windowState.componentId, plugins)
+    return resolveFromComponentId(activeWindow.componentId, plugins)
   }, [
-    windowState.componentId,
-    windowState.props?.pluginId,
-    windowState.props?.componentName,
+    activeWindow.componentId,
+    activeWindow.props?.pluginId,
+    activeWindow.props?.componentName,
     plugins,
   ])
 
@@ -285,9 +337,175 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
   )
 
   const pluginProps = React.useMemo(
-    () => ({ ...(windowState.props || {}), isActive }),
-    [windowState.props, isActive],
+    () => ({ ...(activeWindow.props || {}), isActive }),
+    [activeWindow.props, isActive],
   )
+  const dragRef = React.useRef<{
+    tabId: string
+    startX: number
+    startY: number
+    active: boolean
+    mode?: 'reorder' | 'detach'
+  } | null>(null)
+  const tabViewportRef = React.useRef<HTMLDivElement | null>(null)
+  const tabTrackRef = React.useRef<HTMLDivElement | null>(null)
+  const tabStripRef = React.useRef<HTMLDivElement | null>(null)
+  const tabButtonRefs = React.useRef(new Map<string, HTMLButtonElement>())
+  const tabInsertIndexRef = React.useRef<number | null>(null)
+  const detachRafRef = React.useRef<number | null>(null)
+  const detachLastRef = React.useRef<{
+    tabId: string
+    x: number
+    y: number
+  } | null>(null)
+  const [tabInsertIndex, setTabInsertIndex] = React.useState<number | null>(
+    null,
+  )
+  const [tabInsertLeft, setTabInsertLeft] = React.useState<number | null>(null)
+  const [tabOffset, setTabOffset] = React.useState(0)
+  const [tabMaxOffset, setTabMaxOffset] = React.useState(0)
+
+  const placeDetachedTab = React.useCallback(
+    (tabId: string, clientX: number, clientY: number) => {
+      detachLastRef.current = {
+        tabId,
+        x: Math.max(0, clientX - 80),
+        y: Math.max(0, clientY - 14),
+      }
+      if (detachRafRef.current !== null) return
+      detachRafRef.current = window.requestAnimationFrame(() => {
+        const pending = detachLastRef.current
+        if (pending) {
+          updateWindow(pending.tabId, {
+            position: { x: pending.x, y: pending.y },
+            positionMode: 'absolute',
+          })
+        }
+        detachRafRef.current = null
+      })
+    },
+    [updateWindow],
+  )
+
+  const updateTabMetrics = React.useCallback(() => {
+    const viewport = tabViewportRef.current
+    const track = tabTrackRef.current
+    if (!viewport || !track) {
+      setTabMaxOffset(0)
+      return
+    }
+    const maxOffset = Math.max(0, track.scrollWidth - viewport.clientWidth)
+    setTabMaxOffset(maxOffset)
+    setTabOffset((prev) => Math.min(Math.max(prev, 0), maxOffset))
+  }, [])
+
+  React.useEffect(() => {
+    const handleMove = (event: PointerEvent) => {
+      const drag = dragRef.current
+      if (!drag) return
+      const strip = tabStripRef.current
+      const stripRect = strip?.getBoundingClientRect()
+      const inStrip = stripRect
+        ? event.clientY >= stripRect.top && event.clientY <= stripRect.bottom
+        : false
+      const dx = event.clientX - drag.startX
+      const dy = event.clientY - drag.startY
+      const dist = Math.hypot(dx, dy)
+
+      if (!drag.active && dist > 6) {
+        drag.active = true
+        drag.mode = inStrip ? 'reorder' : 'detach'
+        if (drag.mode === 'detach') {
+          detachTab(drag.tabId, {
+            x: Math.max(0, event.clientX - 80),
+            y: Math.max(0, event.clientY - 14),
+          })
+          placeDetachedTab(drag.tabId, event.clientX, event.clientY)
+        }
+      }
+
+      if (!drag.active) return
+
+      if (drag.mode === 'detach') {
+        placeDetachedTab(drag.tabId, event.clientX, event.clientY)
+        return
+      }
+
+      if (!inStrip) {
+        drag.mode = 'detach'
+        detachTab(drag.tabId, {
+          x: Math.max(0, event.clientX - 80),
+          y: Math.max(0, event.clientY - 14),
+        })
+        placeDetachedTab(drag.tabId, event.clientX, event.clientY)
+        setTabInsertIndex(null)
+        tabInsertIndexRef.current = null
+        setTabInsertLeft(null)
+        return
+      }
+
+      if (!stripRect) return
+
+      const rects = tabs
+        .map((id: string) =>
+          tabButtonRefs.current.get(id)?.getBoundingClientRect(),
+        )
+        .filter((rect: DOMRect | undefined): rect is DOMRect => Boolean(rect))
+
+      if (rects.length === 0) return
+
+      let nextIndex = rects.length
+      let nextLeft = rects[rects.length - 1].right - stripRect.left
+      for (let i = 0; i < rects.length; i += 1) {
+        const rect = rects[i]
+        const mid = rect.left + rect.width / 2
+        if (event.clientX < mid) {
+          nextIndex = i
+          nextLeft = rect.left - stripRect.left
+          break
+        }
+      }
+      setTabInsertIndex(nextIndex)
+      tabInsertIndexRef.current = nextIndex
+      setTabInsertLeft(nextLeft)
+    }
+
+    const handleUp = () => {
+      const drag = dragRef.current
+      if (
+        drag?.active &&
+        drag.mode === 'reorder' &&
+        tabInsertIndexRef.current !== null
+      ) {
+        moveTab(windowState.id, drag.tabId, tabInsertIndexRef.current)
+      }
+      dragRef.current = null
+      tabInsertIndexRef.current = null
+      setTabInsertIndex(null)
+      setTabInsertLeft(null)
+    }
+
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', handleUp)
+    return () => {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', handleUp)
+    }
+  }, [detachTab, moveTab, placeDetachedTab, tabs, windowState.id])
+
+  React.useEffect(() => {
+    updateTabMetrics()
+  }, [tabs.length, updateTabMetrics])
+
+  React.useEffect(() => {
+    const viewport = tabViewportRef.current
+    const track = tabTrackRef.current
+    if (!viewport || !track || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => updateTabMetrics())
+    observer.observe(viewport)
+    observer.observe(track)
+    return () => observer.disconnect()
+  }, [updateTabMetrics, tabs.length])
 
   // ✅ safe early return after hooks
   if (!resolved) {
@@ -296,6 +514,15 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
   }
 
   const { pluginId, componentName, def } = resolved
+
+  const safeTitle =
+    activeWindow.title?.trim() ||
+    windowState.title?.trim() ||
+    def?.title ||
+    def?.name ||
+    componentName ||
+    activeWindow.componentId ||
+    'Untitled Panel'
 
   const logoUrl = showPluginLogos ? logos?.[pluginId] : null
   const titleIcon = logoUrl ? (
@@ -316,10 +543,9 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
     windowState.size ||
     windowState.props?.defaultSize ||
     def?.props?.defaultSize
-  const defaultPosition =
-    windowState.position ||
-    windowState.props?.defaultPosition ||
-    def?.props?.defaultPosition
+
+  const defaultPosition = windowState.props?.defaultPosition ||
+    def?.props?.defaultPosition || { x: 20, y: 20 }
 
   if (isBackdrop) {
     return (
@@ -329,7 +555,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
       >
         {/* Top Spacer */}
         {commandBarPosition === 'top' && !isOverlay && (
-          <div className="h-10 w-full shrink-0 bg-background/0" />
+          <div className="h-8 w-full shrink-0 bg-background/0" />
         )}
 
         <div className="flex-1 w-full min-h-0 overflow-hidden relative embeddr-plugin-scope @container [container-name:panel] p-1">
@@ -338,7 +564,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
             <Button
               variant="ghost"
               size="icon-sm"
-              className="h-6 w-6 rounded-full bg-background/50 backdrop-blur border"
+              className="h-6 w-6 rounded-full bg-background/50 backdrop-blur"
               onClick={() => setBackdrop(null)}
             >
               <Minimize2 className="h-3 w-3" />
@@ -346,14 +572,14 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
             <Button
               variant="ghost"
               size="icon-sm"
-              className="h-6 w-6 rounded-full bg-background/50 backdrop-blur border"
+              className="h-6 w-6 rounded-full bg-background/50 backdrop-blur"
               onClick={() => closeWindow(windowState.id)}
             >
               <X className="h-3 w-3" />
             </Button>
           </div>
 
-          <div className="border rounded-md overflow-hidden h-full">
+          <div className="rounded-md overflow-hidden h-full">
             <PluginContent
               pluginId={pluginId}
               componentName={componentName}
@@ -367,7 +593,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
 
         {/* Bottom Spacer */}
         {commandBarPosition === 'bottom' && !isOverlay && (
-          <div className="h-10 w-full shrink-0 bg-background/0" />
+          <div className="h-8 w-full shrink-0 bg-background/0" />
         )}
       </div>
     )
@@ -376,7 +602,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
   return (
     <DraggablePanel
       id={windowState.id}
-      title={windowState.title}
+      title={safeTitle}
       titleIcon={titleIcon}
       isOpen={true}
       zIndex={zIndex}
@@ -395,6 +621,9 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
       transparent={windowState.props?.transparent}
       className={cn(
         windowState.props?.className,
+        'embeddr-panel',
+        `embeddr-panel-${pluginId.replace(/[^a-zA-Z0-9]/g, '-')}`,
+        `embeddr-component-${componentName.replace(/[^a-zA-Z0-9]/g, '-')}`,
         isBackdrop &&
           'fixed! inset-0! w-screen! h-screen! left-0! top-0! z-0! border-0! shadow-none! transform-none! bg-background! p-1 rounded-md',
       )}
@@ -407,7 +636,8 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
       context={context}
     >
       <div
-        className="h-full w-full min-h-0 overflow-hidden embeddr-plugin-scope @container [container-name:panel]"
+        id={`panel-content-${pluginId.replace(/[^a-zA-Z0-9]/g, '-')}-${componentName.replace(/[^a-zA-Z0-9]/g, '-')}`}
+        className="embeddr-panel-content h-full w-full min-h-0 overflow-hidden embeddr-plugin-scope @container [container-name:panel] relative"
         style={{
           paddingTop: isBackdrop
             ? 'var(--layout-screen-safe-top, 0px)'
@@ -417,14 +647,143 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
             : undefined,
         }}
       >
-        <PluginContent
-          pluginId={pluginId}
-          componentName={componentName}
-          api={api}
-          windowId={windowState.id}
-          context={context}
-          pluginProps={pluginProps}
-        />
+        {tabs.length > 1 && (
+          <div
+            ref={tabStripRef}
+            className="embeddr-panel-tabs absolute top-0 inset-x-0 h-7.5 flex items-center gap-1 px-1.5 border-b border-border bg-background/80 backdrop-blur z-10"
+          >
+            <button
+              className={cn(
+                'embeddr-panel-tab-scroll embeddr-panel-tab-scroll-left h-5 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground',
+                tabOffset <= 0 && 'opacity-30 pointer-events-none',
+              )}
+              onClick={() =>
+                setTabOffset((prev) => {
+                  const viewportWidth = tabViewportRef.current?.clientWidth
+                  const step = viewportWidth
+                    ? Math.max(80, viewportWidth - 60)
+                    : 140
+                  return Math.max(0, prev - step)
+                })
+              }
+              aria-label="Scroll tabs left"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <div ref={tabViewportRef} className="flex-1 overflow-hidden">
+              <div
+                ref={tabTrackRef}
+                className="embeddr-panel-tabs-track flex items-center gap-1 whitespace-nowrap transition-transform"
+                style={{ transform: `translateX(-${tabOffset}px)` }}
+              >
+                {tabs.map((tabId: string) => {
+                  const tabWindow = windows[tabId]
+                  const tabPluginId = tabWindow?.props?.pluginId
+                  const tabLogo = showPluginLogos ? logos?.[tabPluginId] : null
+                  const tabResolved = tabWindow
+                    ? resolveFromComponentId(tabWindow.componentId, plugins)
+                    : null
+                  const tabTitle =
+                    tabWindow?.title?.trim() ||
+                    tabResolved?.def?.title ||
+                    tabResolved?.def?.name ||
+                    tabResolved?.componentName ||
+                    tabWindow?.componentId ||
+                    'Untitled Panel'
+                  return (
+                    <button
+                      key={tabId}
+                      ref={(node) => {
+                        if (node) tabButtonRefs.current.set(tabId, node)
+                        else tabButtonRefs.current.delete(tabId)
+                      }}
+                      className={cn(
+                        'embeddr-panel-tab px-2 py-1 text-[11px] rounded border inline-flex items-center gap-1',
+                        tabId === activeTabId
+                          ? 'embeddr-panel-tab-active bg-primary/10 border-primary/40 text-foreground'
+                          : 'border-transparent text-muted-foreground hover:bg-muted/60',
+                      )}
+                      onClick={() => setActiveTab(windowState.id, tabId)}
+                      onPointerDown={(event) => {
+                        dragRef.current = {
+                          tabId,
+                          startX: event.clientX,
+                          startY: event.clientY,
+                          active: false,
+                        }
+                      }}
+                      onContextMenu={(event) => {
+                        event.preventDefault()
+                        detachTab(tabId, {
+                          x: Math.max(0, event.clientX - 80),
+                          y: Math.max(0, event.clientY - 14),
+                        })
+                        placeDetachedTab(tabId, event.clientX, event.clientY)
+                      }}
+                      title="Right-click to detach"
+                    >
+                      {tabLogo && (
+                        <img
+                          src={tabLogo}
+                          alt=""
+                          className="embeddr-panel-tab-icon h-3 w-3 rounded-sm object-contain"
+                        />
+                      )}
+                      <span className="embeddr-panel-tab-title max-w-24 truncate">
+                        {tabTitle}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <button
+              className={cn(
+                'embeddr-panel-tab-scroll embeddr-panel-tab-scroll-right h-5 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground',
+                tabOffset >= tabMaxOffset && 'opacity-30 pointer-events-none',
+              )}
+              onClick={() =>
+                setTabOffset((prev) => {
+                  const viewportWidth = tabViewportRef.current?.clientWidth
+                  const step = viewportWidth
+                    ? Math.max(80, viewportWidth - 60)
+                    : 140
+                  const next = prev + step
+                  return next >= tabMaxOffset - 4
+                    ? tabMaxOffset
+                    : Math.min(tabMaxOffset, next)
+                })
+              }
+              aria-label="Scroll tabs right"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+            {tabInsertLeft !== null && (
+              <div
+                className="absolute top-1 bottom-1 w-px bg-primary/70"
+                style={{ left: tabInsertLeft }}
+              />
+            )}
+          </div>
+        )}
+        <div
+          className={cn(
+            'h-full embeddr-plugin-container',
+            `plugin-${pluginId.replace(/[^a-zA-Z0-9]/g, '-')}`,
+            `component-${componentName.replace(/[^a-zA-Z0-9]/g, '-')}`,
+          )}
+          style={{ paddingTop: tabs.length > 1 ? '30px' : undefined }}
+        >
+          <PluginContent
+            key={activeTabId}
+            pluginId={pluginId}
+            componentName={componentName}
+            api={api}
+            windowId={activeTabId}
+            context={context}
+            pluginProps={pluginProps}
+          />
+        </div>
       </div>
     </DraggablePanel>
   )
@@ -520,7 +879,7 @@ const PanelManagerWrapper = ({
     zIndex,
     // Pass size/position from store if plugin needs to be controlled
     defaultSize: windowState.size || windowState.props?.defaultSize,
-    defaultPosition: windowState.position || windowState.props?.defaultPosition,
+    defaultPosition: windowState.props?.defaultPosition,
     // Explicitly pass constrained position/size so "controlled" mode works in UI lib
     position: windowState.position,
     size: windowState.size,

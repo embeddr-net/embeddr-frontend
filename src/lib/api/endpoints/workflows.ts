@@ -1,6 +1,6 @@
-import { BACKEND_V2_URL } from '../config'
+import { BACKEND_URL } from '../config'
 
-// New V2 Types
+// Workflow Types
 export interface WorkflowPort {
   name: string
   type: string
@@ -53,7 +53,7 @@ export interface Workflow {
   }
 }
 
-// Helper to adapt V2 Artifact to Legacy Workflow Shape
+// Helper to adapt workflow artifacts to legacy shape
 function adaptToLegacy(artifact: WorkflowArtifact): Workflow {
   // Support migration: Try direct payload first, then legacy implementation path
   const payload =
@@ -74,7 +74,7 @@ function adaptToLegacy(artifact: WorkflowArtifact): Workflow {
 }
 
 export async function fetchWorkflows(): Promise<Array<Workflow>> {
-  const response = await fetch(`${BACKEND_V2_URL}/workflows?limit=100`)
+  const response = await fetch(`${BACKEND_URL}/workflows?limit=100`)
   if (!response.ok) {
     throw new Error('Failed to fetch workflows')
   }
@@ -83,7 +83,7 @@ export async function fetchWorkflows(): Promise<Array<Workflow>> {
 }
 
 export async function getWorkflow(id: string | number): Promise<Workflow> {
-  const response = await fetch(`${BACKEND_V2_URL}/workflows/${id}`)
+  const response = await fetch(`${BACKEND_URL}/workflows/${id}`)
   if (!response.ok) {
     throw new Error('Failed to fetch workflow')
   }
@@ -92,7 +92,7 @@ export async function getWorkflow(id: string | number): Promise<Workflow> {
 }
 
 export async function getWorkflowTemplates(): Promise<Record<string, string>> {
-  const response = await fetch(`${BACKEND_V2_URL}/workflows/templates`)
+  const response = await fetch(`${BACKEND_URL}/workflows/templates`)
   if (!response.ok) throw new Error('Failed to fetch templates')
   return await response.json()
 }
@@ -110,7 +110,7 @@ export async function createWorkflow(data: {
     payload: data.graph,
   }
 
-  const response = await fetch(`${BACKEND_V2_URL}/workflows`, {
+  const response = await fetch(`${BACKEND_URL}/workflows`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -128,7 +128,7 @@ export async function createWorkflow(data: {
 export async function duplicateWorkflow(
   id: string | number,
 ): Promise<Workflow> {
-  const response = await fetch(`${BACKEND_V2_URL}/workflows/${id}/duplicate`, {
+  const response = await fetch(`${BACKEND_URL}/workflows/${id}/duplicate`, {
     method: 'POST',
   })
 
@@ -145,7 +145,7 @@ export async function composeWorkflows(
 ): Promise<Workflow> {
   // Query param style for ids or body? Backend expects body `workflow_ids`
   const response = await fetch(
-    `${BACKEND_V2_URL}/workflows/compose?name=${encodeURIComponent(name)}`,
+    `${BACKEND_URL}/workflows/compose?name=${encodeURIComponent(name)}`,
     {
       method: 'POST',
       headers: {
@@ -172,10 +172,10 @@ export async function updateWorkflowMetadata(
   metadata: Record<string, any>,
 ): Promise<Workflow> {
   // We need to fetch the current artifact to get the full metadata structure if we only have the workflow part...
-  // But the V2 API `PUT /workflows/{id}` expects `WorkflowArtifactMetadata` (the definition part).
+  // The API `PUT /workflows/{id}` expects `WorkflowArtifactMetadata` (the definition part).
   // Let's check backend `update_workflow`: expects `WorkflowArtifactMetadata`.
 
-  const response = await fetch(`${BACKEND_V2_URL}/workflows/${id}`, {
+  const response = await fetch(`${BACKEND_URL}/workflows/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(metadata),
@@ -184,14 +184,14 @@ export async function updateWorkflowMetadata(
   return adaptToLegacy(await response.json())
 }
 
-// Deprecated V1 Stubs
+// Deprecated stubs
 export async function updateWorkflow(id: any, data: any): Promise<any> {
   console.warn('updateWorkflow is deprecated/stubbed', id, data)
   return {}
 }
 
 export async function deleteWorkflow(id: string | number): Promise<void> {
-  const response = await fetch(`${BACKEND_V2_URL}/workflows/${id}`, {
+  const response = await fetch(`${BACKEND_URL}/workflows/${id}`, {
     method: 'DELETE',
   })
   if (!response.ok) {
@@ -212,7 +212,7 @@ export async function runWorkflow(
   prompt_id?: string | null
   outputs?: Array<any>
 }> {
-  const response = await fetch(`${BACKEND_V2_URL}/workflows/${id}/run`, {
+  const response = await fetch(`${BACKEND_URL}/workflows/${id}/run`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ inputs }),

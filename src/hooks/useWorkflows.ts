@@ -67,7 +67,7 @@ export function useComposeWorkflows() {
   })
 }
 
-// Deprecated name, but implemented for V2
+// Deprecated name, kept for compatibility
 export function useRunWorkflow() {
   return useMutation({
     mutationFn: async ({

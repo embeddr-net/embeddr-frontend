@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Switch } from '@embeddr/react-ui/components/switch'
 import { Button } from '@embeddr/react-ui/components/button'
 import { Badge } from '@embeddr/react-ui/components/badge'
 import {
@@ -27,6 +26,8 @@ import {
   setAnalysisConfig,
   type PluginCapabilities,
 } from '@/lib/api/endpoints/analysis'
+import { embeddrApi } from '@/lib/api/client'
+import type { LotusCapability } from '@/lib/api/types'
 import { Spinner } from '@embeddr/react-ui/components/spinner'
 import { ArrowUp, ArrowDown, Settings2, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -49,6 +50,64 @@ interface WorkflowStep {
   tags: string[]
 }
 
+const CORE_PRESET = [
+  { pluginName: 'embeddr-thumbnailer', label: 'Thumbnailer', priority: 20 },
+  { pluginName: 'embeddr-embeddings', label: 'Embeddings', priority: 10 },
+]
+
+const INGESTION_KEYWORDS = [
+  'ingest',
+  'thumbnail',
+  'embedding',
+  'embed',
+  'scanner',
+]
+
+const isIngestionCapability = (cap: LotusCapability) => {
+  if (cap.tags?.includes('ingest')) return true
+  const id = String(cap.id || '').toLowerCase()
+  const title = String(cap.title || '').toLowerCase()
+  const slot = String(cap.slot || '').toLowerCase()
+  return INGESTION_KEYWORDS.some(
+    (key) => id.includes(key) || title.includes(key) || slot.includes(key),
+  )
+}
+
+const isBackfillCapability = (label?: string) =>
+  String(label || '')
+    .toLowerCase()
+    .includes('backfill')
+
+const isIngestionAnalysisCap = (cap: any) => {
+  const tags = cap.tags || []
+  if (tags.includes('ingest')) return true
+  const name = String(cap.name || '').toLowerCase()
+  const label = String(cap.label || '').toLowerCase()
+  const trigger = String(cap.trigger_event || '').toLowerCase()
+  return INGESTION_KEYWORDS.some(
+    (key) => name.includes(key) || label.includes(key) || trigger.includes(key),
+  )
+}
+
+const pickPrimaryCapability = (caps: any[]) => {
+  if (caps.length === 0) return null
+  const ranked = [...caps].sort((a, b) => {
+    const score = (cap: any) => {
+      const label = String(cap.label || cap.name || '').toLowerCase()
+      let s = 0
+      if (label.includes('generate')) s += 3
+      if (label.includes('thumbnail')) s += 3
+      if (label.includes('embedding')) s += 2
+      if (label.includes('ingest')) s += 2
+      if (label.includes('scan')) s += 1
+      if (isBackfillCapability(label)) s -= 5
+      return s
+    }
+    return score(b) - score(a)
+  })
+  return ranked[0]
+}
+
 export const IngestionWorkflowEditor = ({
   scope = 'global',
   scopeId,
@@ -58,6 +117,7 @@ export const IngestionWorkflowEditor = ({
   const [selectedPluginForConfig, setSelectedPluginForConfig] = useState<
     string | null
   >(null)
+  const [applyingPreset, setApplyingPreset] = useState(false)
 
   // 1. Fetching Data
   const { data: configs, isLoading: loadingConfigs } = useQuery({
@@ -70,6 +130,12 @@ export const IngestionWorkflowEditor = ({
     queryFn: fetchAnalysisCapabilities,
   })
 
+  const { data: lotusCaps, isLoading: loadingLotusCaps } = useQuery({
+    queryKey: ['lotus', 'capabilities', 'ingestion'],
+    queryFn: () => embeddrApi.lotus.list({ limit: 500 }),
+    staleTime: 30_000,
+  })
+
   const mutation = useMutation({
     mutationFn: setAnalysisConfig,
     onSuccess: () => {
@@ -79,64 +145,128 @@ export const IngestionWorkflowEditor = ({
     },
   })
 
+  const effectiveCapabilities = useMemo<PluginCapabilities[]>(() => {
+    if (capabilities && capabilities.length > 0) {
+      return capabilities.map((plugin) => ({
+        ...plugin,
+        capabilities: (plugin.capabilities || []).filter(
+          isIngestionAnalysisCap,
+        ),
+      }))
+    }
+    const items = (lotusCaps?.items || []) as LotusCapability[]
+    if (items.length === 0) return []
+
+    const byPlugin = new Map<string, PluginCapabilities>()
+    items.forEach((cap) => {
+      if (!isIngestionCapability(cap)) return
+      const pluginName = cap.plugin || cap.id?.split('.')[0]
+      if (!pluginName) return
+      if (!byPlugin.has(pluginName)) {
+        byPlugin.set(pluginName, {
+          plugin_name: pluginName,
+          capabilities: [],
+        })
+      }
+      byPlugin.get(pluginName)?.capabilities.push({
+        name: cap.id,
+        label: cap.title || cap.id,
+        supported_types: [],
+        trigger_event: cap.kind,
+        priority: cap.data?.priority ?? 10,
+        tags: cap.tags || [],
+      } as any)
+    })
+
+    return Array.from(byPlugin.values())
+  }, [capabilities, lotusCaps?.items])
+
+  const presetMissing = useMemo(() => {
+    if (!effectiveCapabilities || effectiveCapabilities.length === 0) return []
+    const available = new Set(effectiveCapabilities.map((p) => p.plugin_name))
+    return CORE_PRESET.filter((p) => !available.has(p.pluginName)).map(
+      (p) => p.pluginName,
+    )
+  }, [effectiveCapabilities])
+
+  const handleApplyCorePreset = async () => {
+    setApplyingPreset(true)
+    try {
+      await Promise.all(
+        CORE_PRESET.map(async (preset) => {
+          const pluginCaps = effectiveCapabilities.find(
+            (p) => p.plugin_name === preset.pluginName,
+          )
+          const capPriority = pluginCaps?.capabilities?.[0]?.priority
+          await mutation.mutateAsync({
+            scope,
+            scope_id: effectiveScopeId,
+            plugin_name: preset.pluginName,
+            enabled: true,
+            priority: capPriority ?? preset.priority,
+          })
+        }),
+      )
+    } finally {
+      setApplyingPreset(false)
+    }
+  }
+
   // 2. Transforming Data into Linear Workflow
   const { steps, availableSteps } = useMemo(() => {
-    if (!capabilities || loadingConfigs)
+    if (loadingConfigs || (loadingCaps && loadingLotusCaps))
       return { steps: [], availableSteps: [] }
+
+    if (effectiveCapabilities.length === 0) {
+      const enabledConfigs = (configs || []).filter((c) => c.enabled)
+      const activeSteps = enabledConfigs.map((cfg) => ({
+        id: cfg.plugin_name,
+        pluginName: cfg.plugin_name,
+        label: cfg.plugin_name,
+        description: `Configured step: ${cfg.plugin_name}`,
+        priority: cfg.priority ?? 10,
+        originalPriority: cfg.priority ?? 10,
+        enabled: cfg.enabled,
+        isDirty: false,
+        tags: [],
+      }))
+      return {
+        steps: activeSteps.sort((a, b) => b.priority - a.priority),
+        availableSteps: [],
+      }
+    }
 
     const activeSteps: WorkflowStep[] = []
     const inactiveSteps: WorkflowStep[] = []
 
-    capabilities.forEach((p: PluginCapabilities) => {
-      p.capabilities.forEach((cap: any) => {
-        // HEURISTIC: Only show capabilities tagged 'ingest' or capable of analysis
-        const tags = cap.tags || []
+    effectiveCapabilities.forEach((p: PluginCapabilities) => {
+      const caps = (p.capabilities || []).filter(isIngestionAnalysisCap)
+      if (caps.length === 0) return
+      const primaryCap = pickPrimaryCapability(caps)
+      if (!primaryCap) return
 
-        // Find existing config
-        // The config key used in backend is usually `plugin_name` unless it's a specific capability override.
-        // But here we treat the "plugin" as the unit of configuration for now,
-        // because setAnalysisConfig takes `plugin_name`.
-        // However, if a plugin has multiple capabilities, we might need to distinguish them.
-        // For now, let's assume one main "ingest" capability per plugin or they share config.
+      const fullId = `${p.plugin_name}:${primaryCap.name}`
+      const cfg = configs?.find(
+        (c) => c.plugin_name === fullId || c.plugin_name === p.plugin_name,
+      )
 
-        // Let's use the FULL ID for the switch logic if we want to support granular toggles later,
-        // but existing setAnalysisConfig takes `plugin_name`.
+      const enabled = cfg ? cfg.enabled : false
+      const priority = cfg?.priority ?? primaryCap.priority ?? 10
 
-        const fullId = `${p.plugin_name}:${cap.name}`
-        // We check if there is a config entry for this specific plugin
-        const cfg = configs?.find(
-          (c) => c.plugin_name === fullId || c.plugin_name === p.plugin_name,
-        )
+      const step: WorkflowStep = {
+        id: p.plugin_name,
+        pluginName: p.plugin_name,
+        label: primaryCap.label || primaryCap.name || p.plugin_name,
+        description: `Provided by ${p.plugin_name}`,
+        priority,
+        originalPriority: primaryCap.priority ?? 10,
+        enabled,
+        isDirty: false,
+        tags: primaryCap.tags || [],
+      }
 
-        // Default Logic:
-        // If config exists, use it.
-        // If not, check "enabled" default.
-        // We default to FALSE so they appear in "Available" list unless explicitly enabled.
-        const enabled = cfg ? cfg.enabled : false
-
-        const priority = cfg?.priority ?? cap.priority ?? 10
-
-        const step = {
-          id: p.plugin_name, // Key used for API
-          pluginName: p.plugin_name,
-          label: cap.label || cap.name,
-          description: `Provided by ${p.plugin_name}`,
-          priority: priority,
-          originalPriority: cap.priority ?? 10,
-          enabled: enabled,
-          isDirty: false,
-          tags: tags,
-        }
-
-        // Avoid duplicates if multiple capabilities map to same plugin?
-        // For now, let's allow them.
-
-        if (enabled) {
-          activeSteps.push(step)
-        } else {
-          inactiveSteps.push(step)
-        }
-      })
+      if (enabled) activeSteps.push(step)
+      else inactiveSteps.push(step)
     })
 
     // Sort by Priority Descending (Highest runs first)
@@ -146,7 +276,13 @@ export const IngestionWorkflowEditor = ({
         a.label.localeCompare(b.label),
       ),
     }
-  }, [capabilities, configs, loadingConfigs])
+  }, [
+    effectiveCapabilities,
+    configs,
+    loadingConfigs,
+    loadingCaps,
+    loadingLotusCaps,
+  ])
 
   // 3. Handlers
   const handleAdd = (step: WorkflowStep) => {
@@ -229,38 +365,54 @@ export const IngestionWorkflowEditor = ({
                 execute in order from Top (High Priority) to Bottom.
               </CardDescription>
             </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Step
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="end">
-                <div className="p-3 border-b font-medium bg-muted/30">
-                  Available Actions
-                </div>
-                <div className="max-h-64 overflow-y-auto p-1">
-                  {availableSteps.length === 0 && (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
-                      No additional actions found.
-                    </div>
-                  )}
-                  {availableSteps.map((step) => (
-                    <button
-                      key={step.id}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted rounded-md flex items-center justify-between group"
-                      onClick={() => handleAdd(step)}
-                    >
-                      <span>{step.label}</span>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {step.pluginName}
-                      </Badge>
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleApplyCorePreset}
+                disabled={applyingPreset || presetMissing.length > 0}
+                className="gap-2"
+                title={
+                  presetMissing.length > 0
+                    ? `Missing plugins: ${presetMissing.join(', ')}`
+                    : 'Enable thumbnails + embeddings'
+                }
+              >
+                {applyingPreset ? 'Applying...' : 'Quick setup: core'}
+              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Step
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <div className="p-3 border-b font-medium bg-muted/30">
+                    Available Actions
+                  </div>
+                  <div className="max-h-64 overflow-y-auto p-1">
+                    {availableSteps.length === 0 && (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        No additional actions found.
+                      </div>
+                    )}
+                    {availableSteps.map((step) => (
+                      <button
+                        key={step.id}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-muted rounded-md flex items-center justify-between group"
+                        onClick={() => handleAdd(step)}
+                      >
+                        <span>{step.label}</span>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {step.pluginName}
+                        </Badge>
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { embeddrApi } from '@/lib/api/v2/client'
+import { embeddrApi } from '@/lib/api/client'
+import type { RoutesResponse } from '@/lib/api/types'
 import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
 import { Badge } from '@embeddr/react-ui/components/badge'
 import { Input } from '@embeddr/react-ui/components/input'
@@ -9,7 +10,7 @@ import { useState } from 'react'
 
 export const RoutesInspector = () => {
   const [filter, setFilter] = useState('')
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<RoutesResponse>({
     queryKey: ['system', 'routes'],
     queryFn: () => embeddrApi.system.getRoutes(),
   })

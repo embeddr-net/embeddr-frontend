@@ -17,7 +17,12 @@ import { Switch } from '@embeddr/react-ui/components/switch'
 import { Badge } from '@embeddr/react-ui/components/badge'
 import { Separator } from '@embeddr/react-ui/components/separator'
 import { embeddrApi } from '@/lib/api/client'
-import type { LotusCapability } from '@/lib/api/v2/types'
+import type {
+  AutomationListResponse,
+  AutomationUpsertResponse,
+  IngestionPipelineConfig,
+  LotusCapability,
+} from '@/lib/api/types'
 import {
   PipelineGraphEditor,
   type PipelineStepDraft,
@@ -62,17 +67,19 @@ export function PipelineComposer() {
     staleTime: 30_000,
   })
 
-  const { data: automationsData, refetch: refetchAutomations } = useQuery({
-    queryKey: ['system', 'automation', 'list'],
-    queryFn: () => embeddrApi.system.listAutomations(),
-    staleTime: 15_000,
-  })
+  const { data: automationsData, refetch: refetchAutomations } =
+    useQuery<AutomationListResponse>({
+      queryKey: ['system', 'automation', 'list'],
+      queryFn: () => embeddrApi.system.listAutomations(),
+      staleTime: 15_000,
+    })
 
-  const { data: pipelineConfig, refetch: refetchPipeline } = useQuery({
-    queryKey: ['system', 'ingestion', 'pipeline'],
-    queryFn: () => embeddrApi.system.getIngestionPipeline(),
-    staleTime: 15_000,
-  })
+  const { data: pipelineConfig, refetch: refetchPipeline } =
+    useQuery<IngestionPipelineConfig>({
+      queryKey: ['system', 'ingestion', 'pipeline'],
+      queryFn: () => embeddrApi.system.getIngestionPipeline(),
+      staleTime: 15_000,
+    })
 
   const actionCaps = useMemo(() => {
     const caps = (capsData?.items || []) as LotusCapability[]
@@ -238,7 +245,7 @@ export function PipelineComposer() {
         actions,
       })
     },
-    onSuccess: (res) => {
+    onSuccess: (res: AutomationUpsertResponse) => {
       setSelectedId(res.item.id)
       refetchAutomations()
     },

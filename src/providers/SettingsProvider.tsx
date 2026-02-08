@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { SettingsContext } from '@/context/SettingsContext'
-import { BACKEND_URL } from '@/lib/api'
+import { BACKEND_URL, BASE_URL } from '@/lib/api'
+import { fetchWithAuth } from '@/lib/api/fetch'
 
 export const SettingsProvider = ({
   children,
@@ -26,8 +27,8 @@ export const SettingsProvider = ({
   const { data: config } = useQuery({
     queryKey: ['system-config'],
     queryFn: async () => {
-      return []
-      const res = await fetch(`${BACKEND_URL}/system/config`)
+      // return []
+      const res = await fetchWithAuth(`${BASE_URL}/system/config`)
       if (!res.ok) throw new Error('Failed to fetch config')
       return res.json()
     },

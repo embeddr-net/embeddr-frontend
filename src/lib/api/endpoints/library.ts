@@ -1,4 +1,4 @@
-import { BACKEND_URL, BACKEND_V2_URL } from '../config'
+import { BACKEND_URL } from '../config'
 import type { FolderInfo, LibraryStats, ScanResult } from '../types'
 
 export interface LibraryPath {
@@ -11,7 +11,7 @@ export interface LibraryPath {
 }
 
 export async function fetchLibraryPaths(): Promise<Array<LibraryPath>> {
-  const response = await fetch(`${BACKEND_V2_URL}/collections/`)
+  const response = await fetch(`${BACKEND_URL}/collections/`)
   if (!response.ok) {
     throw new Error('Failed to fetch library paths')
   }

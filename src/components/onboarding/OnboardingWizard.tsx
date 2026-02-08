@@ -6,7 +6,11 @@ import { Card } from '@embeddr/react-ui/components/card'
 import { Badge } from '@embeddr/react-ui/components/badge'
 import { Separator } from '@embeddr/react-ui/components/separator'
 import { embeddrApi } from '@/lib/api/client'
-import type { LotusCapability } from '@/lib/api/v2/types'
+import type {
+  AutomationListResponse,
+  IngestionPipelineConfig,
+  LotusCapability,
+} from '@/lib/api/types'
 
 interface OnboardingWizardProps {
   onComplete?: () => void
@@ -27,10 +31,10 @@ const steps = [
       'Point Embeddr at a local folder so it can index your files automatically.',
   },
   {
-    id: 'automation',
-    title: 'Pipelines & Automation',
+    id: 'ingestion',
+    title: 'Ingestion defaults',
     description:
-      'Embeddr uses workflows to process your content. The default pipeline generates thumbnails and embeddings automatically.',
+      'Set up a default ingestion pipeline to generate thumbnails and embeddings automatically.',
   },
   {
     id: 'search',
@@ -66,19 +70,13 @@ export function OnboardingWizard({
     staleTime: 30_000,
   })
 
-  const { data: automationStatus } = useQuery({
-    queryKey: ['system', 'automation', 'status'],
-    queryFn: () => embeddrApi.system.getAutomationStatus(),
-    staleTime: 30_000,
-  })
-
-  const { data: pipelineConfig } = useQuery({
+  const { data: pipelineConfig } = useQuery<IngestionPipelineConfig>({
     queryKey: ['system', 'ingestion', 'pipeline'],
     queryFn: () => embeddrApi.system.getIngestionPipeline(),
     staleTime: 30_000,
   })
 
-  const { data: automationsData } = useQuery({
+  const { data: automationsData } = useQuery<AutomationListResponse>({
     queryKey: ['system', 'automation', 'list'],
     queryFn: () => embeddrApi.system.listAutomations(),
     staleTime: 30_000,
@@ -107,10 +105,6 @@ export function OnboardingWizard({
       return true
     })
   }, [capsData])
-
-  const missingAutomation =
-    (automationStatus?.total ?? 0) === 0 ||
-    (automationStatus?.active ?? 0) === 0
 
   const activePipeline = useMemo(() => {
     const pipelineId = pipelineConfig?.pipeline_id
@@ -170,9 +164,6 @@ export function OnboardingWizard({
         {activeStep.id === 'pipeline-check' && (
           <div className="pt-3 space-y-3">
             <div className="flex flex-wrap gap-2">
-              <Badge variant={missingAutomation ? 'secondary' : 'default'}>
-                Automations: {automationStatus?.active ?? 0} active
-              </Badge>
               <Badge variant={activePipeline ? 'default' : 'secondary'}>
                 Ingest pipeline: {activePipeline?.name || 'Not set'}
               </Badge>

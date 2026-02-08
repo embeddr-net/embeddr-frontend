@@ -42,7 +42,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from 'lucide-react'
-import type { Execution, ExecutionEvent } from '@/lib/api/v2/types'
+import type { Execution, ExecutionEvent } from '@/lib/api/types'
 import { embeddrApi } from '@/lib/api/client'
 import { useDebounce } from '@/hooks/use-debounce'
 import {
@@ -165,6 +165,8 @@ const ExecutionQueue = () => {
       'execution.completed',
       handleMessage,
     )
+    const unsubWaiting = globalEventBus.on('execution.waiting', handleMessage)
+    const unsubResumed = globalEventBus.on('execution.resumed', handleMessage)
     const unsubFailed = globalEventBus.on('execution.failed', handleMessage)
 
     // Also support colon syntax if backend uses it
@@ -184,6 +186,14 @@ const ExecutionQueue = () => {
       'execution:completed',
       handleMessage,
     )
+    const unsubWaitingCol = globalEventBus.on(
+      'execution:waiting',
+      handleMessage,
+    )
+    const unsubResumedCol = globalEventBus.on(
+      'execution:resumed',
+      handleMessage,
+    )
     const unsubFailedCol = globalEventBus.on('execution:failed', handleMessage)
 
     return () => {
@@ -191,11 +201,15 @@ const ExecutionQueue = () => {
       unsubStarted()
       unsubUpdated()
       unsubCompleted()
+      unsubWaiting()
+      unsubResumed()
       unsubFailed()
       unsubCreatedCol()
       unsubStartedCol()
       unsubUpdatedCol()
       unsubCompletedCol()
+      unsubWaitingCol()
+      unsubResumedCol()
       unsubFailedCol()
     }
   }, [execFilters, queryClient])
@@ -210,11 +224,11 @@ const ExecutionQueue = () => {
       const results = await Promise.all(
         subtreeIds.map(async (id) => {
           try {
-            const events = (await embeddrApi.executions.events(id, {
+            const res = await embeddrApi.executions.events(id, {
               limit: 500,
               offset: 0,
-            })) as ExecutionEvent[]
-            return [id, events] as const
+            })
+            return [id, res.items || []] as const
           } catch {
             return [id, [] as ExecutionEvent[]] as const
           }
@@ -282,11 +296,11 @@ const ExecutionQueue = () => {
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }))
     if (!rowEvents[id]) {
       try {
-        const events = await embeddrApi.executions.events(id, {
+        const res = await embeddrApi.executions.events(id, {
           limit: 200,
           offset: 0,
         })
-        setRowEvents((prev) => ({ ...prev, [id]: events }))
+        setRowEvents((prev) => ({ ...prev, [id]: res.items || [] }))
       } catch {
         setRowEvents((prev) => ({ ...prev, [id]: [] }))
       }

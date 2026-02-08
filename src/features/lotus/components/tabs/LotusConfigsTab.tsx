@@ -16,6 +16,7 @@ import { Button } from '@embeddr/react-ui/components/button'
 import { Badge } from '@embeddr/react-ui/components/badge'
 import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
 import { toast } from 'sonner'
+import { globalEventBus } from '@/lib/eventBus'
 import { useEmbeddrAPI } from '@/plugins/store'
 import { ConfigEditor } from '../config/ConfigEditor'
 import {
@@ -115,6 +116,11 @@ function ConfigAccordionItem({ cap }: { cap: LotusCapabilityLike }) {
       toast.success('Config saved')
       setLastSavedValue(configValue)
       getQuery.refetch()
+      globalEventBus.emit('lotus:config-updated', {
+        pluginName,
+        configId: cap.id,
+        value: configValue,
+      })
     },
     onError: (err: any) => {
       toast.error(err?.message || 'Failed to save config')

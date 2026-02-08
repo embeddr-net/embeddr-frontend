@@ -1,6 +1,12 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { embeddrApi } from '@/lib/api/v2/client'
+import { embeddrApi } from '@/lib/api/client'
+import type {
+  MaintenanceFixTypesResponse,
+  MaintenancePruneResponse,
+  MaintenanceRunResponse,
+  MaintenanceScript,
+} from '@/lib/api/types'
 import { Button } from '@embeddr/react-ui/components/button'
 import { Checkbox } from '@embeddr/react-ui/components/checkbox'
 import {
@@ -43,7 +49,9 @@ export const MaintenanceManager = () => {
   const [scriptLogs, setScriptLogs] = useState<string[]>([])
 
   // Queries for Orphans/Missing
-  const { data, isLoading, refetch } = useQuery<any>({
+  const { data, isLoading, refetch } = useQuery<
+    OrphanItem[] | MaintenanceScript[]
+  >({
     queryKey: ['maintenance', mode],
     queryFn: () => {
       if (mode === 'orphans') return embeddrApi.maintenance.getOrphans(500)
@@ -55,14 +63,14 @@ export const MaintenanceManager = () => {
   })
 
   // Safe cast for scripts
-  const scripts = mode === 'scripts' ? (data as any[]) || [] : []
-  const orphans = mode !== 'scripts' ? (data as any[]) || [] : []
+  const scripts = mode === 'scripts' ? (data as MaintenanceScript[]) || [] : []
+  const orphans = mode !== 'scripts' ? (data as OrphanItem[]) || [] : []
 
   // Run Script
   const runScriptMutation = useMutation({
     mutationFn: (vars: { name: string; dryRun: boolean }) =>
       embeddrApi.maintenance.runScript(vars.name, vars.dryRun),
-    onSuccess: (res, vars) => {
+    onSuccess: (res: MaintenanceRunResponse, vars) => {
       if (vars.dryRun) {
         toast('Dry Run Complete', {
           description: `Would modify ${res.updated} items`,
@@ -82,7 +90,7 @@ export const MaintenanceManager = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (ids: string[]) => embeddrApi.maintenance.prune(ids),
-    onSuccess: (data) => {
+    onSuccess: (data: MaintenancePruneResponse) => {
       toast.success(`Deleted ${data.deleted} artifacts`)
       setSelectedIds(new Set())
       refetch()
@@ -95,8 +103,8 @@ export const MaintenanceManager = () => {
 
   // Type Fix Mutation
   const fixTypesMutation = useMutation({
-    mutationFn: () => embeddrApi.maintenance.fixTypes(2000),
-    onSuccess: (data) => {
+    mutationFn: () => embeddrApi.maintenance.fixTypes(20000),
+    onSuccess: (data: MaintenanceFixTypesResponse) => {
       toast.success(
         `Type fix complete. Scanned: ${data.scanned}, Updated: ${data.updated}`,
       )
@@ -284,7 +292,7 @@ export const MaintenanceManager = () => {
             </Table>
           </div>
           {scriptLogs.length > 0 && (
-            <div className="w-[400px] border rounded-md flex flex-col">
+            <div className="w-100 border rounded-md flex flex-col">
               <div className="p-2 bg-muted text-xs font-semibold border-b">
                 Execution Logs
               </div>
@@ -342,7 +350,7 @@ export const MaintenanceManager = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[30px]">
+                <TableHead className="w-7.5">
                   <Checkbox
                     checked={
                       orphans.length > 0 && selectedIds.size === orphans.length
@@ -353,7 +361,7 @@ export const MaintenanceManager = () => {
                 <TableHead>Type</TableHead>
                 <TableHead>URI / Name</TableHead>
                 <TableHead>Reason</TableHead>
-                <TableHead className="w-[100px]">ID</TableHead>
+                <TableHead className="w-25">ID</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -388,7 +396,7 @@ export const MaintenanceManager = () => {
                   <TableCell>
                     <Badge variant="outline">{item.type}</Badge>
                   </TableCell>
-                  <TableCell className="max-w-[400px]">
+                  <TableCell className="max-w-100">
                     <div className="flex flex-col">
                       <span className="font-medium truncate text-xs">
                         {item.uri || 'No URI'}

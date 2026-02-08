@@ -25,7 +25,7 @@ export function SettingsWidget() {
       {/* Help -> General Settings Tab */}
       {/* <Tooltip>
         <TooltipTrigger asChild>
-          <Link to="/settings" search={{ tab: 'general' }}>
+          <Link to="/settings" search={{ tab: 'profile' }}>
             <Button
               variant="ghost"
               size="icon"

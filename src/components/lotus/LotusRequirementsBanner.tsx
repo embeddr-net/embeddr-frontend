@@ -6,7 +6,7 @@ import { Button } from '@embeddr/react-ui/components/button'
 import { RefreshCw, Settings, X } from 'lucide-react'
 import { embeddrApi } from '@/lib/api/client'
 import { useEmbeddrAPI } from '@/plugins/store'
-import type { LotusCapability } from '@/lib/api/v2/types'
+import type { IngestionPipelineConfig, LotusCapability } from '@/lib/api/types'
 
 const REQUIRED_CAPS = [
   {
@@ -47,9 +47,9 @@ export function LotusRequirementsBanner() {
     staleTime: 30_000,
   })
 
-  const { data: automationStatus } = useQuery({
-    queryKey: ['system', 'automation', 'status'],
-    queryFn: () => embeddrApi.system.getAutomationStatus(),
+  const { data: pipelineConfig } = useQuery<IngestionPipelineConfig>({
+    queryKey: ['system', 'ingestion', 'pipeline', 'requirements'],
+    queryFn: () => embeddrApi.system.getIngestionPipeline(),
     staleTime: 30_000,
   })
 
@@ -60,11 +60,9 @@ export function LotusRequirementsBanner() {
     )
   }, [data])
 
-  const missingAutomation =
-    (automationStatus?.total ?? 0) === 0 ||
-    (automationStatus?.active ?? 0) === 0
+  const missingPipeline = !pipelineConfig?.pipeline_id
 
-  if (dismissed || isLoading || (missing.length === 0 && !missingAutomation))
+  if (dismissed || isLoading || (missing.length === 0 && !missingPipeline))
     return null
 
   return (
@@ -89,9 +87,9 @@ export function LotusRequirementsBanner() {
               {req.label}
             </Badge>
           ))}
-          {missingAutomation && (
+          {missingPipeline && (
             <Badge variant="secondary" className="text-xs">
-              Default ingestion pipeline disabled
+              Ingestion pipeline not set
             </Badge>
           )}
         </div>

@@ -1,4 +1,5 @@
-import { BACKEND_URL, BACKEND_V2_URL } from '../config'
+import { BACKEND_URL } from '../config'
+import { fetchWithAuth } from '../fetch'
 import type { PromptImage, SystemStatus } from '../types'
 
 export async function getSystemStatus(): Promise<SystemStatus> {
@@ -51,7 +52,7 @@ export async function fetchSystemLogs(
     url += `&filter=${encodeURIComponent(filter)}`
   }
 
-  const res = await fetch(url)
+  const res = await fetchWithAuth(url)
   if (!res.ok) {
     throw new Error('Failed to fetch system logs')
   }
@@ -64,7 +65,7 @@ export interface ModelInfo {
 }
 
 export async function fetchAvailableModels(): Promise<Array<ModelInfo>> {
-  const res = await fetch(`${BACKEND_URL}/system/models`)
+  const res = await fetchWithAuth(`${BACKEND_URL}/system/models`)
   if (!res.ok) {
     throw new Error('Failed to fetch available models')
   }
@@ -74,6 +75,11 @@ export async function fetchAvailableModels(): Promise<Array<ModelInfo>> {
 export interface SystemInfoResponse {
   version: string
   dev_mode: boolean
+  instance?: {
+    name?: string | null
+    logo_url?: string | null
+    description?: string | null
+  }
   db_version?: string | null
   db: {
     provider: string
@@ -101,7 +107,7 @@ export interface SystemInfoResponse {
 }
 
 export async function fetchSystemInfo(): Promise<SystemInfoResponse> {
-  const res = await fetch(`${BACKEND_V2_URL}/system/info`)
+  const res = await fetchWithAuth(`${BACKEND_URL}/system/info`)
   if (!res.ok) {
     throw new Error('Failed to fetch system info')
   }
@@ -112,7 +118,7 @@ export async function backupDatabase(): Promise<{
   status: string
   backup_path: string
 }> {
-  const res = await fetch(`${BACKEND_V2_URL}/system/db/backup`, {
+  const res = await fetchWithAuth(`${BACKEND_URL}/system/db/backup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ confirm: true }),

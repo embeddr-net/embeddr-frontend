@@ -91,8 +91,8 @@ const PluginPage = ({
   }
 
   return (
-    <div className="h-full w-full overflow-hidden flex flex-col p-1">
-      <div className="h-full border">
+    <div className="h-full w-full overflow-hidden flex flex-col p-1 min-w-0">
+      <div className="h-full rounded-md min-w-0">
         {Component ? (
           <PluginPageErrorBoundary pluginName={plugin.name} pageId={pageId}>
             <Component api={api} pluginId={pluginId} {...pageProps} />
@@ -135,7 +135,7 @@ class PluginPageErrorBoundary extends React.Component<
     const { error } = this.state
     if (error) {
       return (
-        <div className="flex items-center justify-center h-full">
+        <div className="flex items-center justify-center h-full ">
           <div className="text-center space-y-2">
             <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto" />
             <h2 className="text-xl font-semibold">Plugin Page Error</h2>

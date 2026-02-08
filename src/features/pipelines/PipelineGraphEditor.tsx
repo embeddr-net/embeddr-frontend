@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@embeddr/react-ui/components/dialog'
 import { Textarea } from '@embeddr/react-ui/components/textarea'
-import type { LotusCapability } from '@/lib/api/v2/types'
+import type { LotusCapability } from '@/lib/api/types'
 import { PipelineGraphNode } from '@/features/pipelines/PipelineGraphNode'
 
 type PipelineOutgoingEdge =

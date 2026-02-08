@@ -3,7 +3,7 @@ import { Skeleton } from '@embeddr/react-ui/components/skeleton'
 
 interface DynamicPluginComponentProps {
   pluginId: string
-  componentName: string
+  componentName: any
   api: any
   [key: string]: any
 }
@@ -18,6 +18,14 @@ export const DynamicPluginComponent: React.FC<DynamicPluginComponentProps> =
       React.useState<React.ComponentType<any> | null>(null)
 
     React.useEffect(() => {
+      if (
+        typeof componentName === 'function' ||
+        (componentName && typeof componentName === 'object')
+      ) {
+        setComponent(() => componentName)
+        return
+      }
+
       // Normalize plugin lib name: simple-window -> simple_windowPlugin
       const libName = pluginId.replace(/[^a-zA-Z0-9]/g, '_') + 'Plugin'
 

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef } from 'react'
-import { EmbeddrProvider, PluginContext } from '@embeddr/zen-ui'
+import { EmbeddrProvider, PluginContext } from '@embeddr/zen-shell'
 import { useEmbeddrAPI, usePluginStore } from '@/plugins/store'
 import { DEFAULT_PLUGINS } from '@/plugins/defaults'
 

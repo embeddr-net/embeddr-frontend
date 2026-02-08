@@ -145,4 +145,5 @@ export const DEFAULT_PLUGINS = [
   // WorkflowInfoPlugin,
   // RandomSeedPlugin,
   //   ZenModeCorePlugin,
+  // MdxPlugin,
 ]

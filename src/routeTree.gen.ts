@@ -15,6 +15,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as PipelinesRouteImport } from './routes/pipelines'
+import { Route as OperatorRouteImport } from './routes/operator'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LotusPlaygroundRouteImport } from './routes/lotus-playground'
 import { Route as LotusRouteImport } from './routes/lotus'
@@ -25,6 +26,7 @@ import { Route as DocsRouteImport } from './routes/docs'
 import { Route as DebugRouteImport } from './routes/debug'
 import { Route as DatasetsRouteImport } from './routes/datasets'
 import { Route as ComfyRouteImport } from './routes/comfy'
+import { Route as AccessRouteImport } from './routes/access'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PipelinesIndexRouteImport } from './routes/pipelines.index'
 import { Route as ActionsIndexRouteImport } from './routes/actions.index'
@@ -63,6 +65,11 @@ const ResourcesRoute = ResourcesRouteImport.update({
 const PipelinesRoute = PipelinesRouteImport.update({
   id: '/pipelines',
   path: '/pipelines',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperatorRoute = OperatorRouteImport.update({
+  id: '/operator',
+  path: '/operator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -115,6 +122,11 @@ const ComfyRoute = ComfyRouteImport.update({
   path: '/comfy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccessRoute = AccessRouteImport.update({
+  id: '/access',
+  path: '/access',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -163,6 +175,7 @@ const PluginsPluginIdPageIdRoute = PluginsPluginIdPageIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/access': typeof AccessRoute
   '/comfy': typeof ComfyRoute
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
@@ -173,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/lotus': typeof LotusRoute
   '/lotus-playground': typeof LotusPlaygroundRoute
   '/onboarding': typeof OnboardingRoute
+  '/operator': typeof OperatorRoute
   '/pipelines': typeof PipelinesRouteWithChildren
   '/resources': typeof ResourcesRoute
   '/search': typeof SearchRoute
@@ -190,6 +204,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/access': typeof AccessRoute
   '/comfy': typeof ComfyRoute
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
@@ -200,6 +215,7 @@ export interface FileRoutesByTo {
   '/lotus': typeof LotusRoute
   '/lotus-playground': typeof LotusPlaygroundRoute
   '/onboarding': typeof OnboardingRoute
+  '/operator': typeof OperatorRoute
   '/resources': typeof ResourcesRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -217,6 +233,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/access': typeof AccessRoute
   '/comfy': typeof ComfyRoute
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
@@ -227,6 +244,7 @@ export interface FileRoutesById {
   '/lotus': typeof LotusRoute
   '/lotus-playground': typeof LotusPlaygroundRoute
   '/onboarding': typeof OnboardingRoute
+  '/operator': typeof OperatorRoute
   '/pipelines': typeof PipelinesRouteWithChildren
   '/resources': typeof ResourcesRoute
   '/search': typeof SearchRoute
@@ -246,6 +264,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/access'
     | '/comfy'
     | '/datasets'
     | '/debug'
@@ -256,6 +275,7 @@ export interface FileRouteTypes {
     | '/lotus'
     | '/lotus-playground'
     | '/onboarding'
+    | '/operator'
     | '/pipelines'
     | '/resources'
     | '/search'
@@ -273,6 +293,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/access'
     | '/comfy'
     | '/datasets'
     | '/debug'
@@ -283,6 +304,7 @@ export interface FileRouteTypes {
     | '/lotus'
     | '/lotus-playground'
     | '/onboarding'
+    | '/operator'
     | '/resources'
     | '/search'
     | '/settings'
@@ -299,6 +321,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/access'
     | '/comfy'
     | '/datasets'
     | '/debug'
@@ -309,6 +332,7 @@ export interface FileRouteTypes {
     | '/lotus'
     | '/lotus-playground'
     | '/onboarding'
+    | '/operator'
     | '/pipelines'
     | '/resources'
     | '/search'
@@ -327,6 +351,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccessRoute: typeof AccessRoute
   ComfyRoute: typeof ComfyRoute
   DatasetsRoute: typeof DatasetsRoute
   DebugRoute: typeof DebugRoute
@@ -337,6 +362,7 @@ export interface RootRouteChildren {
   LotusRoute: typeof LotusRoute
   LotusPlaygroundRoute: typeof LotusPlaygroundRoute
   OnboardingRoute: typeof OnboardingRoute
+  OperatorRoute: typeof OperatorRoute
   PipelinesRoute: typeof PipelinesRouteWithChildren
   ResourcesRoute: typeof ResourcesRoute
   SearchRoute: typeof SearchRoute
@@ -392,6 +418,13 @@ declare module '@tanstack/react-router' {
       path: '/pipelines'
       fullPath: '/pipelines'
       preLoaderRoute: typeof PipelinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operator': {
+      id: '/operator'
+      path: '/operator'
+      fullPath: '/operator'
+      preLoaderRoute: typeof OperatorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -462,6 +495,13 @@ declare module '@tanstack/react-router' {
       path: '/comfy'
       fullPath: '/comfy'
       preLoaderRoute: typeof ComfyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/access': {
+      id: '/access'
+      path: '/access'
+      fullPath: '/access'
+      preLoaderRoute: typeof AccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -558,6 +598,7 @@ const PluginsPluginIdRouteWithChildren = PluginsPluginIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccessRoute: AccessRoute,
   ComfyRoute: ComfyRoute,
   DatasetsRoute: DatasetsRoute,
   DebugRoute: DebugRoute,
@@ -568,6 +609,7 @@ const rootRouteChildren: RootRouteChildren = {
   LotusRoute: LotusRoute,
   LotusPlaygroundRoute: LotusPlaygroundRoute,
   OnboardingRoute: OnboardingRoute,
+  OperatorRoute: OperatorRoute,
   PipelinesRoute: PipelinesRouteWithChildren,
   ResourcesRoute: ResourcesRoute,
   SearchRoute: SearchRoute,

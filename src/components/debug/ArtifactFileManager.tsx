@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { embeddrApi } from '@/lib/api/v2/client'
-import { BACKEND_V2_URL } from '@/lib/api/config'
+import { embeddrApi } from '@/lib/api/client'
+import { BACKEND_URL } from '@/lib/api/config'
 import {
   Table,
   TableBody,
@@ -80,7 +80,7 @@ export const ArtifactFileManager = () => {
       ids: string[]
       payload?: any
     }) => {
-      const res = await fetch(`${BACKEND_V2_URL}/artifacts/bulk_operations`, {
+      const res = await fetch(`${BACKEND_URL}/artifacts/bulk_operations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -412,7 +412,7 @@ export const ArtifactFileManager = () => {
                         art.base_type_name === 'image' ? (
                         <div className="w-10 h-10 rounded bg-muted overflow-hidden relative border group cursor-zoom-in">
                           <img
-                            src={`${BACKEND_V2_URL}/artifacts/${art.id}/preview`}
+                            src={`${BACKEND_URL}/artifacts/${art.id}/preview`}
                             alt="preview"
                             className="w-full h-full object-cover transition-transform group-hover:scale-110"
                             loading="lazy"
@@ -427,8 +427,8 @@ export const ArtifactFileManager = () => {
                                     a.base_type_name === 'image',
                                 )
                                 .map((a) => ({
-                                  src: `${BACKEND_V2_URL}/artifacts/${a.id}/content`,
-                                  thumbnail: `${BACKEND_V2_URL}/artifacts/${a.id}/content?preview=true`,
+                                  src: `${BACKEND_URL}/artifacts/${a.id}/content`,
+                                  thumbnail: `${BACKEND_URL}/artifacts/${a.id}/content?preview=true`,
                                   title:
                                     a.metadata_json?.name ||
                                     a.metadata_json?.filename ||
@@ -443,7 +443,7 @@ export const ArtifactFileManager = () => {
                               )
 
                               useImage.openImage(
-                                `${BACKEND_V2_URL}/artifacts/${art.id}/content`,
+                                `${BACKEND_URL}/artifacts/${art.id}/content`,
                                 {
                                   id: `folder-${currentParentId || 'root'}`,
                                   name: currentParentId
@@ -488,8 +488,8 @@ export const ArtifactFileManager = () => {
                                               a.base_type_name === 'image',
                                           )
                                           .map((a) => ({
-                                            src: `${BACKEND_V2_URL}/artifacts/${a.id}/content`,
-                                            thumbnail: `${BACKEND_V2_URL}/artifacts/${a.id}/content?preview=true`,
+                                            src: `${BACKEND_URL}/artifacts/${a.id}/content`,
+                                            thumbnail: `${BACKEND_URL}/artifacts/${a.id}/content?preview=true`,
                                             title:
                                               a.metadata_json?.name ||
                                               a.metadata_json?.filename ||

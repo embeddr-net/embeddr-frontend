@@ -1,5 +1,5 @@
 import { useActionGraph } from '@/hooks/useActionGraph'
-import { fetchWorkflows } from '@/lib/api/endpoints/workflows'
+import { usePluginWorkflows } from '@/hooks/usePluginWorkflows'
 import {
   Card,
   CardHeader,
@@ -91,11 +91,8 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
     queryFn: fetchAvailableActions,
   })
 
-  // Workflows for introspection
-  const { data: workflows } = useQuery({
-    queryKey: ['workflows'],
-    queryFn: fetchWorkflows,
-  })
+  // ComfyUI plugin workflows for selection inputs
+  const { data: pluginWorkflows } = usePluginWorkflows('embeddr-comfyui')
 
   // Sync initial graph
   useEffect(() => {
@@ -508,7 +505,7 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
 
                                             if (
                                               isWorkflowSelector &&
-                                              workflows
+                                              pluginWorkflows
                                             ) {
                                               return (
                                                 <Select
@@ -522,114 +519,26 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
                                                         value: val,
                                                       },
                                                     )
-                                                    // Trigger morphing logic manually
-                                                    if (
-                                                      node.action ===
-                                                        'comfy_run_workflow' ||
-                                                      node.action ===
-                                                        'run_workflow'
-                                                    ) {
-                                                      const wf = workflows.find(
-                                                        (w) =>
-                                                          w.id === val ||
-                                                          w.name === val,
-                                                      )
-                                                      if (wf) {
-                                                        const meta =
-                                                          wf.metadata_json as any
-                                                        const interfaceInputs =
-                                                          meta?.interface
-                                                            ?.inputs ||
-                                                          meta?.inputs ||
-                                                          []
-
-                                                        // Get current inputs but filter out previous dynamic params?
-                                                        // For now, simple merge.
-                                                        const currentInputs = {
-                                                          ...node.inputs,
-                                                        }
-                                                        currentInputs[
-                                                          key
-                                                        ].value = val // set WF ID/Name
-
-                                                        // Merge exposed inputs from workflow into node inputs
-                                                        interfaceInputs.forEach(
-                                                          (i: any) => {
-                                                            let safeKey =
-                                                              i.label
-                                                                ?.replace(
-                                                                  / /,
-                                                                  '_',
-                                                                )
-                                                                .trim() ||
-                                                              `${i.node}_${i.port}`
-
-                                                            if (
-                                                              safeKey ===
-                                                                'workflow_name' ||
-                                                              safeKey ===
-                                                                'workflow_artifact_id'
-                                                            ) {
-                                                              // skip binding to self
-                                                              return
-                                                            }
-
-                                                            // Only add if not present, to preserve values if switching back?
-                                                            // Or if present but empty?
-                                                            if (
-                                                              !currentInputs[
-                                                                safeKey
-                                                              ]
-                                                            ) {
-                                                              currentInputs[
-                                                                safeKey
-                                                              ] = {
-                                                                type:
-                                                                  i.type ===
-                                                                  'int'
-                                                                    ? 'integer'
-                                                                    : i.type ===
-                                                                        'float'
-                                                                      ? 'number'
-                                                                      : i.type,
-                                                                value:
-                                                                  i.default,
-                                                                link: null,
-                                                                exposed: false,
-                                                                schema: i,
-                                                              }
-                                                            }
-                                                          },
-                                                        )
-
-                                                        // Update Node
-                                                        setNodes((prev) =>
-                                                          prev.map((n) =>
-                                                            n.id === node.id
-                                                              ? {
-                                                                  ...n,
-                                                                  inputs:
-                                                                    currentInputs,
-                                                                }
-                                                              : n,
-                                                          ),
-                                                        )
-                                                      }
-                                                    }
                                                   }}
                                                 >
                                                   <SelectTrigger className="h-7 text-xs">
                                                     <SelectValue placeholder="Select Workflow..." />
                                                   </SelectTrigger>
                                                   <SelectContent>
-                                                    {workflows.map((wf) => (
-                                                      <SelectItem
-                                                        key={wf.id}
-                                                        value={String(wf.id)}
-                                                      >
-                                                        {wf.name}
-                                                      </SelectItem>
-                                                    ))}
+                                                    {pluginWorkflows.map(
+                                                      (wf) => (
+                                                        <SelectItem
+                                                          key={String(
+                                                            wf.id ?? wf.name,
+                                                          )}
+                                                          value={String(
+                                                            wf.name ?? wf.id,
+                                                          )}
+                                                        >
+                                                          {wf.name ?? wf.id}
+                                                        </SelectItem>
+                                                      ),
+                                                    )}
                                                   </SelectContent>
                                                 </Select>
                                               )

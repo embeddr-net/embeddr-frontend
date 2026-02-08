@@ -35,7 +35,7 @@ export function ImageSelectorDialog({
 
         <div className="flex-1 min-h-0 bg-muted/10 p-2">
           <ImageBrowser
-            useV2={true}
+            useArtifactsApi={true}
             onSelect={(image) => {
               onSelect(image)
               onOpenChange(false)

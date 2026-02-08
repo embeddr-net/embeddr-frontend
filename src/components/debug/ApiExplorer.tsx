@@ -31,7 +31,8 @@ import {
 } from 'lucide-react'
 import { Input } from '@embeddr/react-ui/components/input'
 import { useQuery } from '@tanstack/react-query'
-import { embeddrApi } from '@/lib/api/v2/client'
+import { embeddrApi } from '@/lib/api/client'
+import type { Artifact, PaginatedResponse } from '@/lib/api/types'
 import { useArtifact } from '@/hooks/useArtifact'
 import { Separator } from '@embeddr/react-ui/components/separator'
 import { useDebounce } from '@/hooks/use-debounce'
@@ -63,29 +64,29 @@ export const ApiExplorer = () => {
     data: artifactsData,
     isLoading: isLoadingList,
     refetch,
-  } = useQuery({
+  } = useQuery<PaginatedResponse<Artifact>>({
     queryKey: [
-      'v2',
+      'artifacts',
       'artifacts',
       page,
       pageSize,
       debouncedSearchTerm,
       typeFilter,
     ],
-    queryFn: () => {
+    queryFn: async (): Promise<PaginatedResponse<Artifact>> => {
       if (debouncedSearchTerm) {
-        return embeddrApi.artifacts.search(
+        return (await embeddrApi.artifacts.search(
           debouncedSearchTerm,
           pageSize,
           page * pageSize,
           typeFilter === 'all' ? undefined : typeFilter,
-        )
+        )) as PaginatedResponse<Artifact>
       }
-      return embeddrApi.artifacts.list({
+      return (await embeddrApi.artifacts.list({
         limit: pageSize,
         offset: page * pageSize,
         type_name: typeFilter === 'all' ? undefined : typeFilter,
-      })
+      })) as PaginatedResponse<Artifact>
     },
     placeholderData: (previousData) => previousData,
   })
@@ -145,7 +146,7 @@ export const ApiExplorer = () => {
 
   const storageOptions = useMemo(() => {
     const items = new Set<string>(['all'])
-    artifacts.forEach((a) => items.add(getStorageKind(a.uri)))
+    artifacts.forEach((a: Artifact) => items.add(getStorageKind(a.uri)))
     return Array.from(items)
   }, [artifacts])
 
@@ -155,11 +156,11 @@ export const ApiExplorer = () => {
 
   const pluginOptions = useMemo(() => {
     const items = new Set<string>(['all'])
-    artifacts.forEach((a) => items.add(getArtifactPlugin(a)))
+    artifacts.forEach((a: Artifact) => items.add(getArtifactPlugin(a)))
     return Array.from(items)
   }, [artifacts])
 
-  const filteredArtifacts = artifacts.filter((a) => {
+  const filteredArtifacts = artifacts.filter((a: Artifact) => {
     const storageKind = getStorageKind(a.uri)
     const originKind = getOriginKind(a.uri)
     const pluginName = getArtifactPlugin(a)
@@ -200,7 +201,7 @@ export const ApiExplorer = () => {
         <div className="p-2 border-b bg-muted/20 flex flex-col gap-2 shrink-0">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">
-              V2 Artifacts ({totalItems})
+              Artifacts ({totalItems})
             </span>
             <div className="flex items-center gap-1">
               <Button
@@ -309,7 +310,7 @@ export const ApiExplorer = () => {
           >
             <div className="flex flex-col">
               {isLoading && <div className="p-4 text-xs">Loading...</div>}
-              {filteredArtifacts?.map((a) => {
+              {filteredArtifacts?.map((a: Artifact) => {
                 const isImage =
                   a.type_name === 'image' || a.base_type_name === 'image'
                 const previewUrl = embeddrApi.artifacts.getPreviewUrl(

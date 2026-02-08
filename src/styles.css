@@ -1,5 +1,9 @@
 @import 'tailwindcss';
-@source "../node_modules/@embeddr/react-ui/dist/**/*";
+@source "../node_modules/@embeddr/react-ui/dist/**/*.{js,jsx,ts,tsx}";
+@source "../../embeddr-react-ui/dist/**/*.{js,jsx,ts,tsx}";
+@source "../../embeddr-react-ui/src/**/*.{js,jsx,ts,tsx}";
+@source "../../embeddr-plugins/plugins/**/*.{ts,tsx,js,jsx}";
+@source "../../embeddr-plugins/plugins/**/*.{css,scss}";
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/jetbrains-mono';

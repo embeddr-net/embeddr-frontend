@@ -1,35 +1,35 @@
 import { useQuery } from '@tanstack/react-query'
-import { embeddrApi } from '@/lib/api/v2/client'
+import { embeddrApi } from '@/lib/api/client'
 
 export function useArtifact(id: string | null) {
   const enabled = !!id
 
   const { data: details, isLoading: isLoadingDetails } = useQuery({
-    queryKey: ['v2', 'artifact', id],
+    queryKey: ['artifacts', 'artifact', id],
     queryFn: () => embeddrApi.artifacts.get(id!),
     enabled,
   })
 
   const { data: embeddings, isLoading: isLoadingEmbeddings } = useQuery({
-    queryKey: ['v2', 'artifact', id, 'embeddings'],
+    queryKey: ['artifacts', 'artifact', id, 'embeddings'],
     queryFn: () => embeddrApi.artifacts.getEmbeddings(id!),
     enabled,
   })
 
   const { data: annotations, isLoading: isLoadingAnnotations } = useQuery({
-    queryKey: ['v2', 'artifact', id, 'annotations'],
+    queryKey: ['artifacts', 'artifact', id, 'annotations'],
     queryFn: () => embeddrApi.artifacts.getAnnotations(id!),
     enabled,
   })
 
   const { data: lineage, isLoading: isLoadingLineage } = useQuery({
-    queryKey: ['v2', 'artifact', id, 'lineage'],
+    queryKey: ['artifacts', 'artifact', id, 'lineage'],
     queryFn: () => embeddrApi.artifacts.getLineage(id!),
     enabled,
   })
 
   const { data: relations, isLoading: isLoadingRelations } = useQuery({
-    queryKey: ['v2', 'artifact', id, 'relations'],
+    queryKey: ['artifacts', 'artifact', id, 'relations'],
     queryFn: () => embeddrApi.artifacts.getRelations(id!),
     enabled,
   })

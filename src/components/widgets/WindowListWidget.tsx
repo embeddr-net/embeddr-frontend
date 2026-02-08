@@ -14,6 +14,7 @@ import {
   ContextMenuTrigger,
 } from '@embeddr/react-ui/components/context-menu'
 import {
+  Box,
   Layers,
   Check,
   Maximize2,
@@ -30,6 +31,7 @@ export function WindowListWidget() {
     windows,
     panelOrder,
     backdropWindowId,
+    openWindow,
     minimizeWindow,
     restoreWindow,
     bringToFront,
@@ -41,6 +43,7 @@ export function WindowListWidget() {
       windows: s.windows,
       panelOrder: s.panelOrder,
       backdropWindowId: s.backdropWindowId,
+      openWindow: s.openWindow,
       minimizeWindow: s.minimizeWindow,
       restoreWindow: s.restoreWindow,
       bringToFront: s.bringToFront,
@@ -101,6 +104,35 @@ export function WindowListWidget() {
         side="top"
         sideOffset={8}
       >
+        <div className="flex flex-col gap-1 pb-2">
+          <Button
+            variant={
+              windows['zen-toolbox'] && !windows['zen-toolbox'].isMinimized
+                ? 'secondary'
+                : 'ghost'
+            }
+            size="sm"
+            className="w-full justify-start h-8 text-xs font-normal"
+            onClick={() => {
+              const windowId = 'zen-toolbox'
+              const win = windows[windowId]
+              if (!win) {
+                openWindow({
+                  id: windowId,
+                  title: 'Toolbox',
+                  componentId: 'core-toolbox',
+                })
+                return
+              }
+              if (win.isMinimized) restoreWindow(windowId)
+              bringToFront(windowId)
+            }}
+          >
+            <Box className="h-3.5 w-3.5 mr-2" />
+            Toolbox
+          </Button>
+          <div className="h-px bg-border/60 mx-1" />
+        </div>
         <div className="flex flex-col gap-1">
           <div className="text-[10px] font-medium text-muted-foreground px-2 py-1 mb-1 border-b border-border/50 uppercase tracking-wider flex items-center justify-between">
             <span>Open Panels</span>

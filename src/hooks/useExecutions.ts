@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { embeddrApi } from '@/lib/api/v2/client'
-import type { Execution, ExecutionEvent } from '@/lib/api/v2/types'
+import { embeddrApi } from '@/lib/api/client'
+import type { Execution, ExecutionEvent } from '@/lib/api/types'
 
 export interface ExecutionFilters {
   limit?: number
@@ -16,7 +16,11 @@ export interface ExecutionFilters {
 export const useExecutions = (filters: ExecutionFilters) => {
   return useQuery<Execution[]>({
     queryKey: ['executions', filters],
-    queryFn: () => embeddrApi.executions.list(filters),
+    queryFn: async () => {
+      const res = await embeddrApi.executions.list(filters)
+      if (Array.isArray(res)) return res
+      return res.items || []
+    },
     staleTime: 5_000,
   })
 }
@@ -27,10 +31,12 @@ export const useExecutionEvents = (
 ) => {
   return useQuery<ExecutionEvent[]>({
     queryKey: ['execution-events', executionId, params],
-    queryFn: () =>
-      executionId
-        ? embeddrApi.executions.events(executionId, params)
-        : Promise.resolve([]),
+    queryFn: async () => {
+      if (!executionId) return []
+      const res = await embeddrApi.executions.events(executionId, params)
+      if (Array.isArray(res)) return res
+      return res.items || []
+    },
     enabled: !!executionId,
   })
 }

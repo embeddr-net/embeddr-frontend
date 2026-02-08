@@ -57,7 +57,7 @@ export function DropdownMenuDemo() {
             }
           >
             <Key className="mr-2 h-4 w-4" />
-            <span>API Keys</span>
+            <span>Client Keys</span>
           </DropdownMenuItem> */}
           {/* <DropdownMenuItem onClick={() => navigateTo('billing')}>
             <CreditCard className="mr-2 h-4 w-4" />

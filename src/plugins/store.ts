@@ -2,8 +2,9 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { toast } from 'sonner'
 import React, { useMemo } from 'react'
-import type { EmbeddrAPI, PluginDefinition } from '@embeddr/zen-ui'
+import type { EmbeddrAPI, PluginDefinition } from '@embeddr/zen-shell'
 import { useGlobalStore } from '@/store/globalStore'
+import { useUserStore } from '@/store/userStore'
 import { useGeneration } from '@/context/GenerationContext'
 import { usePanelStore } from '@/store/panelStore'
 import { useWindowStore } from '@/store/windowStore'
@@ -11,8 +12,9 @@ import { useWorkspaceStore } from '@/store/workspaceStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { registerWindowComponent } from '@/components/ui/windowRegistry'
 import { uploadItem } from '@/lib/api/endpoints/images'
-import { BACKEND_URL, BASE_URL, BACKEND_V2_URL } from '@/lib/api/config'
+import { BACKEND_URL } from '@/lib/api/config'
 import { globalEventBus } from '@/lib/eventBus'
+import { fetchWithAuth } from '@/lib/api/fetch'
 import {
   loadExternalPlugins as loadExternalPluginsZen,
   registerPlugin as registerZenPlugin,
@@ -20,12 +22,15 @@ import {
   usePluginRegistry,
   type PluginLoaderAdapter,
   type PluginManifest,
-} from '@embeddr/zen-ui'
+} from '@embeddr/zen-shell'
+import { fetchPluginManifests } from '@/lib/api/endpoints/plugins'
 
 interface PluginState {
   plugins: Record<string, PluginDefinition>
   activePlugins: Array<string>
   knownPlugins: Array<string>
+  isLoadingExternal: boolean
+  hasLoadedExternal: boolean
 
   registerPlugin: (plugin: PluginDefinition) => void
   unregisterPlugin: (pluginId: string) => void
@@ -50,8 +55,11 @@ export const usePluginStore = create<PluginState>()(
       activePlugins: [],
       knownPlugins: [],
       backendMetadata: {},
+      isLoadingExternal: false,
+      hasLoadedExternal: false,
 
       loadExternalPlugins: async () => {
+        set({ isLoadingExternal: true })
         try {
           const ensureRegistrySync = () => {
             if ((window as any).__embeddrRegistrySync) return
@@ -68,46 +76,38 @@ export const usePluginStore = create<PluginState>()(
 
           const adapter: PluginLoaderAdapter = {
             list: async () => {
-              const res = await fetch(`${BACKEND_V2_URL}/plugins`)
-              if (!res.ok) return []
-              const plugins = await res.json()
-              return plugins as PluginManifest[]
+              return fetchPluginManifests()
             },
             resolveScriptUrl: (manifest) => {
               const plugin = manifest as any
               let scriptUrl = plugin.url
               if (!scriptUrl) return ''
-              if (BASE_URL.startsWith('http')) {
-                const url = new URL(BASE_URL)
+              if (BACKEND_URL.startsWith('http')) {
+                const url = new URL(BACKEND_URL)
                 scriptUrl = `${url.origin}${plugin.url}`
               }
               return scriptUrl
             },
             resolveCssUrl: (manifest) => {
               const plugin = manifest as any
-              let scriptUrl = plugin.url
-              if (!scriptUrl) return null
-              if (BASE_URL.startsWith('http')) {
-                const url = new URL(BASE_URL)
-                scriptUrl = `${url.origin}${plugin.url}`
+              const cssUrl = plugin.css_url
+              if (!cssUrl) return null
+              if (BACKEND_URL.startsWith('http')) {
+                const url = new URL(BACKEND_URL)
+                return `${url.origin}${cssUrl}`
               }
-              if (scriptUrl.includes('index.js')) {
-                return scriptUrl.replace('index.js', 'style.css')
-              }
-              if (scriptUrl.endsWith('.umd.js')) {
-                return scriptUrl.replace('.umd.js', '.css')
-              }
-              if (scriptUrl.endsWith('.js')) {
-                return scriptUrl.replace('.js', '.css')
-              }
-              return `${scriptUrl}.css`
+              return cssUrl
             },
           }
 
           ensureRegistrySync()
           await loadExternalPluginsZen({ adapter })
+          set({ hasLoadedExternal: true })
         } catch (e) {
           console.error('Failed to load external plugins', e)
+          set({ hasLoadedExternal: true })
+        } finally {
+          set({ isLoadingExternal: false })
         }
       },
 
@@ -226,7 +226,54 @@ export const extendApiForPlugin = (
       ...api.utils,
       getPluginUrl: (path: string) => {
         const cleanPath = path.startsWith('/') ? path.slice(1) : path
-        return `${BACKEND_V2_URL}/plugins/${pluginId}/${cleanPath}`
+        return `${BACKEND_URL}/plugins/${pluginId}/${cleanPath}`
+      },
+    },
+    plugin: {
+      fetch: async (path: string, init?: RequestInit) => {
+        // Handle absolute or relative paths
+        let url = path
+        if (!path.startsWith('http')) {
+          const cleanPath = path.startsWith('/') ? path.slice(1) : path
+          url = `${BACKEND_URL}/plugins/${pluginId}/${cleanPath}`
+        }
+        return fetchWithAuth(url, init)
+      },
+      request: async (path: string, init?: RequestInit) => {
+        // Reuse the fetch implementation above via closure or direct logic
+        // We can't access 'extended.plugin.fetch' easily inside definition, so duping logic or moving it out.
+        // Actually since we are inside the closure of 'extended', we can just use the same logic.
+        let url = path
+        if (!path.startsWith('http')) {
+          const cleanPath = path.startsWith('/') ? path.slice(1) : path
+          url = `${BACKEND_URL}/plugins/${pluginId}/${cleanPath}`
+        }
+
+        // Add default Content-Type if body exists and not set
+        const options = { ...init }
+        if (
+          options.body &&
+          typeof options.body === 'string' &&
+          !options.headers
+        ) {
+          options.headers = { 'Content-Type': 'application/json' }
+        }
+
+        const res = await fetchWithAuth(url, options)
+        if (!res.ok) {
+          const errorText = await res.text().catch(() => res.statusText)
+          let errorJson
+          try {
+            errorJson = JSON.parse(errorText)
+          } catch {}
+          throw new Error(
+            errorJson?.detail ||
+              errorJson?.error ||
+              errorText ||
+              `Request failed: ${res.status}`,
+          )
+        }
+        return res.json()
       },
     },
   }
@@ -267,9 +314,36 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
     [],
   )
 
-  const utils = useMemo(
-    () => ({
+  const utils = useMemo(() => {
+    const getPanels = () => {
+      const windows = useWindowStore.getState().windows
+      const panelOrder = useWindowStore.getState().panelOrder
+      const hoverPanelId = useWindowStore.getState().hoverPanelId
+      const activeId = panelOrder[panelOrder.length - 1]
+      return Object.values(windows).map((win) => ({
+        id: win.id,
+        componentId: win.componentId,
+        title: win.title,
+        position: win.position,
+        size: win.size,
+        isPinned: win.isPinned,
+        isMinimized: win.isMinimized,
+        isBackdrop: useWindowStore.getState().backdropWindowId === win.id,
+        isActive: activeId === win.id,
+        isHovered: hoverPanelId === win.id,
+      }))
+    }
+
+    return {
       backendUrl: BACKEND_URL,
+      getApiKey: () => useUserStore.getState().apiKey,
+      getPanels,
+      subscribePanelState: (listener: (panels: any[]) => void) => {
+        const store = useWindowStore
+        const notify = () => listener(getPanels())
+        notify()
+        return store.subscribe(notify)
+      },
       uploadImage: async (
         file: File,
         prompt?: string,
@@ -286,6 +360,17 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       getPluginUrl: (path: string) => {
         console.warn('getPluginUrl called without plugin context')
         return `${BACKEND_URL}/${path.startsWith('/') ? path.slice(1) : path}`
+      },
+    }
+  }, [])
+
+  const pluginApi = useMemo(
+    () => ({
+      fetch: async () => {
+        throw new Error('api.plugin.fetch called outside of plugin context')
+      },
+      request: async () => {
+        throw new Error('api.plugin.request called outside of plugin context')
       },
     }),
     [],
@@ -306,7 +391,9 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       if (input.sort) q.append('sort', input.sort)
       if (input.ids?.length) input.ids.forEach((id) => q.append('ids', id))
 
-      const res = await fetch(`${BACKEND_V2_URL}/artifacts/?${q.toString()}`)
+      const res = await fetchWithAuth(
+        `${BACKEND_URL}/artifacts/?${q.toString()}`,
+      )
       if (!res.ok) {
         const txt = await res.text()
         throw new Error(txt || 'Failed to list artifacts')
@@ -315,8 +402,10 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       return res.json()
     }
 
-    const getContentUrl = (id: string) =>
-      `${BACKEND_V2_URL}/artifacts/${id}/content`
+    const getContentUrl = (id: string) => {
+      const base = `${BACKEND_URL}/artifacts/${id}/content`
+      return base
+    }
 
     const resolve = async (input: {
       id: string
@@ -325,8 +414,8 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       const params = new URLSearchParams()
       if (input.variant) params.append('variant', input.variant)
       const qs = params.toString()
-      const res = await fetch(
-        `${BACKEND_V2_URL}/artifacts/${input.id}/resolve${qs ? `?${qs}` : ''}`,
+      const res = await fetchWithAuth(
+        `${BACKEND_URL}/artifacts/${input.id}/resolve${qs ? `?${qs}` : ''}`,
       )
       if (!res.ok) {
         const txt = await res.text()
@@ -343,8 +432,8 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       base_type_name?: string
       confirm?: boolean
     }) => {
-      const res = await fetch(
-        `${BACKEND_V2_URL}/lotus/embeddr-core.artifact.create`,
+      const res = await fetchWithAuth(
+        `${BACKEND_URL}/lotus/embeddr-core.artifact.create`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -370,7 +459,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
         base_type_name?: string
       },
     ) => {
-      const res = await fetch(`${BACKEND_V2_URL}/artifacts/${id}`, {
+      const res = await fetchWithAuth(`${BACKEND_URL}/artifacts/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
@@ -385,7 +474,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
     }
 
     const remove = async (id: string) => {
-      const res = await fetch(`${BACKEND_V2_URL}/artifacts/${id}`, {
+      const res = await fetchWithAuth(`${BACKEND_URL}/artifacts/${id}`, {
         method: 'DELETE',
       })
 
@@ -404,8 +493,8 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       size?: number
       confirm?: boolean
     }) => {
-      const res = await fetch(
-        `${BACKEND_V2_URL}/lotus/embeddr-core.artifact.upload.init`,
+      const res = await fetchWithAuth(
+        `${BACKEND_URL}/lotus/embeddr-core.artifact.upload.init`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -425,8 +514,8 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       upload_id: string
       confirm?: boolean
     }) => {
-      const res = await fetch(
-        `${BACKEND_V2_URL}/lotus/embeddr-core.artifact.upload.complete`,
+      const res = await fetchWithAuth(
+        `${BACKEND_URL}/lotus/embeddr-core.artifact.upload.complete`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -455,13 +544,10 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       const formData = new FormData()
       formData.append('file', input.file)
 
-      const uploadRes = await fetch(
-        `${BACKEND_V2_URL.replace('/api/v2', '')}${uploadPath}`,
-        {
-          method: 'POST',
-          body: formData,
-        },
-      )
+      const uploadRes = await fetchWithAuth(`${BACKEND_URL}${uploadPath}`, {
+        method: 'POST',
+        body: formData,
+      })
 
       if (!uploadRes.ok) {
         const txt = await uploadRes.text()
@@ -478,7 +564,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
     }
 
     const get = async (id: string) => {
-      const res = await fetch(`${BACKEND_V2_URL}/artifacts/${id}`)
+      const res = await fetchWithAuth(`${BACKEND_URL}/artifacts/${id}`)
       if (!res.ok) {
         const txt = await res.text()
         throw new Error(txt || 'Failed to get artifact')
@@ -486,9 +572,51 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       return res.json()
     }
 
+    const getRelations = async (id: string) => {
+      const res = await fetchWithAuth(
+        `${BACKEND_URL}/artifacts/${id}/relations`,
+      )
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to get relations')
+      }
+      return res.json()
+    }
+
+    const addRelation = async (
+      sourceId: string,
+      input: {
+        target_id: string
+        relation_type?: string
+        metadata_json?: Record<string, any>
+      },
+    ) => {
+      const res = await fetchWithAuth(
+        `${BACKEND_URL}/artifacts/${sourceId}/relations`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            target_id: input.target_id,
+            relation_type: input.relation_type || 'contains',
+            metadata_json: input.metadata_json || {},
+          }),
+        },
+      )
+
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to create relation')
+      }
+
+      return res.json()
+    }
+
     return {
       list,
       get,
+      getRelations,
+      addRelation,
       getContentUrl,
       resolve,
       create,
@@ -525,12 +653,12 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
         return {
           id: artifactId,
           type: hintType || 'image',
-          content_url: `${BACKEND_V2_URL}/artifacts/${artifactId}/content`,
-          preview_url: `${BACKEND_V2_URL}/artifacts/${artifactId}/preview`,
+          content_url: `${BACKEND_URL}/artifacts/${artifactId}/content`,
+          preview_url: `${BACKEND_URL}/artifacts/${artifactId}/preview`,
         }
       }
 
-      const res = await fetch(`${BACKEND_V2_URL}/resources/resolve`, {
+      const res = await fetchWithAuth(`${BACKEND_URL}/resources/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -581,7 +709,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
     () => ({
       getLoras: async (page = 1, limit = 60) => {
         try {
-          const res = await fetch(
+          const res = await fetchWithAuth(
             `${BACKEND_URL}/comfy/loras?page=${page}&limit=${limit}`,
           )
           if (!res.ok) return { items: [], total: 0, page, limit, pages: 0 }
@@ -593,7 +721,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       },
       getCheckpoints: async (page = 1, limit = 60) => {
         try {
-          const res = await fetch(
+          const res = await fetchWithAuth(
             `${BACKEND_URL}/comfy/checkpoints?page=${page}&limit=${limit}`,
           )
           if (!res.ok) return { items: [], total: 0, page, limit, pages: 0 }
@@ -605,7 +733,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       },
       getEmbeddings: async (page = 1, limit = 60) => {
         try {
-          const res = await fetch(
+          const res = await fetchWithAuth(
             `${BACKEND_URL}/comfy/embeddings?page=${page}&limit=${limit}`,
           )
           if (!res.ok) return { items: [], total: 0, page, limit, pages: 0 }
@@ -617,7 +745,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       },
       getSamplers: async () => {
         try {
-          const res = await fetch(`${BACKEND_URL}/comfy/samplers`)
+          const res = await fetchWithAuth(`${BACKEND_URL}/comfy/samplers`)
           if (!res.ok) return { samplers: [], schedulers: [] }
           return await res.json()
         } catch (e) {
@@ -629,8 +757,30 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
     [],
   )
 
-  return useMemo(
+  const security = useMemo(
     () => ({
+      overview: async () => {
+        const res = await fetchWithAuth(`${BACKEND_URL}/security/overview`)
+        if (!res.ok) {
+          const txt = await res.text()
+          throw new Error(txt || 'Failed to load security overview')
+        }
+        return res.json()
+      },
+      operatorProfile: async () => {
+        const res = await fetchWithAuth(`${BACKEND_URL}/security/operator`)
+        if (!res.ok) {
+          const txt = await res.text()
+          throw new Error(txt || 'Failed to load operator profile')
+        }
+        return res.json()
+      },
+    }),
+    [],
+  )
+
+  return useMemo(() => {
+    const api = {
       stores: {
         global: {
           selectedImage: globalStore.selectedImage,
@@ -712,7 +862,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
         }) => {
           const jobType = input.job_type || input.action_id
           const inputs = input.inputs || input.parameters || {}
-          const res = await fetch(`${BACKEND_V2_URL}/executions`, {
+          const res = await fetchWithAuth(`${BACKEND_URL}/executions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -728,7 +878,9 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
           return res.json()
         },
         get: async (executionId: string) => {
-          const res = await fetch(`${BACKEND_V2_URL}/executions/${executionId}`)
+          const res = await fetchWithAuth(
+            `${BACKEND_URL}/executions/${executionId}`,
+          )
           if (!res.ok) {
             const txt = await res.text()
             throw new Error(txt || 'Execution lookup failed')
@@ -747,8 +899,8 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
           if (input?.limit != null) params.set('limit', String(input.limit))
           if (input?.offset != null) params.set('offset', String(input.offset))
           const qs = params.toString()
-          const res = await fetch(
-            `${BACKEND_V2_URL}/executions${qs ? `?${qs}` : ''}`,
+          const res = await fetchWithAuth(
+            `${BACKEND_URL}/executions${qs ? `?${qs}` : ''}`,
           )
           if (!res.ok) {
             const txt = await res.text()
@@ -759,7 +911,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       },
       lotus: {
         invoke: async (capId: string, input?: Record<string, any>) => {
-          const res = await fetch(`${BACKEND_V2_URL}/lotus/${capId}`, {
+          const res = await fetchWithAuth(`${BACKEND_URL}/lotus/${capId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(input ?? {}),
@@ -772,8 +924,8 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
         },
         query: async (q: string, limit = 20) => {
           const params = new URLSearchParams({ q, limit: String(limit) })
-          const res = await fetch(
-            `${BACKEND_V2_URL}/lotus/query?${params.toString()}`,
+          const res = await fetchWithAuth(
+            `${BACKEND_URL}/lotus/query?${params.toString()}`,
           )
           if (!res.ok) {
             const txt = await res.text()
@@ -797,8 +949,8 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
           if (input?.offset !== undefined)
             params.append('offset', String(input.offset))
           const qs = params.toString()
-          const res = await fetch(
-            `${BACKEND_V2_URL}/lotus/list${qs ? `?${qs}` : ''}`,
+          const res = await fetchWithAuth(
+            `${BACKEND_URL}/lotus/list${qs ? `?${qs}` : ''}`,
           )
           if (!res.ok) {
             const txt = await res.text()
@@ -807,16 +959,32 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
           return res.json()
         },
       },
+      plugin: pluginApi,
       plugins: {
         list: async () => {
-          const res = await fetch(`${BACKEND_V2_URL}/plugins`)
+          const res = await fetchWithAuth(`${BACKEND_URL}/plugins`)
           if (!res.ok) {
             const txt = await res.text()
             throw new Error(txt || 'Failed to list plugins')
           }
           return res.json()
         },
+        listLogos: async () => {
+          const res = await fetchWithAuth(`${BACKEND_URL}/plugins/logos`)
+          if (!res.ok) {
+            const txt = await res.text()
+            throw new Error(txt || 'Failed to list plugin logos')
+          }
+          const data = await res.json()
+          return (data?.logos || {}) as Record<string, string | null>
+        },
+        getComponents: (location: string) =>
+          usePluginStore.getState().getComponents(location),
+        getActions: (location: string) =>
+          usePluginStore.getState().getActions(location),
+        getApi: (pluginId: string) => extendApiForPlugin(api as any, pluginId),
       },
+      security,
       artifacts,
       resources,
       client: {
@@ -828,12 +996,12 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
             body?: any,
           ): Promise<T> => {
             const cleanPath = path.startsWith('/') ? path.slice(1) : path
-            const url = `${BACKEND_V2_URL}/plugins/${pluginId}/${cleanPath}`
+            const url = `${BACKEND_URL}/plugins/${pluginId}/${cleanPath}`
 
             const headers: Record<string, string> = {}
             if (body) headers['Content-Type'] = 'application/json'
 
-            const res = await fetch(url, {
+            const res = await fetchWithAuth(url, {
               method,
               headers,
               body: body ? JSON.stringify(body) : undefined,
@@ -849,22 +1017,24 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       },
       events: events,
       comfy: comfy,
-    }),
-    [
-      globalStore.selectedImage,
-      globalStore.selectImage,
-      generation.workflows,
-      generation.selectedWorkflow,
-      generation.generations,
-      generation.isGenerating,
-      generation.generate,
-      generation.setWorkflowInput,
-      generation.selectWorkflow,
-      events,
-      toastApi,
-      settings,
-      utils,
-      comfy,
-    ],
-  )
+    }
+
+    return api
+  }, [
+    globalStore.selectedImage,
+    globalStore.selectImage,
+    generation.workflows,
+    generation.selectedWorkflow,
+    generation.generations,
+    generation.isGenerating,
+    generation.generate,
+    generation.setWorkflowInput,
+    generation.selectWorkflow,
+    events,
+    toastApi,
+    settings,
+    utils,
+    comfy,
+    security,
+  ])
 }

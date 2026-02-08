@@ -1,4 +1,5 @@
-import { BACKEND_V2_URL } from '../config'
+import { useUserStore } from '@/store/userStore'
+import { BACKEND_URL } from '../config'
 import type {
   Artifact,
   ArtifactEmbedding,
@@ -73,22 +74,81 @@ export interface ResourceResolveRequest {
   adapter_id?: string
 }
 
+// ... existing code ...
+
 class EmbeddrApi {
   private baseUrl: string
 
-  constructor(baseUrl: string = BACKEND_V2_URL) {
+  constructor(baseUrl: string = BACKEND_URL) {
     this.baseUrl = baseUrl
   }
 
-  private async request<T>(path: string, options?: RequestInit): Promise<T> {
+  private async request<T>(
+    path: string,
+    options: RequestInit = {},
+  ): Promise<T> {
     const url = `${this.baseUrl}${path}`
-    const response = await fetch(url, options)
+
+    const token = useUserStore.getState().apiKey
+    const headers = new Headers(options.headers || {})
+
+    // Inject client key if available
+    if (token) {
+      headers.set('X-API-Key', token)
+      // console.debug('[API] Injected client key')
+    } else {
+      console.warn('[API] No client key found in store')
+    }
+
+    const config: RequestInit = {
+      ...options,
+      headers,
+      credentials: options.credentials ?? 'include',
+    }
+
+    const response = await fetch(url, config)
 
     if (!response.ok) {
       throw new Error(`API Error: ${response.status} ${response.statusText}`)
     }
 
     return response.json()
+  }
+
+  private withApiKey(url: string) {
+    const token = useUserStore.getState().apiKey
+    if (!token) return url
+    const [base, query] = url.split('?')
+    const params = new URLSearchParams(query || '')
+    if (!params.has('api_key')) {
+      params.set('api_key', token)
+    }
+    const qs = params.toString()
+    return qs ? `${base}?${qs}` : base
+  }
+
+  public auth = {
+    setSession: async (options?: {
+      apiKey?: string | null
+      clear?: boolean
+    }) => {
+      const token = options?.apiKey ?? useUserStore.getState().apiKey
+      const headers = new Headers({ 'Content-Type': 'application/json' })
+      if (token) headers.set('X-API-Key', token)
+
+      const response = await fetch(`${this.baseUrl}/system/auth/session`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ clear: !!options?.clear }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`)
+      }
+
+      return response.json()
+    },
   }
 
   public artifacts = {
@@ -107,6 +167,7 @@ class EmbeddrApi {
     }) => {
       const q = new URLSearchParams()
       q.append('limit', (params.limit || 50).toString())
+
       q.append('offset', (params.offset || 0).toString())
       if (params.type_name) q.append('type_name', params.type_name)
       if (params.media_type) q.append('media_type', params.media_type)
@@ -226,15 +287,9 @@ class EmbeddrApi {
     uploadFile: (uploadId: string, file: File) => {
       const form = new FormData()
       form.append('file', file)
-      return fetch(`${this.baseUrl}/artifacts/uploads/${uploadId}`, {
+      return this.request<any>(`/artifacts/uploads/${uploadId}`, {
         method: 'POST',
         body: form,
-      }).then(async (res) => {
-        if (!res.ok) {
-          const txt = await res.text()
-          throw new Error(txt || 'Failed to upload file')
-        }
-        return res.json()
       })
     },
 
@@ -261,11 +316,12 @@ class EmbeddrApi {
       limit = 20,
       model?: string,
       space?: string,
+      offset = 0,
     ) => {
       return this.lotus.invoke<{
         items: { id: string; score: number }[]
         count: number
-      }>('search.text', { query, limit, model_name: model, space })
+      }>('search.text', { query, limit, model_name: model, space, offset })
     },
 
     findSimilarCap: (
@@ -273,6 +329,7 @@ class EmbeddrApi {
       limit = 20,
       model?: string,
       space?: string,
+      offset = 0,
     ) => {
       return this.lotus.invoke<{
         items: { id: string; score: number }[]
@@ -282,6 +339,7 @@ class EmbeddrApi {
         limit,
         model_name: model,
         space,
+        offset,
       })
     },
     // Semantic search via plugin
@@ -423,6 +481,18 @@ class EmbeddrApi {
           body: JSON.stringify({ pipeline_id: pipeline_id ?? null }),
         },
       )
+    },
+    applyIngestionDefaults: (input?: { enabled_plugins?: string[] }) => {
+      return this.request<{
+        ok: boolean
+        automation_id?: string | null
+        pipeline_id?: string | null
+        actions?: Array<Record<string, any>>
+      }>('/system/ingestion/defaults', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input ?? {}),
+      })
     },
     runCommand: (args: string[]) => {
       return this.request<{ success: boolean; stdout: string; stderr: string }>(
@@ -587,7 +657,7 @@ class EmbeddrApi {
 
   public collections = {
     list: (category?: 'library' | 'source') => {
-      // Renamed to Collections in V2, but kept as .library here for minimal refactor
+      // Renamed to Collections, but kept as .library here for minimal refactor
       const q = category ? `?category=${category}` : ''
       return this.request<CollectionResponse[]>(`/collections${q}`)
     },

@@ -6,9 +6,9 @@ export async function fetchActionArtifacts(): Promise<Artifact[]> {
   // If not, we might need to search or use a specific endpoint.
   // Let's assume a query param or filter.
   // Current backend might be simplistic.
-  // Let's try to hit /api/v2/artifacts?type_name=action:graph
+  // Try to fetch action artifacts by type filter
   // If that fails we might need to implement it in backend, but for now let's write client code.
-  const url = new URL(`${BACKEND_URL}/api/v2/artifacts/`)
+  const url = new URL(`${BACKEND_URL}/artifacts/`)
   url.searchParams.append('type_name', 'action:graph')
 
   const res = await fetch(url.toString())
@@ -20,7 +20,7 @@ export async function fetchActionArtifacts(): Promise<Artifact[]> {
 }
 
 export async function fetchArtifact(id: string): Promise<Artifact> {
-  const res = await fetch(`${BACKEND_URL}/api/v2/artifacts/${id}`)
+  const res = await fetch(`${BACKEND_URL}/artifacts/${id}`)
   if (!res.ok) throw new Error('Failed to fetch artifact')
   return res.json()
 }
@@ -29,7 +29,7 @@ export async function runActionArtifact(
   artifactId: string,
   inputs: Record<string, any>,
 ): Promise<{ execution_id: string }> {
-  const res = await fetch(`${BACKEND_URL}/api/v2/actions/run`, {
+  const res = await fetch(`${BACKEND_URL}/actions/run`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -59,7 +59,7 @@ export interface AvailableAction {
 }
 
 export async function fetchAvailableActions(): Promise<AvailableAction[]> {
-  const res = await fetch(`${BACKEND_URL}/api/v2/executions/actions`)
+  const res = await fetch(`${BACKEND_URL}/executions/actions`)
   if (!res.ok) throw new Error('Failed to fetch available actions')
   return res.json()
 }

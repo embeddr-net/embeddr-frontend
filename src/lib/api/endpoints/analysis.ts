@@ -1,4 +1,5 @@
-import { BACKEND_V2_URL } from '../config'
+import { BACKEND_URL } from '../config'
+import { fetchWithAuth } from '../fetch'
 
 export interface AnalysisConfig {
   scope: 'global' | 'collection'
@@ -24,7 +25,7 @@ export interface PluginCapabilities {
 export const fetchAnalysisCapabilities = async (): Promise<
   PluginCapabilities[]
 > => {
-  const res = await fetch(`${BACKEND_V2_URL}/config/analysis/capabilities`)
+  const res = await fetchWithAuth(`${BACKEND_URL}/config/analysis/capabilities`)
   if (!res.ok) throw new Error('Failed to fetch capabilities')
   return res.json()
 }
@@ -33,11 +34,11 @@ export const fetchAnalysisConfigs = async (
   scope?: string,
   scope_id?: string,
 ): Promise<AnalysisConfig[]> => {
-  const url = new URL(`${BACKEND_V2_URL}/config/analysis`)
+  const url = new URL(`${BACKEND_URL}/config/analysis`)
   if (scope) url.searchParams.append('scope', scope)
   if (scope_id) url.searchParams.append('scope_id', scope_id)
 
-  const res = await fetch(url.toString())
+  const res = await fetchWithAuth(url.toString())
   if (!res.ok) throw new Error('Failed to fetch analysis configs')
   return res.json()
 }
@@ -45,7 +46,7 @@ export const fetchAnalysisConfigs = async (
 export const setAnalysisConfig = async (
   config: AnalysisConfig,
 ): Promise<AnalysisConfig> => {
-  const res = await fetch(`${BACKEND_V2_URL}/config/analysis`, {
+  const res = await fetchWithAuth(`${BACKEND_URL}/config/analysis`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(config),

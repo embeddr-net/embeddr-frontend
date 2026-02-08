@@ -24,6 +24,7 @@ import {
 } from '@embeddr/react-ui/components/dropdown-menu'
 import { usePluginStore } from '@/plugins/store'
 import { useSystemStatus } from '@/hooks/useSystemStatus'
+import { BASE_URL } from '@/lib/api/config'
 
 interface NavLink {
   to: string
@@ -58,9 +59,7 @@ export function NavWidget() {
 
   // API Docs
   if (status?.docs) {
-    const apiDocsUrl = import.meta.env.VITE_BACKEND_URL
-      ? `${import.meta.env.VITE_BACKEND_URL.replace(/\/+$/, '')}/docs`
-      : '/api/v1/docs'
+    const apiDocsUrl = BASE_URL ? `${BASE_URL}/docs` : '/docs'
     links.push({
       to: apiDocsUrl,
       label: 'API Docs',

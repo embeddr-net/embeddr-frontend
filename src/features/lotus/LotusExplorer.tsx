@@ -99,24 +99,29 @@ export function LotusExplorer() {
       return
     }
 
+    const baseData = { ...(item.data || {}), inputs: inputs || {} } as Record<
+      string,
+      any
+    >
+    const pluginName = baseData.plugin_name as string | undefined
+    const actionName = baseData.action_name as string | undefined
+    if (!pluginName || !actionName) {
+      toast.error('Action missing plugin or action name.')
+      return
+    }
+
     setDispatching(true)
     try {
       const payload = {
         result_id: item.id,
         kind: item.kind,
-        data: {
-          ...item.data,
-          inputs: inputs || {}, // Merge inputs
-        },
+        data: baseData,
       }
 
       const out = (await embeddrApi.lotus.dispatch(
         payload.result_id,
         'action',
-        {
-          ...payload.data,
-          inputs: payload.data.inputs || {},
-        },
+        payload.data,
       )) as { navigate_to?: string; execution_id?: string }
 
       if (out.navigate_to) {

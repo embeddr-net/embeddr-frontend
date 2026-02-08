@@ -22,6 +22,9 @@ import type { Generation } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
 
 import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { usePluginStore } from '@/plugins/store'
+import { useWindowStore } from '@/store/windowStore'
+import { lucideIconFromName } from '@/lib/lucide'
 
 interface ZenToolbarProps {
   panels: {
@@ -57,7 +60,26 @@ export function ZenToolbar({
     'zen-plugin-settings',
     emptySettings,
   )
+  const [pinnedPanels] = useLocalStorage<string[]>('zen-pinned-panels', [])
+  const getComponents = usePluginStore((s) => s.getComponents)
+  const spawnWindow = useWindowStore((s) => s.spawnWindow)
   const showTimer = pluginSettings['core.zen-mode']?.showTimer ?? true
+  const pinnedPanelDefs = React.useMemo(() => {
+    if (!pinnedPanels.length) return []
+    const defs = getComponents('zen-overlay').filter(
+      ({ def }) => !def.options?.spawnOnly,
+    )
+    const map = new Map(
+      defs.map(({ pluginId, def }) => [
+        `${pluginId}-${def.id}`,
+        { pluginId, def },
+      ]),
+    )
+    return pinnedPanels.map((id) => map.get(id)).filter(Boolean) as Array<{
+      pluginId: string
+      def: any
+    }>
+  }, [getComponents, pinnedPanels])
 
   const [elapsed, setElapsed] = React.useState(0)
 
@@ -112,6 +134,41 @@ export function ZenToolbar({
           </TooltipTrigger>
           <TooltipContent side="right">Toolbox</TooltipContent>
         </Tooltip>
+
+        {pinnedPanelDefs.length > 0 && <Separator className="my-1" />}
+
+        {pinnedPanelDefs.map(({ pluginId, def }) => {
+          const componentId = `${pluginId}-${def.id}`
+          const PanelIcon = lucideIconFromName(def.icon) || Box
+          return (
+            <Tooltip key={componentId}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    const componentName = def.exportName || def.component
+                    if (!componentName) return
+                    spawnWindow(componentId, def.label, {
+                      pluginId,
+                      componentName,
+                      defaultPosition: def.defaultPosition,
+                      defaultSize: def.defaultSize,
+                      panelMode: def.options?.instanceMode,
+                      hideHeader: def.options?.hideHeader,
+                      transparent: def.options?.transparent,
+                    })
+                  }}
+                >
+                  <PanelIcon className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {def.label || def.id}
+              </TooltipContent>
+            </Tooltip>
+          )
+        })}
 
         {/* <Tooltip>
           <TooltipTrigger asChild>

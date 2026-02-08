@@ -31,50 +31,64 @@ import { useImageDialog } from '@embeddr/react-ui/hooks'
 import { Input } from '@embeddr/react-ui/components/input'
 import type { PromptImage } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import {
+  getArtifactProviderId,
+  getArtifactImportSource,
+  getArtifactOrigin,
+} from '@/lib/providers'
 import { ImageDetailDialog } from '@/components/dialogs/ImageDetailDialog'
 import { Route } from '@/routes/search'
 import { TagsFilter } from '@/components/search/TagsFilter'
 import PostsScrollArea from '@/components/search/PostsScrollArea'
 import { fetchCollections, fetchItems, fetchTags, searchItems } from '@/lib/api'
 import { embeddrApi } from '@/lib/api/client'
-import type { Artifact } from '@/lib/api/v2/types'
+import { embeddrApi as embeddrApiV2 } from '@/lib/api/v2/client'
+import type { Artifact } from '@/lib/api/types'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 
 import { ExploreSidebar } from '@/components/panels/ExploreSidebar'
 
 import { useRef } from 'react'
 
-const mapArtifactToImage = (a: Artifact): PromptImage => ({
-  id: a.id as any, // Cast UUID to any to bypass number type check till PromptImage is updated
-  created_at: a.created_at,
-  url: embeddrApi.artifacts.getContentUrl(a.id),
-  image_url: embeddrApi.artifacts.getContentUrl(a.id),
-  thumb_url: embeddrApi.artifacts.getPreviewUrl(a.id, 'thumbnail'),
-  file_size: 0,
-  prompt:
-    a.metadata_json?.prompt ||
-    a.metadata_json?.label ||
-    a.uri?.split('/').pop() ||
-    '',
-  author_name: 'Local User',
-  author_username: 'local',
-  media_type:
-    a.base_type_name === 'collection' ||
-    a.type_name === 'collection' ||
-    a.base_type_name == 'folder'
-      ? 'collection' // Use 'collection' if available, otherwise we will treat as image but leverage `is_collection` property.
-      : // Or if TypeScript is strict, we might need a workaround. Assuming PromptImage allows arbitrary strings or we cast.
-        ((a.base_type_name === 'video' || a.type_name === 'video'
-          ? 'video'
-          : 'image') as any),
-  duration: 0,
-  fps: 0,
-  frame_count: 0,
-  phash: '',
-  is_archived: !!a.metadata_json?.is_archived,
-  width: a.metadata_json?.width || 0,
-  height: a.metadata_json?.height || 0,
-})
+const mapArtifactToImage = (
+  a: Artifact,
+  knownProviders?: Set<string>,
+): PromptImage =>
+  ({
+    id: a.id as any, // Cast UUID to any to bypass number type check till PromptImage is updated
+    created_at: a.created_at,
+    url: embeddrApi.artifacts.getContentUrl(a.id),
+    image_url: embeddrApi.artifacts.getContentUrl(a.id),
+    thumb_url: embeddrApi.artifacts.getPreviewUrl(a.id, 'thumbnail'),
+    file_size: 0,
+    prompt:
+      a.metadata_json?.prompt ||
+      a.metadata_json?.label ||
+      a.uri?.split('/').pop() ||
+      '',
+    author_name: 'Local User',
+    author_username: 'local',
+    media_type:
+      a.base_type_name === 'collection' ||
+      a.type_name === 'collection' ||
+      a.base_type_name == 'folder'
+        ? 'collection' // Use 'collection' if available, otherwise we will treat as image but leverage `is_collection` property.
+        : // Or if TypeScript is strict, we might need a workaround. Assuming PromptImage allows arbitrary strings or we cast.
+          ((a.base_type_name === 'video' || a.type_name === 'video'
+            ? 'video'
+            : 'image') as any),
+    duration: 0,
+    fps: 0,
+    frame_count: 0,
+    phash: '',
+    is_archived: !!a.metadata_json?.is_archived,
+    width: a.metadata_json?.width || 0,
+    height: a.metadata_json?.height || 0,
+    provider_id: getArtifactProviderId(a, knownProviders),
+    import_source: getArtifactImportSource(a),
+    origin: getArtifactOrigin(a),
+    import_instance: a.metadata_json?.external?.instance || null,
+  }) as PromptImage
 import { useSettings } from '@/hooks/useSettings'
 import { globalEventBus } from '@/lib/eventBus'
 
@@ -112,10 +126,6 @@ const ExplorePage = () => {
   )
   const [mediaType, setMediaType] = useState<'image' | 'video' | 'all'>('image')
   const [showArchived, setShowArchived] = useState<boolean | null>(false)
-  const [useReranker, setUseReranker] = useLocalStorage(
-    'explore-use-reranker',
-    false,
-  )
   const [selectedTags, setSelectedTags] = useState<Array<string>>([])
   const [gridCols, setGridCols] = useLocalStorage('explore-grid-cols', 5)
   const [autoGrid, setAutoGrid] = useLocalStorage('explore-auto-grid', true)
@@ -201,6 +211,16 @@ const ExplorePage = () => {
     queryFn: fetchTags,
   })
 
+  const { data: artifactRegistry } = useQuery({
+    queryKey: ['system', 'artifact-registry'],
+    queryFn: () => embeddrApi.system.getArtifactRegistry(),
+  })
+
+  const providerSet = useMemo(
+    () => new Set(artifactRegistry?.providers || []),
+    [artifactRegistry],
+  )
+
   useEffect(() => {
     if (imageId) {
       setSearchImageId(imageId)
@@ -285,15 +305,37 @@ const ExplorePage = () => {
         selectedSourceType,
       ],
       queryFn: async ({ pageParam }) => {
+        const providerFilter = selectedSourceType
+        const providerParams: {
+          provider?: string
+          import_source?: string
+          import_instance?: string
+          origin?: string
+        } = {}
+        if (providerFilter) {
+          const [kind] = providerFilter.split(':')
+          const value = providerFilter.slice(kind.length + 1)
+          if (kind === 'import') {
+            providerParams.import_source = value
+          } else if (kind === 'instance') {
+            providerParams.import_instance = value
+          } else if (kind === 'origin') {
+            providerParams.origin = value
+          } else if (kind === 'provider') {
+            providerParams.provider = value
+          }
+        }
+
         if (selectedCollectionId) {
-          // V2 Collection Items
+          // Collection items
           const res = await embeddrApi.artifacts.list({
             collection_id: selectedCollectionId.toString(),
             limit: 50,
             offset: pageParam,
             sort: activeTab === 'random' ? 'random' : 'new',
+            ...providerParams,
           })
-          return res.items.map(mapArtifactToImage)
+          return res.items.map((item) => mapArtifactToImage(item, providerSet))
         }
 
         if (selectedSourceId) {
@@ -303,8 +345,9 @@ const ExplorePage = () => {
             limit: 50,
             offset: pageParam,
             sort: activeTab === 'random' ? 'random' : 'new',
+            ...providerParams,
           })
-          return res.items.map(mapArtifactToImage)
+          return res.items.map((item) => mapArtifactToImage(item, providerSet))
         }
 
         let sort: 'random' | 'new' = 'new'
@@ -319,10 +362,9 @@ const ExplorePage = () => {
           media_type: mediaType === 'all' ? undefined : mediaType,
           sort: sort,
           is_archived: showArchived || false,
-          // @ts-ignore - Backend support for source filtering pending or via metadata
-          source: selectedSourceType,
+          ...providerParams,
         })
-        return res.items.map(mapArtifactToImage)
+        return res.items.map((item) => mapArtifactToImage(item, providerSet))
       },
       initialPageParam: 0,
       getNextPageParam: (lastPage, allPages) => {
@@ -405,40 +447,51 @@ const ExplorePage = () => {
       selectedModel,
       mediaType,
       showArchived,
-      useReranker,
     ],
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
+      const offset = typeof pageParam === 'number' ? pageParam : 0
       if (searchImageId) {
-        const res = (await embeddrApi.artifacts.findSimilarCap(
+        const res = (await embeddrApiV2.artifacts.findSimilarCap(
           searchImageId.toString(),
           50,
           selectedModel,
-        )) as { items: Array<{ id: string | number }> }
-        if (res.items.length === 0) return []
+          undefined,
+          offset,
+        )) as { items: Array<{ id: string | number }>; count?: number }
+        if (res.items.length === 0) {
+          return { items: [], count: res.count ?? 0, offset }
+        }
 
         const ids = res.items.map((item) => item.id)
         const artifacts = await Promise.all(
           ids.map((id) => embeddrApi.artifacts.get(String(id))),
         )
-        return artifacts.map(mapArtifactToImage)
+        return {
+          items: artifacts.map((item) => mapArtifactToImage(item, providerSet)),
+          count: res.count ?? artifacts.length,
+          offset,
+        }
       }
 
-      // Use V2 Semantic Search
-      const res = (await embeddrApi.artifacts.semanticSearchCap(
+      // Use semantic search
+      const res = (await embeddrApiV2.artifacts.semanticSearchCap(
         activeSearchQuery,
         50,
         selectedModel,
-      )) as { items: Array<{ id: string | number }> }
+        undefined,
+        offset,
+      )) as { items: Array<{ id: string | number }>; count?: number }
       // Plugin returns { items: [{ id, score }] }. We need to fetch full artifacts or just headers?
       // UI needs images. We should Hydrate them.
       // Fetch details for the IDs.
-      if (res.items.length === 0) return []
+      if (res.items.length === 0) {
+        return { items: [], count: res.count ?? 0, offset }
+      }
 
       const ids = res.items.map((item) => item.id)
 
-      // We don't have a bulk fetch by ID endpoint in V2 yet (artifacts.list doesn't take IDs array in my edit).
-      // We can iterate fetch (slow) or better: update backend list to accept ids or use search endpoint in V2 artifacts.py
-      // V2 artifacts.py search_artifacts(q) uses text search.
+      // We don't have a bulk fetch by ID endpoint yet (artifacts.list doesn't take IDs array).
+      // We can iterate fetch (slow) or add a list-by-ids endpoint.
       // The USER wants embedding search.
       // So we have IDs from plugin.
       // Let's implement a 'getByIds' or 'list' with IDs in client/backend.
@@ -446,12 +499,18 @@ const ExplorePage = () => {
       const artifacts = await Promise.all(
         ids.map((id) => embeddrApi.artifacts.get(String(id))),
       )
-      return artifacts.map(mapArtifactToImage)
+      return {
+        items: artifacts.map((item) => mapArtifactToImage(item, providerSet)),
+        count: res.count ?? artifacts.length,
+        offset,
+      }
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.length < 50) return undefined
-      return allPages.length * 50
+      const total = lastPage.count ?? 0
+      const loaded = allPages.reduce((acc, page) => acc + page.items.length, 0)
+      if (loaded >= total) return undefined
+      return loaded
     },
     enabled:
       activeTab === 'search' &&
@@ -460,7 +519,7 @@ const ExplorePage = () => {
 
   const searchPosts = useMemo(() => {
     if (!searchData) return []
-    const flatPosts = searchData.pages.flat()
+    const flatPosts = searchData.pages.flatMap((page) => page.items)
     const seen = new Set()
     return flatPosts.filter((post) => {
       if (seen.has(post.id)) return false
@@ -469,9 +528,70 @@ const ExplorePage = () => {
     })
   }, [searchData])
 
+  const providerCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    const items = activeTab === 'search' ? searchPosts : posts
+    items.forEach((item) => {
+      const providerId = (item as any).provider_id as string | undefined
+      if (!providerId) return
+      counts.set(providerId, (counts.get(providerId) || 0) + 1)
+    })
+    return counts
+  }, [activeTab, posts, searchPosts])
+
   const { setGalleryImages, currentGallery } = useImageDialog()
 
-  const currentPosts = activeTab === 'search' ? searchPosts : posts
+  const filterByProvider = (items: PromptImage[]) => {
+    if (!selectedSourceType) return items
+    const [kind, rawValue] = selectedSourceType.split(':')
+    const value = rawValue ? selectedSourceType.slice(kind.length + 1) : ''
+
+    return items.filter((item) => {
+      const providerId = (item as any).provider_id
+      const importSource = (item as any).import_source
+      const origin = (item as any).origin
+
+      if (kind === 'provider') {
+        return providerId === value
+      }
+
+      if (kind === 'import') {
+        return importSource === value
+      }
+
+      if (kind === 'instance') {
+        return (item as any).import_instance === value
+      }
+
+      if (kind === 'origin') {
+        return origin === value
+      }
+
+      return false
+    })
+  }
+
+  const filteredSearchPosts = useMemo(
+    () => filterByProvider(searchPosts),
+    [searchPosts, selectedSourceType],
+  )
+
+  const importSourceOptions = useMemo(
+    () => artifactRegistry?.import_sources || [],
+    [artifactRegistry],
+  )
+
+  const originOptions = useMemo(
+    () => artifactRegistry?.origins || [],
+    [artifactRegistry],
+  )
+
+  const importInstanceOptions = useMemo(
+    () => artifactRegistry?.import_instances || [],
+    [artifactRegistry],
+  )
+
+  const currentPosts = activeTab === 'search' ? filteredSearchPosts : posts
   const currentFetchNext =
     activeTab === 'search' ? fetchNextSearchPage : fetchNextPage
   const currentHasNext =
@@ -481,7 +601,7 @@ const ExplorePage = () => {
   useEffect(() => {
     if (currentGallery?.id === 'virtual-gallery' && currentPosts.length > 0) {
       const galleryImages = currentPosts.map((p) => ({
-        src: p.image_url,
+        src: embeddrApi.artifacts.getContentUrl(String(p.id)),
         title: p.prompt,
         metadata: p as any,
         media_type: (p.media_type === 'video' ? 'video' : 'image') as
@@ -520,11 +640,11 @@ const ExplorePage = () => {
     const index = currentPosts.findIndex((p) => p.id === image.id)
     if (index !== -1) {
       openImage(
-        image.image_url,
+        embeddrApi.artifacts.getContentUrl(String(image.id)),
         {
           id: 'virtual-gallery',
           images: currentPosts.map((p) => ({
-            src: p.image_url,
+            src: embeddrApi.artifacts.getContentUrl(String(p.id)),
             title: p.prompt,
             metadata: p as any,
             media_type: p.media_type === 'video' ? 'video' : 'image',
@@ -584,8 +704,10 @@ const ExplorePage = () => {
         setShowArchived={setShowArchived}
         selectedSourceType={selectedSourceType}
         setSelectedSourceType={setSelectedSourceType}
-        useReranker={useReranker}
-        setUseReranker={setUseReranker}
+        importSourceOptions={importSourceOptions}
+        importInstanceOptions={importInstanceOptions}
+        originOptions={originOptions}
+        providerCounts={providerCounts}
         navigate={navigate}
       />
 
@@ -713,13 +835,13 @@ const ExplorePage = () => {
                 <div className="flex items-center justify-center h-full flex-col">
                   <Spinner />
                 </div>
-              ) : searchPosts.length === 0 ? (
+              ) : filteredSearchPosts.length === 0 ? (
                 <div className="flex items-center justify-center h-full flex-col text-muted-foreground">
                   No results found for "{activeSearchQuery || 'Image Search'}"
                 </div>
               ) : (
                 <PostsScrollArea
-                  posts={searchPosts}
+                  posts={filteredSearchPosts}
                   fetchNextPage={fetchNextSearchPage}
                   hasNextPage={hasNextSearchPage}
                   isFetchingNextPage={isFetchingNextSearchPage}

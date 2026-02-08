@@ -99,17 +99,18 @@ export const useGenerationStore = create<GenerationState>()(
         })
 
         // Embeddr Events
-        globalEventBus.on('generation_submitted', (genData: Generation) => {
+        globalEventBus.on('generation_submitted', (genData: unknown) => {
+          const payload = genData as Generation
           set((state) => {
-            const exists = state.generations.some((g) => g.id === genData.id)
+            const exists = state.generations.some((g) => g.id === payload.id)
             if (exists) {
               return {
                 generations: state.generations.map((g) =>
-                  g.id === genData.id ? { ...g, ...genData } : g,
+                  g.id === payload.id ? { ...g, ...payload } : g,
                 ),
               }
             } else {
-              const newGen = { ...genData, images: [] }
+              const newGen = { ...payload, images: [] }
               return {
                 generations: [newGen, ...state.generations],
               }

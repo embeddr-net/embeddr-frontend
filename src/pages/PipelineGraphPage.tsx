@@ -36,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from '@embeddr/react-ui/components/dropdown-menu'
 import { PipelineGraphEditor } from '@/features/pipelines/PipelineGraphEditor'
-import type { LotusCapability } from '@/lib/api/v2/types'
+import type { AutomationListResponse, LotusCapability } from '@/lib/api/types'
 import { embeddrApi } from '@/lib/api/client'
 import { usePluginWorkflows } from '@/hooks/usePluginWorkflows'
 
@@ -173,11 +173,12 @@ export default function PipelineGraphPage({
     staleTime: 30_000,
   })
 
-  const { data: automationsData, refetch: refetchAutomations } = useQuery({
-    queryKey: ['system', 'automation', 'list'],
-    queryFn: () => embeddrApi.system.listAutomations(),
-    staleTime: 15_000,
-  })
+  const { data: automationsData, refetch: refetchAutomations } =
+    useQuery<AutomationListResponse>({
+      queryKey: ['system', 'automation', 'list'],
+      queryFn: () => embeddrApi.system.listAutomations(),
+      staleTime: 15_000,
+    })
 
   const actionCaps = useMemo(() => {
     const caps = (capsData?.items || []) as LotusCapability[]

@@ -28,6 +28,7 @@ import { useGenerationStore } from '@/store/generationStore'
 import { usePluginStore } from '@/plugins/store'
 import { useSettingsStore } from '@/store/settingsStore'
 import { usePluginLogos } from '@/hooks/usePluginLogos'
+import { BASE_URL } from '@/lib/api/config'
 import {
   Popover,
   PopoverContent,
@@ -150,10 +151,7 @@ export default function Header() {
   // links.push({ to: '/umap', label: 'UMAP', icon: ChartNetworkIcon })
 
   if (status?.docs) {
-    // Get api url from env api/v1/docs
-    const apiDocsUrl = import.meta.env.VITE_BACKEND_URL
-      ? `${import.meta.env.VITE_BACKEND_URL.replace(/\/+$/, '')}/docs`
-      : '/api/v1/docs'
+    const apiDocsUrl = BASE_URL ? `${BASE_URL}/docs` : '/docs'
     // Open New Tab
     links.push({
       to: apiDocsUrl,
@@ -221,7 +219,7 @@ export default function Header() {
           <ConnectionStatus />
           <Link
             to="/settings"
-            search={{ tab: 'general' }}
+            search={{ tab: 'profile' }}
             activeProps={{
               'data-active': 'true',
               className: 'bg-primary/20!',

@@ -3,7 +3,7 @@ import { useGenerationStore } from './generationStore'
 
 // Mock dependencies
 vi.mock('@/lib/api/config', () => ({
-  BACKEND_URL: 'http://localhost:8000/api/v1',
+  BACKEND_URL: 'http://localhost:8000/api',
 }))
 
 vi.mock('@/lib/eventBus', () => ({

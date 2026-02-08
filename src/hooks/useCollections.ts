@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { BACKEND_URL } from '@/lib/api'
+import { fetchWithAuth } from '@/lib/api/fetch'
 
 export interface Collection {
   id: number
@@ -10,7 +11,7 @@ export interface Collection {
 }
 
 async function fetchCollections(): Promise<Array<Collection>> {
-  const response = await fetch(`${BACKEND_URL}/collections`)
+  const response = await fetchWithAuth(`${BACKEND_URL}/collections`)
   if (!response.ok) {
     throw new Error('Failed to fetch collections')
   }

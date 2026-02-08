@@ -10,6 +10,9 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 import { globalEventBus } from './lib/eventBus'
+import { embeddrApi } from './lib/api/client'
+import { useUserStore } from './store/userStore'
+import { GlobalEffectsLayer } from './components/effects/GlobalEffectsLayer'
 
 import './styles.css'
 
@@ -23,6 +26,18 @@ import './styles.css'
 ;(window as any).Embeddr = {
   eventBus: globalEventBus,
 }
+
+const bootstrapAuthCookie = async () => {
+  const apiKey = useUserStore.getState().apiKey
+  if (!apiKey) return
+  try {
+    await embeddrApi.auth.setSession({ apiKey })
+  } catch (error) {
+    console.warn('Failed to bootstrap auth cookie', error)
+  }
+}
+
+bootstrapAuthCookie()
 
 // Create a new router instance
 const router = createRouter({
@@ -47,6 +62,7 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOMClient.createRoot(rootElement)
   root.render(
     <StrictMode>
+      <GlobalEffectsLayer />
       <RouterProvider router={router} />
     </StrictMode>,
   )

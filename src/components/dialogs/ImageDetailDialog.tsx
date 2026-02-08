@@ -9,7 +9,7 @@ import { ArrowRight, Loader2 } from 'lucide-react'
 import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
 import type { PromptImage } from '@/lib/api/types'
 import { BACKEND_URL } from '@/lib/api/config'
-import { embeddrApi } from '@/lib/api/v2/client'
+import { embeddrApi } from '@/lib/api/client'
 
 interface ImageDetailDialogProps {
   imageId: string | number | null
@@ -50,7 +50,7 @@ export function ImageDetailDialog({
             width: a.metadata_json?.width || 0,
             height: a.metadata_json?.height || 0,
             parents: [],
-            children: [], // Lineage requires separate call for V2
+            children: [], // Lineage requires separate call
           }))
         : fetch(`${BACKEND_URL}/images/${imageId}`).then((res) => res.json())
 

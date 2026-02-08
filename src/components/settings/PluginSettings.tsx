@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { BACKEND_V2_URL } from '@/lib/api'
+import { BACKEND_URL } from '@/lib/api'
 import {
   Card,
   CardContent,
@@ -39,7 +39,7 @@ export function PluginConfigCard({
   const { data, isLoading, error } = useQuery<PluginConfigResponse>({
     queryKey: ['plugin-config', pluginId],
     queryFn: async () => {
-      const res = await fetch(`${BACKEND_V2_URL}/plugins/${pluginId}/config`)
+      const res = await fetch(`${BACKEND_URL}/plugins/${pluginId}/config`)
       if (!res.ok) throw new Error('Failed to fetch config')
       return res.json()
     },
@@ -55,7 +55,7 @@ export function PluginConfigCard({
 
   const mutation = useMutation({
     mutationFn: async (newConfig: Record<string, any>) => {
-      const res = await fetch(`${BACKEND_V2_URL}/plugins/${pluginId}/config`, {
+      const res = await fetch(`${BACKEND_URL}/plugins/${pluginId}/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig),
@@ -182,7 +182,7 @@ export function PluginSettings() {
   const { data: plugins, isLoading } = useQuery<any[]>({
     queryKey: ['plugins-backend'],
     queryFn: async () => {
-      const res = await fetch(`${BACKEND_V2_URL}/plugins`)
+      const res = await fetch(`${BACKEND_URL}/plugins`)
       if (!res.ok) throw new Error('Failed to fetch plugins')
       return res.json()
     },

@@ -76,7 +76,7 @@ export function ZenImageBrowser({
               storageKey="zen-grid-cols"
               multiSelectMode={isMultiSelect}
               onMultiSelect={onMultiSelect}
-              useV2={true}
+              useArtifactsApi={true}
             />
           </div>
         </div>

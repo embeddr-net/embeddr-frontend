@@ -1,4 +1,4 @@
-import { Outlet, createRootRoute } from '@tanstack/react-router'
+import { Outlet, createRootRoute, useRouterState } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
@@ -8,14 +8,24 @@ import AppProviders from '@/providers/AppProvider'
 import NotFoundPage from '@/pages/NotFoundPage'
 import { DragDropOverlay } from '@/components/upload/DragDropOverlay'
 import { useSettingsStore } from '@/store/settingsStore'
-import { LotusRequirementsBanner } from '@/components/lotus/LotusRequirementsBanner'
 import { GlobalCommandBar } from '@/components/GlobalCommandBar'
-import { VHSEffect } from '@/components/ui/VHSEffect'
+import { CustomStyles } from '@/components/ui/CustomStyles'
 import { useDefaultWidgets } from '@/hooks/useDefaultWidgets'
-import { useEffect } from 'react'
+import { usePluginWidgets } from '@/hooks/usePluginWidgets'
+import { usePinnedPanelWidgets } from '@/hooks/usePinnedPanelWidgets'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { AuthGate } from '@/components/auth/AuthGate'
+import { fetchSecurityOverviewStatus } from '@/lib/api/endpoints/security'
+import { useUserStore } from '@/store/userStore'
+import { usePluginStore } from '@/plugins/store'
+import { Spinner } from '@embeddr/react-ui/components/spinner'
+import { DockManager } from '@/components/ui/DockManager'
 
 function Root() {
+  const { apiKey } = useUserStore()
+  const { isLoadingExternal, hasLoadedExternal } = usePluginStore()
+  const [showCommandBar, setShowCommandBar] = useState(false)
   const {
     backgroundImage,
     backgroundOpacity,
@@ -23,10 +33,11 @@ function Root() {
     themeMode,
     commandBarPosition,
     commandBarHoverParams,
-    vhsEnabled,
   } = useSettingsStore()
-
-  useDefaultWidgets()
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
+  const hideChrome = pathname === '/access'
 
   // "Overlay" means the bar floats (auto-hides).
   // If false (default), it's "Docked" (static blocks layout).
@@ -56,10 +67,38 @@ function Root() {
     root.classList.add(themeMode)
   }, [themeMode])
 
+  useEffect(() => {
+    let active = true
+    const checkAuthGate = async () => {
+      try {
+        const status = await fetchSecurityOverviewStatus()
+        if (!active) return
+        setShowCommandBar(true)
+      } catch (err) {
+        console.error(err)
+        if (active) setShowCommandBar(true)
+      }
+    }
+    checkAuthGate()
+    return () => {
+      active = false
+    }
+  }, [apiKey])
+
+  const pluginsReady = hasLoadedExternal && !isLoadingExternal
+
+  const barHeight = hideChrome ? '0px' : '2.25rem'
+  const screenBarHeight = hideChrome ? '0px' : '2.20rem'
+  const showChrome = showCommandBar && !hideChrome
+
   return (
     <AppProviders>
-      {vhsEnabled && <VHSEffect />}
-      <div className="h-screen w-full flex flex-col overflow-hidden relative bg-background">
+      <CommandBarBootstrap />
+      <CustomStyles />
+      <div
+        id="embeddr-app-root"
+        className="embeddr h-screen w-full flex flex-col overflow-hidden relative bg-background"
+      >
         {backgroundImage && (
           <div
             className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-300 ease-in-out pointer-events-none"
@@ -71,29 +110,38 @@ function Root() {
           />
         )}
         <div
-          className="relative z-10 flex flex-col h-full w-full"
+          className={cn(
+            'relative z-10 flex flex-col h-full w-full transition-opacity duration-500 ease-out',
+            pluginsReady ? 'opacity-100' : 'opacity-0',
+          )}
           style={
             {
               // CSS Variables for children to respect layout
-              '--layout-bar-height': '2.25rem',
+              '--layout-bar-height': barHeight,
               // Flow Content Safe Area (Outlet)
               '--layout-safe-top':
-                commandBarPosition === 'top' && isOverlay ? '2.25rem' : '0px',
+                !hideChrome && commandBarPosition === 'top' && isOverlay
+                  ? barHeight
+                  : '0px',
               '--layout-safe-bottom':
-                commandBarPosition === 'bottom' && isOverlay
-                  ? '2.25rem'
+                !hideChrome && commandBarPosition === 'bottom' && isOverlay
+                  ? barHeight
                   : '0px',
               // Screen/Fixed Content Safe Area (Backdrops/Modals) - Bar is always present in Z-space
               '--layout-screen-safe-top':
-                commandBarPosition === 'top' ? '2.20rem' : '0px',
+                !hideChrome && commandBarPosition === 'top'
+                  ? screenBarHeight
+                  : '0px',
               '--layout-screen-safe-bottom':
-                commandBarPosition === 'bottom' ? '2.20rem' : '0px',
+                !hideChrome && commandBarPosition === 'bottom'
+                  ? screenBarHeight
+                  : '0px',
               // If overlay is active, the content is full-bleed (0 inset).
               // If static, the flex layout handles it (0 inset inside main).
             } as React.CSSProperties
           }
         >
-          {commandBarPosition === 'top' && (
+          {showChrome && commandBarPosition === 'top' && (
             <div
               className={cn(
                 isOverlay && 'absolute top-0 inset-x-0 z-50  transition-colors',
@@ -103,12 +151,14 @@ function Root() {
             </div>
           )}
 
-          <LotusRequirementsBanner />
           <main className="flex-1 flex flex-col overflow-visible min-h-0 w-full relative">
-            <Outlet />
+            <AuthGate>
+              <Outlet />
+            </AuthGate>
           </main>
+          <DockManager />
 
-          {commandBarPosition === 'bottom' && (
+          {showChrome && commandBarPosition === 'bottom' && (
             <div
               className={cn(
                 isOverlay &&
@@ -119,12 +169,32 @@ function Root() {
             </div>
           )}
         </div>
+        <div
+          className={cn(
+            'absolute inset-0 z-20 flex items-center justify-center bg-background/90 backdrop-blur-sm transition-opacity duration-500',
+            pluginsReady ? 'opacity-0 pointer-events-none' : 'opacity-100',
+          )}
+        >
+          <div className="flex flex-col items-center gap-3">
+            <Spinner className="h-6 w-6" />
+            <div className="text-sm text-muted-foreground">
+              Loading workspace…
+            </div>
+          </div>
+        </div>
       </div>
       <DragDropOverlay />
       <Toaster dir="ltr" position="top-center" closeButton />
       {/* <TanStackDevtools ... /> */}
     </AppProviders>
   )
+}
+
+function CommandBarBootstrap() {
+  useDefaultWidgets()
+  usePluginWidgets()
+  usePinnedPanelWidgets()
+  return null
 }
 
 export const Route = createRootRoute({

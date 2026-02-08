@@ -1,19 +1,18 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
-import { QueueItem } from '../GenerationQueue'
-import { DraggablePanel } from '@/components/ui/DraggablePanel'
-import { useExecutions } from '@/lib/api/client-v2'
-import { Loader2 } from 'lucide-react'
 import { Badge } from '@embeddr/react-ui/components/badge'
+import { Loader2 } from 'lucide-react'
+import { DraggablePanel } from '@/components/ui/DraggablePanel'
+import { useExecutions } from '@/hooks/useExecutions'
 import { useWindowStore } from '@/store/windowStore'
 
 interface ZenQueueProps {
   isOpen?: boolean
   onClose?: () => void
-  generations: Array<any>
-  selectedGenerationId: string | null
-  selectGeneration: (gen: any) => void
-  onRepeat: (gen: any) => void
+  generations?: Array<any>
+  selectedGenerationId?: string | null
+  selectGeneration?: (gen: any) => void
+  onRepeat?: (gen: any) => void
 }
 
 export function ZenQueue({
@@ -27,13 +26,45 @@ export function ZenQueue({
   const isOpen = propIsOpen ?? isMinimized === false
   const onClose = propOnClose ?? (() => closeWindow('zen-queue'))
 
-  // V2 Integration
-  // const { data: executions, isLoading } = useExecutions({ limit: 50 })
+  const { data: executions = [], isLoading } = useExecutions({ limit: 50 })
+
+  const orderedExecutions = React.useMemo(() => {
+    const rank = (status?: string) => {
+      switch (status) {
+        case 'running':
+          return 0
+        case 'pending':
+          return 1
+        case 'completed':
+          return 2
+        case 'failed':
+          return 3
+        case 'canceled':
+          return 4
+        default:
+          return 5
+      }
+    }
+
+    return [...executions].sort((a, b) => {
+      const diff = rank(a.status) - rank(b.status)
+      if (diff !== 0) return diff
+      return (b.created_at || '').localeCompare(a.created_at || '')
+    })
+  }, [executions])
+
+  const activeCount = React.useMemo(
+    () =>
+      orderedExecutions.filter((ex) =>
+        ['running', 'pending'].includes(ex.status),
+      ).length,
+    [orderedExecutions],
+  )
 
   return (
     <DraggablePanel
       id="zen-queue"
-      title="History & Queue"
+      title="Jobs"
       isOpen={isOpen}
       onClose={onClose}
       defaultPosition={{ x: window.innerWidth - 340, y: 100 }}
@@ -41,23 +72,32 @@ export function ZenQueue({
       className="absolute"
     >
       <div className="flex flex-col h-full p-2.5">
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-2">
+          <span>Active: {activeCount}</span>
+          <span>Total: {orderedExecutions.length}</span>
+        </div>
         <ScrollArea className="h-full pr-3" type="always">
           <div className="space-y-1">
-            {/* {isLoading && (
+            {isLoading && (
               <div className="flex justify-center p-2">
                 <Loader2 className="animate-spin w-4 h-4 text-muted-foreground" />
               </div>
-            )} */}
+            )}
 
-            {/* V2 Executions */}
-            {/* {executions?.map((ex: any) => (
+            {!isLoading && orderedExecutions.length === 0 && (
+              <div className="text-xs text-muted-foreground p-2">
+                No jobs yet.
+              </div>
+            )}
+
+            {orderedExecutions.map((ex) => (
               <div
                 key={ex.id}
-                className="p-2 border  bg-card mb-2 flex flex-col gap-1 text-xs"
+                className="p-2 border bg-card mb-2 flex flex-col gap-1 text-xs"
               >
                 <div className="flex justify-between items-start">
                   <span className="font-semibold truncate">
-                    {ex.action_name}
+                    {ex.type || ex.plugin_name}
                   </span>
                   <Badge
                     variant={
@@ -77,25 +117,18 @@ export function ZenQueue({
                 <div className="text-muted-foreground text-[10px] truncate">
                   {ex.plugin_name}
                 </div>
-                {ex.inputs?.artifact_id && (
-                  <div className="text-[10px] text-muted-foreground truncate font-mono">
-                    {ex.inputs.artifact_id.slice(0, 8)}...
+                {typeof ex.progress === 'number' && ex.progress > 0 && (
+                  <div className="text-[10px] text-muted-foreground">
+                    {ex.progress}%
+                  </div>
+                )}
+                {ex.parent_execution_id && (
+                  <div className="text-[10px] text-muted-foreground truncate">
+                    Parent: {ex.parent_execution_id.slice(0, 8)}…
                   </div>
                 )}
               </div>
-            ))} */}
-
-            {/* Legacy Generations (Temporary Mix) */}
-            {/* {generations.map((gen) => (
-              <QueueItem
-                key={gen.id}
-                generation={gen}
-                isSelected={selectedGenerationId === gen.id}
-                onSelect={() => selectGeneration(gen)}
-                onOpenImage={() => {}}
-                onRepeat={() => onRepeat(gen)}
-              />
-            ))} */}
+            ))}
           </div>
         </ScrollArea>
       </div>

@@ -29,7 +29,7 @@ import type { PromptImage } from '@/lib/api'
 import { useGlobalStore } from '@/store/globalStore'
 import { useLineageStore } from '@/store/lineageStore'
 import { updateImage } from '@/lib/api/endpoints/images'
-import { BACKEND_URL, BACKEND_V2_URL } from '@/lib/api'
+import { embeddrApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 
 interface PostCardProps {
@@ -61,8 +61,9 @@ const PostCard = memo(
 
     const imageUrl =
       useOriginalImages && post.media_type !== 'video'
-        ? post.image_url || `${BACKEND_URL}/images/${post.id}/file`
-        : post.thumb_url || `${BACKEND_V2_URL}/artifacts/${post.id}/preview`
+        ? embeddrApi.artifacts.getContentUrl(post.id)
+        : post.thumb_url ||
+          embeddrApi.artifacts.getPreviewUrl(post.id, 'thumbnail')
 
     const handleUseInCreate = () => {
       selectGlobalImage(post)
@@ -97,8 +98,11 @@ const PostCard = memo(
             onDragStart={(e) => {
               // Force the use of the API URL for DnD to permit browser/plugin access
               // Do not use post.image_url as it might contain the local filesystem path
-              const contentUrl = `${BACKEND_V2_URL}/artifacts/${post.id}/content`
-              const previewUrl = `${BACKEND_V2_URL}/artifacts/${post.id}/preview`
+              const contentUrl = embeddrApi.artifacts.getContentUrl(post.id)
+              const previewUrl = embeddrApi.artifacts.getPreviewUrl(
+                post.id,
+                'thumbnail',
+              )
 
               console.log('[DnD] DragStart detected on PostCard', {
                 id: post.id,

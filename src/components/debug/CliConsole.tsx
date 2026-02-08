@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { embeddrApi } from '@/lib/api/v2/client'
+import { embeddrApi } from '@/lib/api/client'
 import { Button } from '@embeddr/react-ui/components/button'
 import { Input } from '@embeddr/react-ui/components/input'
 import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'

@@ -31,9 +31,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@embeddr/react-ui/components/accordion'
-import { embeddrApi } from '@/lib/api/v2/client'
-import { BACKEND_URL, BACKEND_V2_URL, type PromptImage } from '@/lib/api'
-import type { LineageResponse } from '@/lib/api/v2/types'
+import { embeddrApi } from '@/lib/api/client'
+import { BACKEND_URL, type PromptImage } from '@/lib/api'
+import type { LineageResponse } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 
@@ -326,9 +326,9 @@ export function ImageDetailsSidebar({
                   onSelectImage &&
                   onSelectImage({
                     id: link.parent_id,
-                    url: BACKEND_V2_URL + `/artifacts/${link.parent_id}`,
+                    url: BACKEND_URL + `/artifacts/${link.parent_id}`,
                     image_url:
-                      BACKEND_V2_URL + `/artifacts/${link.parent_id}/content`,
+                      BACKEND_URL + `/artifacts/${link.parent_id}/content`,
                     width: 0,
                     height: 0,
                     prompt: '',
@@ -339,7 +339,7 @@ export function ImageDetailsSidebar({
                 <div className="w-12 h-12  border">
                   <img
                     src={
-                      BACKEND_V2_URL +
+                      BACKEND_URL +
                       `/artifacts/${link.parent_id}/preview?preview_type=thumbnail`
                     }
                     alt=""
@@ -379,9 +379,9 @@ export function ImageDetailsSidebar({
                   onSelectImage &&
                   onSelectImage({
                     id: link.child_id,
-                    url: BACKEND_V2_URL + `/artifacts/${link.child_id}`,
+                    url: BACKEND_URL + `/artifacts/${link.child_id}`,
                     image_url:
-                      BACKEND_V2_URL + `/artifacts/${link.child_id}/content`,
+                      BACKEND_URL + `/artifacts/${link.child_id}/content`,
                     width: 0,
                     height: 0,
                     prompt: '',
@@ -392,7 +392,7 @@ export function ImageDetailsSidebar({
                 <div className="w-12 h-12  border">
                   <img
                     src={
-                      BACKEND_V2_URL +
+                      BACKEND_URL +
                       `/artifacts/${link.child_id}/preview?preview_type=thumbnail`
                     }
                     alt=""
@@ -475,7 +475,7 @@ export function ImageDetailsSidebar({
   }
 
   return (
-    <div className="flex flex-col h-full bg-background border-l">
+    <div className="flex flex-col h-full bg-background min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b">
         <span className="font-semibold text-sm flex items-center gap-2">
@@ -505,7 +505,7 @@ export function ImageDetailsSidebar({
 
       {/* Static Preview Area */}
       <div className="p-4 border-b bg-muted/20">
-        <div className=" border overflow-hidden bg-muted aspect-square flex items-center justify-center relative group">
+        <div className="border rounded-md overflow-hidden bg-muted aspect-square flex items-center justify-center relative group">
           <img
             src={image.thumb_url || image.image_url}
             alt="preview"
@@ -526,8 +526,8 @@ export function ImageDetailsSidebar({
       </div>
 
       {/* Scrollable Content */}
-      <ScrollArea className="flex-1">
-        <div className="p-4 space-y-2">
+      <ScrollArea className="flex-1 min-h-0" type="always">
+        <div className="p-4 space-y-2 min-h-0">
           <Accordion
             type="multiple"
             value={expandedSections}
@@ -545,7 +545,7 @@ export function ImageDetailsSidebar({
                   key={id}
                   value={id}
                   className={cn(
-                    'border border-b!  px-3',
+                    'border border-b! rounded-md px-3',
                     editMode && 'border-dashed border-primary/50',
                   )}
                 >
@@ -622,7 +622,7 @@ export function ImageDetailsSidebar({
           </Accordion>
 
           {editMode && (
-            <div className="text-center p-4 text-xs text-muted-foreground bg-muted/30  border border-dashed mt-4">
+            <div className="text-center p-4 text-xs text-muted-foreground bg-muted/30 border border-dashed rounded-md mt-4">
               Use controls to reorder or hide sections.
             </div>
           )}

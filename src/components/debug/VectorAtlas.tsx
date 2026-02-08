@@ -5,7 +5,7 @@ import {
   useQueryClient,
   keepPreviousData,
 } from '@tanstack/react-query'
-import { embeddrApi } from '@/lib/api/v2/client'
+import { embeddrApi } from '@/lib/api/client'
 import { Umap3DExplorer } from '@embeddr/react-ui'
 import { cn } from '@/lib/utils'
 import { Spinner } from '@embeddr/react-ui/components/spinner'
@@ -47,7 +47,7 @@ export const VectorAtlas = () => {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ['v2', 'artifacts', 'atlas'],
+    queryKey: ['artifacts', 'atlas'],
     queryFn: () => embeddrApi.artifacts.list({ limit: 500 }),
     enabled: !useBackend, // Only fetch full list if computing locally
   })
@@ -57,7 +57,7 @@ export const VectorAtlas = () => {
 
   // Collections Query
   const { data: collectionsResponse } = useQuery({
-    queryKey: ['v2', 'collections'],
+    queryKey: ['collections'],
     queryFn: () => embeddrApi.collections.list(),
     enabled: true,
   })
@@ -74,7 +74,7 @@ export const VectorAtlas = () => {
     refetch: refetchBackend,
   } = useQuery({
     queryKey: [
-      'v2',
+      'artifacts',
       'projections',
       nNeighbors,
       minDist,
@@ -174,14 +174,21 @@ export const VectorAtlas = () => {
 
       try {
         // 2. Use the new server-side Subgraph endpoint (Batched & Faster)
-        const subgraph = await embeddrApi.artifacts.getSubgraph(
+        const subgraph = (await embeddrApi.artifacts.getSubgraph(
           selectedPoint.id as string,
           {
             maxDepth: depth[0],
             includeLineage: true,
             includeRelations: true,
           },
-        )
+        )) as {
+          edges: Array<{
+            source: string
+            target: string
+            type: string
+            label?: string
+          }>
+        }
 
         if (isMounted) {
           // Map to internal GraphEdge format
@@ -210,7 +217,7 @@ export const VectorAtlas = () => {
 
   // Fetch details for selected point (full metadata)
   const { data: details } = useQuery<any>({
-    queryKey: ['v2', 'details', selectedPoint?.id],
+    queryKey: ['details', selectedPoint?.id],
     queryFn: async () => {
       if (!selectedPoint) return null
       // Check if it's a virtual search point
@@ -545,7 +552,7 @@ export const VectorAtlas = () => {
           onClearCache={() => {
             PROJECTION_CACHE.clear()
             queryClient.invalidateQueries({
-              queryKey: ['v2', 'artifacts'],
+              queryKey: ['artifacts'],
             })
             queryClient.invalidateQueries({ queryKey: ['lineage'] })
             queryClient.invalidateQueries({ queryKey: ['relations'] })
@@ -555,7 +562,7 @@ export const VectorAtlas = () => {
           onRefresh={() => {
             PROJECTION_CACHE.clear()
             queryClient.invalidateQueries({
-              queryKey: ['v2', 'artifacts'],
+              queryKey: ['artifacts'],
             })
             queryClient.invalidateQueries({ queryKey: ['lineage'] })
             queryClient.invalidateQueries({ queryKey: ['relations'] })

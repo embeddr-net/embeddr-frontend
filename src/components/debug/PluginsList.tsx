@@ -32,7 +32,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@embeddr/react-ui/components/dialog'
-import type { LotusCapability } from '@/lib/api/v2/types'
+import type { LotusCapability } from '@/lib/api/types'
 
 type LotusActionCapability = LotusCapability & {
   data?: {

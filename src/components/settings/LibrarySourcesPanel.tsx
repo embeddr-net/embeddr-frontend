@@ -44,7 +44,7 @@ import { cn } from '@/lib/utils'
 import { embeddrApi } from '@/lib/api/client'
 import { FileBrowser } from './FileBrowser'
 import { usePluginEvent } from '@/hooks/usePluginEvent'
-import type { LotusCapability } from '@/lib/api/v2/types'
+import type { LotusCapability } from '@/lib/api/types'
 
 type LibrarySource = {
   id: string
@@ -54,6 +54,14 @@ type LibrarySource = {
   file_count?: number
   type_name?: string
   metadata?: Record<string, any>
+}
+
+type SourceTreeNode = {
+  id: string
+  label: string
+  children: SourceTreeNode[]
+  source?: LibrarySource
+  count: number
 }
 
 type ScannerOption = {
@@ -110,6 +118,77 @@ function SourceSidebarItem({
       </div>
     </button>
   )
+}
+
+function buildSourceTree(sources: LibrarySource[]): SourceTreeNode {
+  const root: SourceTreeNode = {
+    id: 'root',
+    label: 'Sources',
+    children: [],
+    count: 0,
+  }
+
+  const ensureChild = (parent: SourceTreeNode, id: string, label: string) => {
+    let child = parent.children.find((node) => node.id === id)
+    if (!child) {
+      child = { id, label, children: [], count: 0 }
+      parent.children.push(child)
+    }
+    return child
+  }
+
+  const addLeaf = (parent: SourceTreeNode, source: LibrarySource) => {
+    const leafId = `leaf:${source.id}`
+    const label = source.label || source.uri || source.path || 'Untitled'
+    parent.children.push({
+      id: leafId,
+      label,
+      children: [],
+      source,
+      count: 1,
+    })
+  }
+
+  sources.forEach((source) => {
+    const raw = source.uri || source.path || ''
+    if (!raw) return
+
+    if (raw.startsWith('/')) {
+      const parts = raw.split('/').filter(Boolean)
+      let cursor = root
+      parts.forEach((part, index) => {
+        const id = `${cursor.id}/${part}`
+        cursor = ensureChild(cursor, id, part)
+        if (index === parts.length - 1) {
+          cursor.source = source
+          cursor.label = source.label || part
+        }
+      })
+      return
+    }
+
+    const schemeMatch = raw.match(/^([a-zA-Z0-9+.-]+):\/\//)
+    const scheme = schemeMatch?.[1] || 'remote'
+    const host = raw.replace(/^([a-zA-Z0-9+.-]+):\/\//, '').split('/')[0]
+    const groupLabel = host ? `${scheme}://${host}` : scheme
+    const group = ensureChild(root, `remote:${groupLabel}`, groupLabel)
+    addLeaf(group, source)
+  })
+
+  const computeCounts = (node: SourceTreeNode): number => {
+    if (node.source && node.children.length === 0) {
+      node.count = 1
+      return 1
+    }
+    node.count = node.children.reduce(
+      (sum, child) => sum + computeCounts(child),
+      0,
+    )
+    return node.count
+  }
+
+  computeCounts(root)
+  return root
 }
 
 function SourceDetails({
@@ -443,6 +522,9 @@ export function LibrarySourcesPanel() {
   const [isConfigOpen, setIsConfigOpen] = useState(false)
   const [configDraft, setConfigDraft] = useState('')
   const [configError, setConfigError] = useState<string | null>(null)
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
+    () => new Set(['root']),
+  )
 
   usePluginEvent('scan.started', (data) => {
     if (data.root_id) {
@@ -519,6 +601,61 @@ export function LibrarySourcesPanel() {
     (source) => source.id === selectedSourceId,
   )
 
+  const sourceTree = useMemo(() => buildSourceTree(sources || []), [sources])
+
+  const toggleNode = (id: string) => {
+    setExpandedNodes((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const renderTree = (node: SourceTreeNode, depth: number = 0) => {
+    const isLeaf = !!node.source && node.children.length === 0
+    if (isLeaf && node.source) {
+      return (
+        <div key={node.id} style={{ paddingLeft: depth * 12 }}>
+          <SourceSidebarItem
+            source={node.source}
+            active={node.source.id === selectedSourceId}
+            onClick={() => setSelectedSourceId(node.source?.id || null)}
+          />
+        </div>
+      )
+    }
+
+    const isOpen = expandedNodes.has(node.id)
+    return (
+      <div key={node.id} className="space-y-1">
+        <button
+          type="button"
+          onClick={() => toggleNode(node.id)}
+          className={cn(
+            'w-full rounded-md px-3 py-2 text-left transition hover:bg-accent/60 flex items-center justify-between',
+            depth === 0 ? 'bg-muted/30' : 'bg-muted/10',
+          )}
+          style={{ marginLeft: depth * 8 }}
+        >
+          <span className="text-xs font-semibold text-muted-foreground truncate">
+            {node.label}
+          </span>
+          <Badge variant="secondary" className="text-[10px]">
+            {node.count}
+          </Badge>
+        </button>
+        {isOpen &&
+          node.children
+            .sort((a, b) => a.label.localeCompare(b.label))
+            .map((child) => renderTree(child, depth + 1))}
+      </div>
+    )
+  }
+
   const addSourceMutation = useMutation({
     mutationFn: (input: {
       uri: string
@@ -526,12 +663,12 @@ export function LibrarySourcesPanel() {
       scannerType: string
       config: Record<string, any>
     }) =>
-      embeddrApi.library.add({
-        uri: input.uri,
-        label: input.label,
-        type_name: input.scannerType,
-        scanner_config: input.config,
-      }),
+      embeddrApi.library.add(
+        input.uri,
+        input.label,
+        input.scannerType,
+        input.config,
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['library-roots'] })
       setIsAddOpen(false)
@@ -638,14 +775,7 @@ export function LibrarySourcesPanel() {
               </div>
             ) : (
               <div className="flex flex-col gap-1">
-                {sources.map((source) => (
-                  <SourceSidebarItem
-                    key={source.id}
-                    source={source}
-                    active={source.id === selectedSourceId}
-                    onClick={() => setSelectedSourceId(source.id)}
-                  />
-                ))}
+                {renderTree(sourceTree)}
               </div>
             )}
           </ScrollArea>

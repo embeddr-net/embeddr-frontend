@@ -1,8 +1,9 @@
 import { BACKEND_URL } from '../config'
 import type { PromptImage } from '../types'
+import { fetchWithAuth } from '../fetch'
 
 export async function fetchImage(id: string): Promise<PromptImage> {
-  const response = await fetch(`${BACKEND_URL}/items/${id}`)
+  const response = await fetchWithAuth(`${BACKEND_URL}/items/${id}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch image: ${response.statusText}`)
   }
@@ -10,7 +11,7 @@ export async function fetchImage(id: string): Promise<PromptImage> {
 }
 
 export async function fetchLocalImage(itemId: number | string): Promise<any> {
-  const response = await fetch(`${BACKEND_URL}/images/${itemId}`)
+  const response = await fetchWithAuth(`${BACKEND_URL}/images/${itemId}`)
   if (!response.ok) {
     throw new Error('Failed to fetch item')
   }
@@ -18,7 +19,7 @@ export async function fetchLocalImage(itemId: number | string): Promise<any> {
 }
 
 export async function fetchItem(itemId: number | string): Promise<PromptImage> {
-  const response = await fetch(`${BACKEND_URL}/images/${itemId}`)
+  const response = await fetchWithAuth(`${BACKEND_URL}/images/${itemId}`)
   if (!response.ok) {
     throw new Error('Failed to fetch item')
   }
@@ -142,9 +143,12 @@ export async function toggleFavorite(id: string): Promise<PromptImage> {
 export async function fetchTags(): Promise<
   Array<{ name: string; count: number }>
 > {
-  const response = await fetch(`${BACKEND_URL}/images/tags`)
+  const response = await fetchWithAuth(`${BACKEND_URL}/images/tags`)
   if (!response.ok) {
-    throw new Error('Failed to fetch tags')
+    console.warn(
+      `[API] Tags endpoint unavailable: ${response.status} ${response.statusText}`,
+    )
+    return []
   }
   return response.json()
 }

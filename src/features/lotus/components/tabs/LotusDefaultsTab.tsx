@@ -14,11 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@embeddr/react-ui/components/select'
-import { Textarea } from '@embeddr/react-ui/components/textarea'
 
 export function LotusDefaultsTab({
   blobProviders,
-  blobResolvers,
   providerResolvers,
   defaultBlobProvider,
   setDefaultBlobProvider,
@@ -28,13 +26,11 @@ export function LotusDefaultsTab({
   onSaveBlobDefaults,
   automationTotal,
   automationActive,
-  ingestionWorkflowId,
-  setIngestionWorkflowId,
-  workflowOptions,
-  defaultWorkflowIdsText,
-  setDefaultWorkflowIdsText,
-  saveWorkflowRegistryPending,
-  onSaveWorkflowRegistry,
+  ingestionPipelineId,
+  setIngestionPipelineId,
+  pipelineOptions,
+  saveIngestionPipelinePending,
+  onSaveIngestionPipeline,
   textProvider,
   setTextProvider,
   similarProvider,
@@ -44,7 +40,6 @@ export function LotusDefaultsTab({
   onSaveRouting,
 }: {
   blobProviders: string[]
-  blobResolvers: string[]
   providerResolvers: Record<string, string>
   defaultBlobProvider: string
   setDefaultBlobProvider: (value: string) => void
@@ -54,13 +49,11 @@ export function LotusDefaultsTab({
   onSaveBlobDefaults: () => void
   automationTotal: number
   automationActive: number
-  ingestionWorkflowId: string
-  setIngestionWorkflowId: (value: string) => void
-  workflowOptions: Array<{ id: string; name: string }>
-  defaultWorkflowIdsText: string
-  setDefaultWorkflowIdsText: (value: string) => void
-  saveWorkflowRegistryPending: boolean
-  onSaveWorkflowRegistry: () => void
+  ingestionPipelineId: string
+  setIngestionPipelineId: (value: string) => void
+  pipelineOptions: Array<{ id: string; name: string }>
+  saveIngestionPipelinePending: boolean
+  onSaveIngestionPipeline: () => void
   textProvider: string
   setTextProvider: (value: string) => void
   similarProvider: string
@@ -69,6 +62,11 @@ export function LotusDefaultsTab({
   saveRoutingPending: boolean
   onSaveRouting: () => void
 }) {
+  const providerValue = defaultBlobProvider || '__unset__'
+  const resolvedResolver = defaultBlobProvider
+    ? providerResolvers[defaultBlobProvider]
+    : defaultBlobResolver
+
   return (
     <div className="flex flex-col gap-4">
       <Card className="border-muted/60 bg-transparent">
@@ -82,13 +80,18 @@ export function LotusDefaultsTab({
                 Default upload provider
               </span>
               <Select
-                value={defaultBlobProvider}
-                onValueChange={setDefaultBlobProvider}
+                value={providerValue}
+                onValueChange={(value) => {
+                  const next = value === '__unset__' ? '' : value
+                  setDefaultBlobProvider(next)
+                  setDefaultBlobResolver(providerResolvers[next] || '')
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select provider" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__unset__">Not set</SelectItem>
                   {blobProviders.map((provider) => (
                     <SelectItem key={provider} value={provider}>
                       {provider}
@@ -105,23 +108,15 @@ export function LotusDefaultsTab({
             </div>
             <div className="flex flex-col gap-2">
               <span className="text-[11px] text-muted-foreground">
-                Default resolver
+                Resolver (auto)
               </span>
-              <Select
-                value={defaultBlobResolver}
-                onValueChange={setDefaultBlobResolver}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select resolver" />
-                </SelectTrigger>
-                <SelectContent>
-                  {blobResolvers.map((resolver) => (
-                    <SelectItem key={resolver} value={resolver}>
-                      {resolver}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="rounded border border-muted/60 bg-muted/20 px-2 py-1 text-[11px]">
+                {resolvedResolver || 'Auto-resolved by provider'}
+              </div>
+              <span className="text-[10px] text-muted-foreground">
+                Resolvers are inferred from the selected provider; no manual
+                default needed.
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -137,6 +132,12 @@ export function LotusDefaultsTab({
               </span>
             )}
           </div>
+          {blobProviders.length === 0 && (
+            <div className="text-[11px] text-muted-foreground">
+              No blob providers registered yet. Add a storage plugin to expose
+              providers here.
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -151,44 +152,32 @@ export function LotusDefaultsTab({
           </div>
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-muted-foreground">
-              Ingestion workflow artifact
+              Ingestion pipeline automation
             </span>
             <Select
-              value={ingestionWorkflowId}
-              onValueChange={setIngestionWorkflowId}
+              value={ingestionPipelineId}
+              onValueChange={setIngestionPipelineId}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select workflow" />
+                <SelectValue placeholder="Select pipeline" />
               </SelectTrigger>
               <SelectContent>
-                {workflowOptions.map((workflow) => (
-                  <SelectItem key={workflow.id} value={workflow.id}>
-                    {workflow.name}
+                {pipelineOptions.map((pipeline) => (
+                  <SelectItem key={pipeline.id} value={pipeline.id}>
+                    {pipeline.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="flex flex-col gap-2">
-            <span className="text-[11px] text-muted-foreground">
-              Default workflow ids (JSON array)
-            </span>
-            <Textarea
-              value={defaultWorkflowIdsText}
-              onChange={(event) =>
-                setDefaultWorkflowIdsText(event.target.value)
-              }
-              className="min-h-24 font-mono text-[11px]"
-            />
-          </div>
           <div className="flex items-center gap-2">
             <Button
-              onClick={onSaveWorkflowRegistry}
-              disabled={saveWorkflowRegistryPending}
+              onClick={onSaveIngestionPipeline}
+              disabled={saveIngestionPipelinePending}
             >
-              Save Defaults
+              Save Pipeline
             </Button>
-            {saveWorkflowRegistryPending && (
+            {saveIngestionPipelinePending && (
               <span className="text-[11px] text-muted-foreground">
                 Saving...
               </span>

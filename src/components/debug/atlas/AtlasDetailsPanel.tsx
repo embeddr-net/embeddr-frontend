@@ -18,7 +18,7 @@ import {
   Search,
   Zap,
 } from 'lucide-react'
-import { embeddrApi } from '@/lib/api/v2/client'
+import { embeddrApi } from '@/lib/api/client'
 import type { Point3D, GraphEdge } from './types'
 
 interface AtlasDetailsPanelProps {

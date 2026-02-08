@@ -7,7 +7,7 @@ import {
 } from '@embeddr/react-ui/components/card'
 import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
 import { Badge } from '@embeddr/react-ui/components/badge'
-import type { LotusCapability } from '@/lib/api/v2/types'
+import type { LotusCapability } from '@/lib/api/types'
 
 export function LotusCapabilitiesTab({
   capabilities,

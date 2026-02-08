@@ -80,15 +80,23 @@ export function LotusCommandPalette({
       return
     }
 
+    const payloadData = {
+      ...(item.data || {}),
+      inputs: inputs || {},
+    } as Record<string, any>
+    const pluginName = payloadData.plugin_name as string | undefined
+    const actionName = payloadData.action_name as string | undefined
+    if (!pluginName || !actionName) {
+      toast.error('Action missing plugin or action name.')
+      return
+    }
+
     setDispatching(true)
     try {
       const payload = {
         result_id: item.id,
         kind: 'action' as const,
-        data: {
-          ...item.data,
-          inputs: inputs || {},
-        },
+        data: payloadData,
       }
 
       const out = (await embeddrApi.lotus.dispatch(

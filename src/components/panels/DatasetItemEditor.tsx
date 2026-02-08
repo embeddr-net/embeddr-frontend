@@ -22,7 +22,6 @@ import {
   useGenerateItemCaption,
   useUpdateDatasetItem,
 } from '@/hooks/useDatasets'
-import { WorkflowRunnerDialog } from '@/components/dialogs/WorkflowRunnerDialog'
 import { ImageSelectorDialog } from '@/components/dialogs/ImageSelectorDialog'
 
 interface DatasetItemEditorProps {
@@ -38,7 +37,6 @@ export function DatasetItemEditor({
   const generateCaption = useGenerateItemCaption()
   const [captionBuffer, setCaptionBuffer] = useState('')
   const [activeLayer, setActiveLayer] = useState<'base' | 'pair'>('base')
-  const [isGenerateOpen, setIsGenerateOpen] = useState(false)
   const [isSelectOpen, setIsSelectOpen] = useState(false)
 
   useEffect(() => {
@@ -76,7 +74,7 @@ export function DatasetItemEditor({
   }
 
   const handleGeneratePair = () => {
-    setIsGenerateOpen(true)
+    toast.info('Pair generation is not available yet.')
   }
 
   const handleSelectPair = () => {
@@ -113,20 +111,6 @@ export function DatasetItemEditor({
     }
   }
 
-  const handlePairGenerated = async (path: string) => {
-    if (!selectedItem) return
-    try {
-      await updateItem.mutateAsync({
-        datasetId: dataset.id,
-        itemId: selectedItem.id,
-        updates: { pair_image_path: path },
-      })
-      setActiveLayer('pair')
-    } catch (error) {
-      toast.error('Failed to update pair image')
-    }
-  }
-
   if (!selectedItem) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -148,18 +132,6 @@ export function DatasetItemEditor({
 
   return (
     <div className="h-full p-2 flex gap-2 shrink-0">
-      <WorkflowRunnerDialog
-        open={isGenerateOpen}
-        onOpenChange={setIsGenerateOpen}
-        imagePath={
-          selectedItem.processed_image_path || selectedItem.original_path
-        }
-        imageId={selectedItem.original_image_id}
-        onSuccess={handlePairGenerated}
-        title="Generate Pair Image"
-        description="Select a workflow to generate the paired image."
-      />
-
       <ImageSelectorDialog
         open={isSelectOpen}
         onOpenChange={setIsSelectOpen}
@@ -180,10 +152,6 @@ export function DatasetItemEditor({
         ) : (
           <div className="text-center p-4 flex flex-col gap-2">
             <p className="text-sm text-muted-foreground mb-2">No Pair Image</p>
-            <Button size="sm" variant="outline" onClick={handleGeneratePair}>
-              <Wand2 className="w-3 h-3 mr-2" />
-              Generate
-            </Button>
             <Button size="sm" variant="ghost" onClick={handleSelectPair}>
               <ImageIcon className="w-3 h-3 mr-2" />
               Select Existing
