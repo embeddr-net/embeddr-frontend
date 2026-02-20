@@ -1,12 +1,12 @@
 import React from 'react'
 import { useWindowStore } from '@/store/windowStore'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { Box, PanelBottomClose, PanelBottomOpen, PlugZap } from 'lucide-react'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@embeddr/react-ui/components/popover'
+} from '@embeddr/react-ui/components/ui'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { usePluginStore } from '@/plugins/store'
 import { usePluginLogos } from '@/hooks/usePluginLogos'

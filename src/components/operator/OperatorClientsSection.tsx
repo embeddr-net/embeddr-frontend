@@ -6,18 +6,18 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Switch } from '@embeddr/react-ui/components/switch'
+} from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import { toast } from 'sonner'
 import {
   createSecurityUser,
@@ -151,12 +151,12 @@ export const OperatorClientsSection = ({
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold uppercase tracking-wide">
-                    Username
+                    Client name
                   </label>
                   <Input
                     value={newUsername}
                     onChange={(event) => setNewUsername(event.target.value)}
-                    placeholder="new-user"
+                    placeholder="new-client"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -183,12 +183,12 @@ export const OperatorClientsSection = ({
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold uppercase tracking-wide">
-                    Roles
+                    Scope presets
                   </label>
                   <div className="space-y-2 rounded border p-2">
                     {roles.length === 0 ? (
                       <div className="text-xs text-muted-foreground">
-                        No roles available.
+                        No scope presets available.
                       </div>
                     ) : (
                       roles.map((role) => (

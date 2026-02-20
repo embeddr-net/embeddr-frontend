@@ -1,6 +1,6 @@
 import React, { memo } from 'react'
-import { Card } from '@embeddr/react-ui/components/card'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Card } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { ChevronUp, Layers } from 'lucide-react'
 import type { PromptImage } from '@/lib/api/types'
 import { cn } from '@/lib/utils'

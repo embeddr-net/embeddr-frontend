@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useRef } from 'react'
 import { EmbeddrProvider, PluginContext } from '@embeddr/zen-shell'
 import { useEmbeddrAPI, usePluginStore } from '@/plugins/store'
+import { useUserStore } from '@/store/userStore'
 import { DEFAULT_PLUGINS } from '@/plugins/defaults'
 
 export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -15,10 +16,12 @@ export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({
     activatePlugin,
     deactivatePlugin,
   } = usePluginStore()
+  const apiKey = useUserStore((s) => s.apiKey)
 
   const initializedPlugins = useRef<Set<string>>(new Set())
   const autoActivated = useRef<Set<string>>(new Set())
   const cleanupFns = useRef<Record<string, () => void>>({})
+  const lastApiKeyRef = useRef<string | null | undefined>(undefined)
 
   // 1. Register default plugins and load external ones (ONCE)
   useEffect(() => {
@@ -30,6 +33,23 @@ export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({
     })
     loadExternalPlugins()
   }, []) // Empty dependency array: run once on mount
+
+  useEffect(() => {
+    if (lastApiKeyRef.current === undefined) {
+      lastApiKeyRef.current = apiKey
+      return
+    }
+
+    if (lastApiKeyRef.current === apiKey) {
+      return
+    }
+
+    lastApiKeyRef.current = apiKey
+
+    if (apiKey) {
+      loadExternalPlugins({ force: true })
+    }
+  }, [apiKey, loadExternalPlugins])
 
   // 2. Initialize plugins when they appear in the store
   useEffect(() => {

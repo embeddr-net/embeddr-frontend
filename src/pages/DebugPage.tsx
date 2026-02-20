@@ -4,8 +4,8 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/tabs'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+} from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import { WebSocketMonitor } from '@/components/debug/WebSocketMonitor'
 import { ClientsMonitor } from '@/components/debug/ClientsMonitor'
 import { PluginsList } from '@/components/debug/PluginsList'
@@ -14,6 +14,7 @@ import { CliConsole } from '@/components/debug/CliConsole'
 import { MaintenanceManager } from '@/components/debug/MaintenanceManager'
 import ExecutionQueue from '@/components/debug/ExecutionQueue'
 import { VectorIndexDebug } from '@/components/debug/VectorIndexDebug'
+import { AuthSessionDebug } from '@/components/debug/AuthSessionDebug'
 import { tabContentClasses, tabsTriggerClasses } from '@/styles/DebugPage'
 
 // --- Main Page Component ---
@@ -48,6 +49,11 @@ const DebugPage = () => {
       value: 'vectors',
       label: 'Vector Index',
       component: <VectorIndexDebug />,
+    },
+    {
+      value: 'auth',
+      label: 'Auth Session',
+      component: <AuthSessionDebug />,
     },
   ]
   return (

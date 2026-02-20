@@ -4,16 +4,16 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Button } from '@embeddr/react-ui/components/button'
+} from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 
 export function LotusDefaultsTab({
   blobProviders,

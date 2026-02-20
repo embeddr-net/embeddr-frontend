@@ -1,7 +1,7 @@
 import * as React from 'react'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { ChevronDown, Maximize2, Minimize2 } from 'lucide-react'
-import { Card } from '@embeddr/react-ui/components/card'
+import { Card } from '@embeddr/react-ui/components/ui'
 import { cn } from '@/lib/utils'
 
 export interface BottomPanelItem {

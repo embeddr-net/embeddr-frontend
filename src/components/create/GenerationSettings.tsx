@@ -1,18 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
-import { Card } from '@embeddr/react-ui/components/card'
-import { Button } from '@embeddr/react-ui/components/button'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Label } from '@embeddr/react-ui/components/label'
+import { Card } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
-import { Textarea } from '@embeddr/react-ui/components/textarea'
-import { Slider } from '@embeddr/react-ui/components/slider'
+} from '@embeddr/react-ui/components/ui'
+import { Textarea } from '@embeddr/react-ui/components/ui'
+import { Slider } from '@embeddr/react-ui/components/ui'
 import {
   ArrowDownToLine,
   Edit,
@@ -31,8 +31,8 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/tabs'
-import { Switch } from '@embeddr/react-ui/components/switch'
+} from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
 import { ImageIdInput } from './inputs/ImageIdInput'
 import { BACKEND_URL } from '@/lib/api/config'
 // import { getObjectInfo } from '@/lib/api/endpoints/comfy'
@@ -57,8 +57,10 @@ export function GenerationSettings() {
   const [loras, setLoras] = useState<string[]>([])
 
   useEffect(() => {
-    api.comfy.getSamplers().then(setSamplers)
-    api.comfy.getLoras(1, 100000).then((res) => setLoras(res.items || []))
+    api.models.listSamplers().then(setSamplers)
+    api.models
+      .list({ category: 'loras', page: 1, limit: 100000 })
+      .then((res) => setLoras(res.items || []))
   }, [api])
 
   const { data: libraries } = useQuery({

@@ -6,17 +6,17 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Input } from '@embeddr/react-ui/components/input'
+} from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import { toast } from 'sonner'
 import { createSecurityKey, fetchSecurityKeys } from '@/lib/api'
 import { baseScopes } from './operator-utils'
@@ -52,9 +52,9 @@ export const OperatorKeysSection = ({
       setKeyScopes('')
       setKeyPermissions('')
       keysQuery.refetch()
-      toast.success('Client key created')
+      toast.success('Client credential created')
     },
-    onError: () => toast.error('Failed to create client key'),
+    onError: () => toast.error('Failed to create client credential'),
   })
 
   const allScopes = [...baseScopes, ...capabilityScopes]
@@ -103,19 +103,19 @@ export const OperatorKeysSection = ({
           <CardHeader>
             <CardTitle>Operator access required</CardTitle>
             <CardDescription>
-              You do not have permission to manage client keys.
+              You do not have permission to manage client credentials.
             </CardDescription>
           </CardHeader>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Client Keys</CardTitle>
-            <CardDescription>Issued keys and scopes.</CardDescription>
+            <CardTitle>Client Credentials</CardTitle>
+            <CardDescription>Issued credentials and scopes.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="rounded border p-3 space-y-3">
-              <div className="text-sm font-medium">Create client key</div>
+              <div className="text-sm font-medium">Create client credential</div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold uppercase tracking-wide">
@@ -136,7 +136,7 @@ export const OperatorKeysSection = ({
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold uppercase tracking-wide">
-                    Key name
+                    Credential name
                   </label>
                   <Input
                     value={keyName}
@@ -209,13 +209,13 @@ export const OperatorKeysSection = ({
                 >
                   {createKeyMutation.isPending
                     ? 'Creating…'
-                    : 'Create client key'}
+                    : 'Create client credential'}
                 </Button>
               </div>
               {createdKey && (
                 <div className="mt-2 rounded border border-primary/30 bg-primary/5 p-2 text-sm">
                   <div className="text-xs uppercase text-muted-foreground">
-                    New Client Key
+                    New Client Credential
                   </div>
                   <div className="font-mono break-all">{createdKey}</div>
                 </div>

@@ -5,20 +5,20 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/tabs'
+} from '@embeddr/react-ui/components/ui'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/components/accordion'
+} from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import {
   RefreshCcw,
   Search,
@@ -29,12 +29,12 @@ import {
   ChevronRight,
   ChevronLeft,
 } from 'lucide-react'
-import { Input } from '@embeddr/react-ui/components/input'
+import { Input } from '@embeddr/react-ui/components/ui'
 import { useQuery } from '@tanstack/react-query'
 import { embeddrApi } from '@/lib/api/client'
 import type { Artifact, PaginatedResponse } from '@/lib/api/types'
 import { useArtifact } from '@/hooks/useArtifact'
-import { Separator } from '@embeddr/react-ui/components/separator'
+import { Separator } from '@embeddr/react-ui/components/ui'
 import { useDebounce } from '@/hooks/use-debounce'
 
 export const ApiExplorer = () => {

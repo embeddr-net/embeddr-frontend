@@ -1,5 +1,5 @@
 import React from 'react'
-import { Badge } from '@embeddr/react-ui/components/badge'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import { FeatureExplorer } from '@/features/lotus/components/FeatureExplorer'
 
 const FeaturesPage = () => {

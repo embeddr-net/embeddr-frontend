@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { EmbeddrDnDTypes } from '@embeddr/react-ui'
 import {
   Archive,
@@ -24,7 +24,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from '@embeddr/react-ui/components/context-menu'
+} from '@embeddr/react-ui/components/ui'
 import type { PromptImage } from '@/lib/api'
 import { useGlobalStore } from '@/store/globalStore'
 import { useLineageStore } from '@/store/lineageStore'
@@ -153,12 +153,24 @@ const PostCard = memo(
           >
             <div className="relative overflow-hidden aspect-square">
               {(post as any).media_type === 'collection' ? (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-muted/20 text-muted-foreground p-4">
-                  <Folder className="w-16 h-16 opacity-50 mb-2" />
-                  <span className="text-xs font-medium text-center line-clamp-2 px-2">
-                    {post.prompt || 'Collection'}
-                  </span>
-                </div>
+                post.thumb_url ? (
+                  <img
+                    src={post.thumb_url}
+                    alt={post.prompt}
+                    loading="lazy"
+                    className={cn(
+                      'z-40 w-full h-full duration-300',
+                      imageFit === 'cover' ? 'object-cover' : 'object-contain',
+                    )}
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-muted/20 text-muted-foreground p-4">
+                    <Folder className="w-16 h-16 opacity-50 mb-2" />
+                    <span className="text-xs font-medium text-center line-clamp-2 px-2">
+                      {post.prompt || 'Collection'}
+                    </span>
+                  </div>
+                )
               ) : (post.media_type as string) === 'document' ? (
                 <div className="w-full h-full flex items-center justify-center bg-muted">
                   {/* Fallback to preview if available, else icon */}

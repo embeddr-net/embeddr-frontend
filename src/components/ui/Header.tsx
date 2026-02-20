@@ -1,6 +1,6 @@
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Badge } from '@embeddr/react-ui/components/badge'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import { SystemResourceBar } from '@embeddr/react-ui'
 import {
   BookOpenIcon,
@@ -33,7 +33,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@embeddr/react-ui/components/popover'
+} from '@embeddr/react-ui/components/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,7 +41,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/components/dropdown-menu'
+} from '@embeddr/react-ui/components/ui'
 import { useLotus } from '@/providers/LotusProvider'
 
 const mode = import.meta.env.MODE

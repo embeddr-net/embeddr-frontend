@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Button } from '@embeddr/react-ui'
-import { Spinner } from '@embeddr/react-ui/components/spinner'
+import { Spinner } from '@embeddr/react-ui/components/ui'
 import { EmbeddrProvider } from '@embeddr/zen-shell'
 import { toast } from 'sonner'
 import {

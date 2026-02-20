@@ -1,15 +1,19 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { BACKEND_URL } from '@/lib/api/config'
 import { fetchWithAuth } from '@/lib/api/fetch'
+import { useWorkflowProviderPluginId } from '@/lib/plugins/workflowProvider'
 
-export const usePluginWorkflows = (pluginName: string, category?: string) => {
+export const usePluginWorkflows = (pluginName?: string, category?: string) => {
+  const resolvedPluginName = useWorkflowProviderPluginId()
+  const targetPlugin = pluginName || resolvedPluginName
+
   return useQuery({
-    queryKey: ['plugin-workflows', pluginName, category],
+    queryKey: ['plugin-workflows', targetPlugin, category],
     queryFn: async () => {
       // Manual fetch because the client doesn't have dynamic plugin routes yet
       // unless we add a generic helper
       const res = await fetchWithAuth(
-        `${BACKEND_URL}/plugins/${pluginName}/workflows${category ? `?category=${category}` : ''}`,
+        `${BACKEND_URL}/plugins/${targetPlugin}/workflows${category ? `?category=${category}` : ''}`,
       )
       if (!res.ok) throw new Error('Failed to fetch plugin workflows')
       return res.json() as Promise<
@@ -20,15 +24,18 @@ export const usePluginWorkflows = (pluginName: string, category?: string) => {
 }
 
 export const usePluginWorkflow = (
-  pluginName: string,
+  pluginName: string | undefined,
   workflowName: string | null,
 ) => {
+  const resolvedPluginName = useWorkflowProviderPluginId()
+  const targetPlugin = pluginName || resolvedPluginName
+
   return useQuery({
-    queryKey: ['plugin-workflow', pluginName, workflowName],
+    queryKey: ['plugin-workflow', targetPlugin, workflowName],
     queryFn: async () => {
       if (!workflowName) return null
       const res = await fetch(
-        `${BACKEND_URL}/plugins/${pluginName}/workflows/${workflowName}`,
+        `${BACKEND_URL}/plugins/${targetPlugin}/workflows/${workflowName}`,
       )
       if (!res.ok) throw new Error('Failed to fetch plugin workflow')
       return res.json()
@@ -37,7 +44,10 @@ export const usePluginWorkflow = (
   })
 }
 
-export const useRunPluginWorkflow = (pluginName: string) => {
+export const useRunPluginWorkflow = (pluginName?: string) => {
+  const resolvedPluginName = useWorkflowProviderPluginId()
+  const targetPlugin = pluginName || resolvedPluginName
+
   return useMutation({
     mutationFn: async ({
       workflowName,
@@ -46,7 +56,7 @@ export const useRunPluginWorkflow = (pluginName: string) => {
       workflowName: string
       inputs: any
     }) => {
-      const res = await fetch(`${BACKEND_URL}/plugins/${pluginName}/run`, {
+      const res = await fetch(`${BACKEND_URL}/plugins/${targetPlugin}/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workflow_name: workflowName, inputs }),

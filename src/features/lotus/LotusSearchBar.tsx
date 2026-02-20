@@ -1,6 +1,6 @@
 import React from 'react'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { Search, Loader2, CornerDownLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

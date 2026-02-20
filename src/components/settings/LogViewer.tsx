@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
-import { Card, CardContent } from '@embeddr/react-ui/components/card'
+import { Card, CardContent } from '@embeddr/react-ui/components/ui'
 import { useEffect, useRef, useState } from 'react'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/components/accordion'
+} from '@embeddr/react-ui/components/ui'
 import { fetchSystemLogs } from '@/lib/api'
 
 export function LogViewer() {

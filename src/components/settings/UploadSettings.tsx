@@ -5,16 +5,16 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Label } from '@embeddr/react-ui/components/label'
+} from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
-import { Input } from '@embeddr/react-ui/components/input'
+} from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
 import { fetchLibraries } from '@/lib/api/endpoints/library'
 import { fetchCollections } from '@/lib/api/endpoints/collections'
 import { useSettings } from '@/hooks/useSettings'

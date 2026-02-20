@@ -6,17 +6,17 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Label } from '@embeddr/react-ui/components/label'
-import { Switch } from '@embeddr/react-ui/components/switch'
+} from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import { embeddrApi } from '@/lib/api/client'
 import {
   fetchAnalysisConfigs,

@@ -1,6 +1,6 @@
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { TooltipProvider } from '@embeddr/react-ui/components/tooltip'
+import { TooltipProvider } from '@embeddr/react-ui/components/ui'
 import {
   ExternalNavProvider,
   ImageDialogProvider,
@@ -13,33 +13,36 @@ import { PluginProvider } from '@/providers/PluginProvider'
 import { WebSocketProvider } from '@/providers/WebSocketProvider'
 import { CoreUIEventBridge } from './CoreUIEventBridge'
 import { LotusProvider } from '@/providers/LotusProvider'
+import { HotkeysProvider } from '@/providers/HotkeysProvider'
 
 const queryClient = new QueryClient()
 
 const AppProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <QueryClientProvider client={queryClient}>
-      <ExternalNavProvider>
-        <SettingsProvider>
-          <ThemeProvider>
-            <ThemeSynchronizer />
-            <TooltipProvider disableHoverableContent>
-              <ImageDialogProvider>
-                <WebSocketProvider>
-                  <GenerationProvider>
-                    <PluginProvider>
-                      <LotusProvider>
-                        <CoreUIEventBridge />
-                        {children}
-                      </LotusProvider>
-                    </PluginProvider>
-                  </GenerationProvider>
-                </WebSocketProvider>
-              </ImageDialogProvider>
-            </TooltipProvider>
-          </ThemeProvider>
-        </SettingsProvider>
-      </ExternalNavProvider>
+      <HotkeysProvider>
+        <ExternalNavProvider>
+          <SettingsProvider>
+            <ThemeProvider>
+              <ThemeSynchronizer />
+              <TooltipProvider disableHoverableContent>
+                <ImageDialogProvider>
+                  <WebSocketProvider>
+                    <GenerationProvider>
+                      <PluginProvider>
+                        <LotusProvider>
+                          <CoreUIEventBridge />
+                          {children}
+                        </LotusProvider>
+                      </PluginProvider>
+                    </GenerationProvider>
+                  </WebSocketProvider>
+                </ImageDialogProvider>
+              </TooltipProvider>
+            </ThemeProvider>
+          </SettingsProvider>
+        </ExternalNavProvider>
+      </HotkeysProvider>
     </QueryClientProvider>
   )
 }

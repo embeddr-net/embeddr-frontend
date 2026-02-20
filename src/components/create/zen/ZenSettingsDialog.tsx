@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { Dialog, DialogContent } from '@embeddr/react-ui/components/dialog'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Settings, X as XIcon } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { Dialog, DialogContent } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { ArrowUpRight, Settings, X as XIcon } from 'lucide-react'
 import { ImageSelectorDialog } from '@/components/dialogs/ImageSelectorDialog'
 import {
   settingsConfig,
@@ -12,8 +13,6 @@ import {
 interface ZenSettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  hiddenWorkflows: Array<string>
-  setHiddenWorkflows: (workflows: Array<string>) => void
   activeTab?: string
   onActiveTabChange?: (tab: string) => void
 }
@@ -24,6 +23,7 @@ export function ZenSettingsDialog({
   activeTab: controlledTab,
   onActiveTabChange,
 }: ZenSettingsDialogProps) {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState(controlledTab || 'profile')
   const currentTab = controlledTab ?? activeTab
   const setCurrentTab = onActiveTabChange ?? setActiveTab
@@ -36,7 +36,13 @@ export function ZenSettingsDialog({
     }
   }, [controlledTab])
 
-  const activeTabConfig = getTabById(currentTab)
+  useEffect(() => {
+    if (!open) return
+    if (getTabById(currentTab)) return
+    setCurrentTab('profile')
+  }, [open, currentTab, setCurrentTab])
+
+  const activeTabConfig = getTabById(currentTab) ?? getTabById('profile')
 
   return (
     <>
@@ -83,13 +89,27 @@ export function ZenSettingsDialog({
                   {activeTabConfig?.icon}
                   {activeTabConfig?.label}
                 </h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onOpenChange(false)}
-                >
-                  <XIcon className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const tab = activeTabConfig?.id ?? 'profile'
+                      onOpenChange(false)
+                      navigate({ to: '/settings', search: { tab } })
+                    }}
+                  >
+                    <ArrowUpRight className="h-4 w-4 mr-1" />
+                    Open full settings
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onOpenChange(false)}
+                  >
+                    <XIcon className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
               <div className="flex-1 min-h-0 relative flex">

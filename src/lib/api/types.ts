@@ -1,6 +1,41 @@
-import type { Generation, PromptImage, Workflow } from '@embeddr/react-ui/types'
+import type { PromptImage } from '@embeddr/react-ui/types'
 
-export type { PromptImage, Workflow, Generation }
+export type { PromptImage }
+
+export interface PipelineSpec {
+  id: number
+  name: string
+  description?: string
+  data: Record<string, any>
+  meta?: {
+    exposed_inputs?: Array<{
+      node_id: string
+      field: string
+      label?: string
+      type?: string
+      order?: number
+      enabled: boolean
+    }>
+    [key: string]: any
+  }
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ExecutionRecord {
+  id: string
+  prompt_id?: string
+  status: 'pending' | 'queued' | 'processing' | 'completed' | 'failed'
+  prompt: string
+  images?: Array<string>
+  error_message?: string
+  created_at: string
+  workflow_id: number
+  inputs: Record<string, any>
+  outputs?: Array<any>
+  preview_url?: string
+}
 
 export interface Gallery {
   id: string
@@ -87,6 +122,21 @@ export interface Artifact {
   base_type_name: string
   metadata_json: Record<string, any>
   override_capabilities?: string[]
+  owner_user_id?: string
+  owner_operator_id?: string
+  visibility?: 'public' | 'private'
+  owner_user?: {
+    id: string
+    username?: string
+    display_name?: string
+    avatar_url?: string | null
+  }
+  owner_operator?: {
+    id: string
+    name?: string
+    display_name?: string
+    avatar_url?: string | null
+  }
 }
 
 export interface RouteInfo {
@@ -169,6 +219,24 @@ export interface ArtifactRegistryResponse {
   sample_size: number
   total_artifacts: number
   sampled: boolean
+  relation_ontology: RelationOntologyResponse
+}
+
+export interface RelationTypeDefResponse {
+  name: string
+  family: string
+  direction: string
+  inverse?: string | null
+  transitive: boolean
+  structural: boolean
+}
+
+export interface RelationOntologyResponse {
+  families: Record<string, string[]>
+  types: RelationTypeDefResponse[]
+  structural_parent_to_child: string[]
+  structural_child_to_parent: string[]
+  structural_all: string[]
 }
 
 export interface ArtifactTypeCountsResponse {
@@ -295,10 +363,17 @@ export interface Execution {
   id: string
   type: string
   plugin_name: string
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'canceled'
+  status:
+    | 'pending'
+    | 'running'
+    | 'completed'
+    | 'failed'
+    | 'canceled'
+    | 'waiting'
   priority: number
   progress: number
   message?: string
+  trigger?: string
   created_at: string
   started_at?: string
   finished_at?: string
@@ -307,6 +382,11 @@ export interface Execution {
   outputs?: Record<string, any> | null
   error?: string | null
   parent_execution_id?: string | null
+  primary_artifact_id?: string | null
+  operator_id?: string | null
+  api_key_id?: string | null
+  trigger_event_type?: string | null
+  tags?: Record<string, string>
 }
 
 export interface ExecutionEvent {
@@ -316,6 +396,15 @@ export interface ExecutionEvent {
   level: string
   message?: string
   payload?: Record<string, any> | null
+  created_at: string
+}
+
+export interface ExecutionArtifactLink {
+  id: string
+  execution_id: string
+  artifact_id: string
+  action: 'created' | 'modified' | 'deleted' | 'read' | 'input'
+  detail?: string | null
   created_at: string
 }
 
@@ -330,16 +419,8 @@ export interface PluginAction {
   inputs: string[]
 }
 
-export interface ArtifactExecution {
-  id: string
-  created_at: string
-  plugin_name: string
-  action_name: string
-  status: 'pending' | 'running' | 'completed' | 'failed'
-  inputs: Record<string, any>
-  outputs?: Record<string, any>
-  error?: string
-  started_at?: string
-  finished_at?: string
-  primary_artifact_id?: string
-}
+/**
+ * @deprecated Use Execution instead. This type is kept for backward compatibility
+ * but all new code should use the Execution interface.
+ */
+export type ArtifactExecution = Execution

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Card } from '@embeddr/react-ui/components/card'
+import { Card } from '@embeddr/react-ui/components/ui'
 
 function DatasetsPlaceholder() {
   return (

@@ -6,18 +6,18 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Input } from '@embeddr/react-ui/components/input'
+} from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+} from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
@@ -56,18 +56,18 @@ export const OperatorRolesSection = ({
       setNewRoleDescription('')
       setNewRolePermissions([])
       rolesQuery.refetch()
-      toast.success('Role created')
+      toast.success('Scope preset created')
     },
-    onError: () => toast.error('Failed to create role'),
+    onError: () => toast.error('Failed to create scope preset'),
   })
 
   const updateRoleMutation = useMutation({
     mutationFn: updateSecurityRole,
     onSuccess: () => {
       rolesQuery.refetch()
-      toast.success('Role updated')
+      toast.success('Scope preset updated')
     },
-    onError: () => toast.error('Failed to update role'),
+    onError: () => toast.error('Failed to update scope preset'),
   })
 
   const togglePermission = (
@@ -84,7 +84,7 @@ export const OperatorRolesSection = ({
 
   const handleCreateRole = () => {
     if (!newRoleName.trim()) {
-      toast.error('Role name is required')
+      toast.error('Scope preset name is required')
       return
     }
     createRoleMutation.mutate({
@@ -96,7 +96,7 @@ export const OperatorRolesSection = ({
 
   const handleUpdateRole = () => {
     if (!editRoleId) {
-      toast.error('Select a role')
+      toast.error('Select a scope preset')
       return
     }
     updateRoleMutation.mutate({
@@ -127,28 +127,28 @@ export const OperatorRolesSection = ({
           <CardHeader>
             <CardTitle>Operator access required</CardTitle>
             <CardDescription>
-              You do not have permission to manage roles.
+              You do not have permission to manage scope presets.
             </CardDescription>
           </CardHeader>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Roles</CardTitle>
-            <CardDescription>Role definitions and permissions.</CardDescription>
+            <CardTitle>Scope Presets</CardTitle>
+            <CardDescription>Scope presets and permissions.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="rounded border p-3 space-y-4">
-              <div className="text-sm font-medium">Create role</div>
+              <div className="text-sm font-medium">Create scope preset</div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold uppercase tracking-wide">
-                    Role name
+                    Scope preset name
                   </label>
                   <Input
                     value={newRoleName}
                     onChange={(event) => setNewRoleName(event.target.value)}
-                    placeholder="comfyui-user"
+                    placeholder="comfyui-client"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -246,21 +246,23 @@ export const OperatorRolesSection = ({
                   onClick={handleCreateRole}
                   disabled={createRoleMutation.isPending}
                 >
-                  {createRoleMutation.isPending ? 'Creating…' : 'Create role'}
+                  {createRoleMutation.isPending
+                    ? 'Creating…'
+                    : 'Create scope preset'}
                 </Button>
               </div>
             </div>
 
             <div className="rounded border p-3 space-y-4">
-              <div className="text-sm font-medium">Edit role</div>
+              <div className="text-sm font-medium">Edit scope preset</div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold uppercase tracking-wide">
-                    Role
+                    Scope preset
                   </label>
                   <Select value={editRoleId} onValueChange={setEditRoleId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a role" />
+                      <SelectValue placeholder="Select a scope preset" />
                     </SelectTrigger>
                     <SelectContent>
                       {roles.map((role) => (
@@ -391,18 +393,20 @@ export const OperatorRolesSection = ({
                   onClick={handleUpdateRole}
                   disabled={updateRoleMutation.isPending}
                 >
-                  {updateRoleMutation.isPending ? 'Updating…' : 'Update role'}
+                  {updateRoleMutation.isPending
+                    ? 'Updating…'
+                    : 'Update scope preset'}
                 </Button>
               </div>
             </div>
 
             {rolesQuery.isLoading ? (
               <div className="text-sm text-muted-foreground">
-                Loading roles…
+                Loading scope presets…
               </div>
             ) : roles.length === 0 ? (
               <div className="text-sm text-muted-foreground">
-                No roles configured.
+                No scope presets configured.
               </div>
             ) : (
               roles.map((role) => (

@@ -3,7 +3,7 @@ import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
-} from '@embeddr/react-ui/components/resizable'
+} from '@embeddr/react-ui/components/ui'
 import { LotusInspector } from './LotusInspector'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
@@ -16,10 +16,10 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/tabs'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+} from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import { embeddrApi } from '@/lib/api/client'
 
 interface LotusQueryResponse {
@@ -94,8 +94,8 @@ export function LotusExplorer() {
       return
     }
 
-    if (item.kind !== 'action') {
-      toast.info('This item is not dispatchable action.')
+    if (item.kind !== 'action' && item.kind !== 'feature') {
+      toast.info('This item is not dispatchable.')
       return
     }
 
@@ -103,12 +103,14 @@ export function LotusExplorer() {
       string,
       any
     >
-    const pluginName = baseData.plugin_name as string | undefined
-    const actionName = baseData.action_name as string | undefined
+    const pluginName = (baseData.plugin_name || baseData.plugin) as string | undefined
+    const actionName = (baseData.action_name || baseData.action) as string | undefined
     if (!pluginName || !actionName) {
       toast.error('Action missing plugin or action name.')
       return
     }
+    baseData.plugin_name = pluginName
+    baseData.action_name = actionName
 
     setDispatching(true)
     try {
@@ -120,7 +122,7 @@ export function LotusExplorer() {
 
       const out = (await embeddrApi.lotus.dispatch(
         payload.result_id,
-        'action',
+        item.kind as 'action' | 'feature',
         payload.data,
       )) as { navigate_to?: string; execution_id?: string }
 

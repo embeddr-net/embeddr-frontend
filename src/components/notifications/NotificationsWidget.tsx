@@ -1,14 +1,14 @@
 import React, { useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Badge } from '@embeddr/react-ui/components/badge'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@embeddr/react-ui/components/popover'
-import { Card } from '@embeddr/react-ui/components/card'
+} from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/components/ui'
 import { AlertTriangle, Bell, RefreshCw, Settings } from 'lucide-react'
 import { embeddrApi } from '@/lib/api/client'
 import type { IngestionPipelineConfig, LotusCapability } from '@/lib/api/types'

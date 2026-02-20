@@ -15,13 +15,13 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from '@embeddr/react-ui/components/card'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Label } from '@embeddr/react-ui/components/label'
-import { Textarea } from '@embeddr/react-ui/components/textarea'
-import { Spinner } from '@embeddr/react-ui/components/spinner'
+} from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { Textarea } from '@embeddr/react-ui/components/ui'
+import { Spinner } from '@embeddr/react-ui/components/ui'
 import { Play, Terminal } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -47,7 +47,12 @@ export const PluginActionsPage = () => {
   const allActions =
     plugins?.flatMap(
       (p) =>
-        p.actions?.map((a) => ({
+        (((p as any).actions || (p as any).frontend_actions || []) as Array<{
+          name: string
+          label?: string
+          description?: string
+          inputs?: string[]
+        }>).map((a) => ({
           ...a,
           pluginName: p.name,
           pluginVersion: p.version,

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import {
   Layers as LayersIcon,
   Pin,
@@ -12,15 +12,15 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import { useWindowStore } from '@/store/windowStore'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/tabs'
-import { Badge } from '@embeddr/react-ui/components/badge'
+} from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import type { EmbeddrAPI } from '@embeddr/zen-shell'
 import { DraggablePanel } from '@/components/ui/DraggablePanel'
 import {

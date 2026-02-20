@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSettingsStore } from '@/store/settingsStore'
+import { useUserStore } from '@/store/userStore'
 import { loadThemePacks, type ThemePack } from '@/lib/themePacks'
 
 export function useThemePacks() {
   const themePackSources = useSettingsStore((s) => s.themePackSources)
+  const apiKey = useUserStore((s) => s.apiKey)
   const [packs, setPacks] = useState<ThemePack[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -19,7 +21,7 @@ export function useThemePacks() {
 
   useEffect(() => {
     reload()
-  }, [reload])
+  }, [reload, apiKey])
 
   return { packs, isLoading, reload }
 }

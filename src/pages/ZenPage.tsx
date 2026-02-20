@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { GenerationProvider } from '@/context/GenerationContext'
 import { ZenInterface } from '@/components/create/ZenInterface'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
-import { Spinner } from '@embeddr/react-ui/components/spinner'
+import { Spinner } from '@embeddr/react-ui/components/ui'
 
 const ZenPage = () => {
   const [ready, setReady] = useState(false)

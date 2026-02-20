@@ -1,4 +1,4 @@
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,7 +7,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/components/dropdown-menu'
+} from '@embeddr/react-ui/components/ui'
 import { IconBrandDiscord } from '@tabler/icons-react'
 import { LucideGithub, SettingsIcon } from 'lucide-react'
 import { useExternalNav } from '@embeddr/react-ui'

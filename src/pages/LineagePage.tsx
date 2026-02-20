@@ -3,9 +3,9 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from '@embeddr/react-ui/components/resizable'
-import { Card } from '@embeddr/react-ui/components/card'
-import { Button } from '@embeddr/react-ui/components/button'
+} from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { Layers } from 'lucide-react'
 import type { PromptImage } from '@/lib/api/types'
 import { useLineageStore } from '@/store/lineageStore'

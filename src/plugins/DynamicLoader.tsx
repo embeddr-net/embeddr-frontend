@@ -1,5 +1,5 @@
 import React, { Suspense, useMemo } from 'react'
-import { Skeleton } from '@embeddr/react-ui/components/skeleton'
+import { Skeleton } from '@embeddr/react-ui/components/ui'
 
 interface DynamicPluginComponentProps {
   pluginId: string
@@ -14,6 +14,24 @@ interface DynamicPluginComponentProps {
  */
 export const DynamicPluginComponent: React.FC<DynamicPluginComponentProps> =
   React.memo(({ pluginId, componentName, api, ...props }) => {
+    const {
+      windowId: legacyWindowId,
+      defaultPosition: legacyDefaultPosition,
+      isActive: legacyIsActive,
+      panel,
+      ...forwardedProps
+    } = props
+
+    const panelMeta =
+      panel ??
+      (legacyWindowId || legacyDefaultPosition || legacyIsActive !== undefined
+        ? {
+            id: legacyWindowId,
+            defaultPosition: legacyDefaultPosition,
+            isActive: legacyIsActive,
+          }
+        : undefined)
+
     const [Component, setComponent] =
       React.useState<React.ComponentType<any> | null>(null)
 
@@ -93,5 +111,12 @@ export const DynamicPluginComponent: React.FC<DynamicPluginComponentProps> =
       )
     }
 
-    return <Component api={api} pluginId={pluginId} {...props} />
+    return (
+      <Component
+        api={api}
+        pluginId={pluginId}
+        panel={panelMeta}
+        {...forwardedProps}
+      />
+    )
   })

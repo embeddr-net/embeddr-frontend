@@ -1,7 +1,7 @@
 import React from 'react'
 import type { Workflow } from '@/lib/api/endpoints/workflows'
 import type { LotusResultItem } from '../types'
-import { Card, CardContent } from '@embeddr/react-ui/components/card'
+import { Card, CardContent } from '@embeddr/react-ui/components/ui'
 import { WorkflowSidebar } from './WorkflowSidebar'
 import { WorkflowEditorHeader } from './WorkflowEditorHeader'
 import { WorkflowEditorContent } from './WorkflowEditorContent'

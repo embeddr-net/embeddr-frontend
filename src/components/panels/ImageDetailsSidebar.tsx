@@ -20,19 +20,19 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Separator } from '@embeddr/react-ui/components/separator'
-import { Skeleton } from '@embeddr/react-ui/components/skeleton'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Separator } from '@embeddr/react-ui/components/ui'
+import { Skeleton } from '@embeddr/react-ui/components/ui'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/components/accordion'
+} from '@embeddr/react-ui/components/ui'
 import { embeddrApi } from '@/lib/api/client'
-import { BACKEND_URL, type PromptImage } from '@/lib/api'
+import type { PromptImage } from '@/lib/api'
 import type { LineageResponse } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
@@ -326,9 +326,10 @@ export function ImageDetailsSidebar({
                   onSelectImage &&
                   onSelectImage({
                     id: link.parent_id,
-                    url: BACKEND_URL + `/artifacts/${link.parent_id}`,
-                    image_url:
-                      BACKEND_URL + `/artifacts/${link.parent_id}/content`,
+                    url: embeddrApi.artifacts.getContentUrl(link.parent_id),
+                    image_url: embeddrApi.artifacts.getContentUrl(
+                      link.parent_id,
+                    ),
                     width: 0,
                     height: 0,
                     prompt: '',
@@ -338,10 +339,10 @@ export function ImageDetailsSidebar({
               >
                 <div className="w-12 h-12  border">
                   <img
-                    src={
-                      BACKEND_URL +
-                      `/artifacts/${link.parent_id}/preview?preview_type=thumbnail`
-                    }
+                    src={embeddrApi.artifacts.getPreviewUrl(
+                      link.parent_id,
+                      'thumbnail',
+                    )}
                     alt=""
                     className="w-full h-full object-contain"
                   />
@@ -379,9 +380,10 @@ export function ImageDetailsSidebar({
                   onSelectImage &&
                   onSelectImage({
                     id: link.child_id,
-                    url: BACKEND_URL + `/artifacts/${link.child_id}`,
-                    image_url:
-                      BACKEND_URL + `/artifacts/${link.child_id}/content`,
+                    url: embeddrApi.artifacts.getContentUrl(link.child_id),
+                    image_url: embeddrApi.artifacts.getContentUrl(
+                      link.child_id,
+                    ),
                     width: 0,
                     height: 0,
                     prompt: '',
@@ -391,10 +393,10 @@ export function ImageDetailsSidebar({
               >
                 <div className="w-12 h-12  border">
                   <img
-                    src={
-                      BACKEND_URL +
-                      `/artifacts/${link.child_id}/preview?preview_type=thumbnail`
-                    }
+                    src={embeddrApi.artifacts.getPreviewUrl(
+                      link.child_id,
+                      'thumbnail',
+                    )}
                     alt=""
                     className="w-full h-full object-contain"
                   />

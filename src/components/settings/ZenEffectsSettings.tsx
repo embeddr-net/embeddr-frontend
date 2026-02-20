@@ -7,8 +7,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Switch } from '@embeddr/react-ui/components/switch'
+} from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
 
 export function ZenEffectsSettings() {
   const {

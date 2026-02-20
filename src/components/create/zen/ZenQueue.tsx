@@ -1,6 +1,6 @@
 import React from 'react'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
-import { Badge } from '@embeddr/react-ui/components/badge'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import { Loader2 } from 'lucide-react'
 import { DraggablePanel } from '@/components/ui/DraggablePanel'
 import { useExecutions } from '@/hooks/useExecutions'

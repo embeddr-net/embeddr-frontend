@@ -4,7 +4,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import { useMemo } from 'react'
 import { useWorkflow } from '@/hooks/useWorkflows'
 

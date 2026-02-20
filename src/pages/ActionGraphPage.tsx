@@ -7,10 +7,10 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@embeddr/react-ui/components/card'
-import { Button } from '@embeddr/react-ui/components/button'
+} from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { Plus, Play, GitBranch } from 'lucide-react'
-import { Spinner } from '@embeddr/react-ui/components/spinner'
+import { Spinner } from '@embeddr/react-ui/components/ui'
 
 export const ActionGraphPage = () => {
   const navigate = useNavigate()

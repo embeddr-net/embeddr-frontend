@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Card } from '@embeddr/react-ui/components/card'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Separator } from '@embeddr/react-ui/components/separator'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Separator } from '@embeddr/react-ui/components/ui'
 import { embeddrApi } from '@/lib/api/client'
 import type {
   AutomationListResponse,
@@ -16,33 +16,6 @@ interface OnboardingWizardProps {
   onComplete?: () => void
   onOpenSettingsTab: (tab: string) => void
 }
-
-const steps = [
-  {
-    id: 'pipeline-check',
-    title: 'Check system readiness',
-    description:
-      'Choose an ingestion pipeline and verify the system can run it before scanning folders.',
-  },
-  {
-    id: 'add-directory',
-    title: 'Add a directory to scan',
-    description:
-      'Point Embeddr at a local folder so it can index your files automatically.',
-  },
-  {
-    id: 'ingestion',
-    title: 'Ingestion defaults',
-    description:
-      'Set up a default ingestion pipeline to generate thumbnails and embeddings automatically.',
-  },
-  {
-    id: 'search',
-    title: 'Try search',
-    description:
-      'Search your library by text or similarity once items are ingested.',
-  },
-]
 
 const REQUIRED_CAPS = [
   {
@@ -62,7 +35,10 @@ export function OnboardingWizard({
   onOpenSettingsTab,
 }: OnboardingWizardProps) {
   const navigate = useNavigate()
-  const [stepIndex, setStepIndex] = useState(0)
+  const queryClient = useQueryClient()
+  const [defaultsResult, setDefaultsResult] = useState<
+    'idle' | 'success' | 'error'
+  >('idle')
 
   const { data: capsData } = useQuery({
     queryKey: ['lotus', 'capabilities', 'onboarding'],
@@ -114,204 +90,169 @@ export function OnboardingWizard({
     )
   }, [pipelineConfig, automationsData])
 
-  const activeStep = useMemo(() => steps[stepIndex], [stepIndex])
+  const defaultsReady = Boolean(activePipeline) && missingCaps.length === 0
 
-  useEffect(() => {
-    if (!onComplete) return
-    if (stepIndex < 0) setStepIndex(0)
-  }, [onComplete, stepIndex])
-
-  const handleSkip = () => {
-    onComplete?.()
-  }
-
-  const handleNext = () => {
-    if (stepIndex >= steps.length - 1) {
-      onComplete?.()
-      return
-    }
-    setStepIndex((prev) => Math.min(prev + 1, steps.length - 1))
-  }
-
-  const handleBack = () => {
-    setStepIndex((prev) => Math.max(prev - 1, 0))
-  }
+  const applyDefaults = useMutation({
+    mutationFn: () => embeddrApi.system.applyIngestionDefaults(),
+    onSuccess: async () => {
+      setDefaultsResult('success')
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['system', 'ingestion', 'pipeline'],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['system', 'automation', 'list'],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['lotus', 'capabilities', 'onboarding'],
+        }),
+      ])
+    },
+    onError: () => {
+      setDefaultsResult('error')
+    },
+  })
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        {steps.map((step, index) => (
-          <Badge
-            key={step.id}
-            variant={index === stepIndex ? 'default' : 'secondary'}
-          >
-            {index + 1}
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant={defaultsReady ? 'default' : 'secondary'}>
+          {defaultsReady ? 'Ready to ingest' : 'Needs defaults'}
+        </Badge>
+        {activePipeline ? (
+          <Badge variant="outline">Pipeline: {activePipeline.name}</Badge>
+        ) : (
+          <Badge variant="outline">Pipeline: not configured</Badge>
+        )}
+        {missingCaps.length === 0 ? (
+          <Badge variant="outline">Core capabilities available</Badge>
+        ) : (
+          <Badge variant="secondary">
+            Missing {missingCaps.map((cap) => cap.label).join(', ')}
           </Badge>
-        ))}
-        <span className="text-xs text-muted-foreground">
-          Step {stepIndex + 1} of {steps.length}
-        </span>
+        )}
       </div>
 
       <Separator />
 
-      <Card className="p-4 space-y-2">
-        <h3 className="text-lg font-semibold">{activeStep.title}</h3>
-        <p className="text-sm text-muted-foreground">
-          {activeStep.description}
-        </p>
+      <Card className="p-4 space-y-4">
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold">Quick start</h3>
+          <p className="text-sm text-muted-foreground">
+            Start with defaults, ingest content, and customize later.
+          </p>
+        </div>
 
-        {activeStep.id === 'pipeline-check' && (
-          <div className="pt-3 space-y-3">
-            <div className="flex flex-wrap gap-2">
-              <Badge variant={activePipeline ? 'default' : 'secondary'}>
-                Ingest pipeline: {activePipeline?.name || 'Not set'}
-              </Badge>
-              {missingCaps.length === 0 ? (
-                <Badge variant="default">Capabilities: ready</Badge>
-              ) : (
-                missingCaps.map((cap) => (
-                  <Badge key={cap.key} variant="secondary">
-                    Missing {cap.label}
-                  </Badge>
-                ))
-              )}
-            </div>
-
-            {activePipeline ? (
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  Suggested ingest actions
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  These are capabilities tagged for ingest. You choose which
-                  ones to add to your pipeline.
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {ingestActions.length === 0 ? (
-                    <Badge variant="secondary">No ingest actions found</Badge>
-                  ) : (
-                    ingestActions.map((cap) => (
-                      <Badge key={cap.id} variant="outline">
-                        {cap.title || cap.id}
-                      </Badge>
-                    ))
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="text-[11px] text-muted-foreground">
-                Pick or create an ingestion pipeline in the composer to see
-                suggested actions.
-              </div>
-            )}
-
+        <div className="rounded-md border border-border/60 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
             <div>
+              <div className="text-sm font-medium">
+                1) Workspace and sources
+              </div>
               <div className="text-xs text-muted-foreground">
-                Active automations
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(automationsData?.items || []).length === 0 ? (
-                  <Badge variant="secondary">No automations configured</Badge>
-                ) : (
-                  automationsData?.items
-                    ?.filter((rule) => rule.is_active)
-                    .map((rule) => (
-                      <Badge key={rule.id} variant="outline">
-                        {rule.name}
-                      </Badge>
-                    ))
-                )}
+                Use Lotus to review workspace state, then add a folder to scan.
               </div>
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => onOpenSettingsTab('automation')}>
-                Configure automation
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate({ to: '/lotus' })}
-              >
-                Open Lotus dashboard
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => navigate({ to: '/pipelines' })}
-              >
-                Open pipeline composer
-              </Button>
-            </div>
+            <Badge variant="outline">Beginner</Badge>
           </div>
-        )}
-
-        {activeStep.id === 'add-directory' && (
-          <div className="pt-2 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
-              onClick={() => {
-                onOpenSettingsTab('library')
-              }}
+              variant="outline"
+              onClick={() => navigate({ to: '/lotus' })}
             >
+              Open Lotus
+            </Button>
+            <Button onClick={() => onOpenSettingsTab('library')}>
               Add directory
             </Button>
+          </div>
+        </div>
+
+        <div className="rounded-md border border-border/60 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <div className="text-sm font-medium">2) Apply sane defaults</div>
+              <div className="text-xs text-muted-foreground">
+                Automatically configures ingestion defaults for thumbnails and
+                embeddings when available.
+              </div>
+            </div>
+            <Badge variant={defaultsReady ? 'default' : 'secondary'}>
+              {defaultsReady ? 'Configured' : 'Recommended'}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => applyDefaults.mutate()}
+              disabled={applyDefaults.isPending}
+            >
+              {applyDefaults.isPending
+                ? 'Applying defaults...'
+                : 'Apply defaults'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate({ to: '/pipelines' })}
+            >
+              Open pipeline composer
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => onOpenSettingsTab('automation')}
+            >
+              Advanced automation
+            </Button>
+          </div>
+          {(defaultsResult === 'success' || defaultsResult === 'error') && (
+            <div
+              className={
+                defaultsResult === 'success'
+                  ? 'text-xs text-emerald-600 dark:text-emerald-400'
+                  : 'text-xs text-destructive'
+              }
+            >
+              {defaultsResult === 'success'
+                ? 'Defaults applied. You can start ingesting now.'
+                : 'Could not apply defaults automatically. Use pipeline composer or automation settings.'}
+            </div>
+          )}
+          {ingestActions.length > 0 && (
+            <div className="text-[11px] text-muted-foreground">
+              Available ingest actions:{' '}
+              {ingestActions.map((cap) => cap.title || cap.id).join(', ')}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-md border border-border/60 p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <div className="text-sm font-medium">3) Start exploring</div>
+              <div className="text-xs text-muted-foreground">
+                Ingest a few files, then use search and similarity.
+              </div>
+            </div>
+            <Badge variant="outline">Ready</Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               onClick={() => onOpenSettingsTab('upload')}
             >
-              Upload a few files instead
+              Upload files
             </Button>
-          </div>
-        )}
-
-        {activeStep.id === 'automation' && (
-          <div className="pt-2 flex flex-wrap gap-2">
-            <Button
-              onClick={() => {
-                onOpenSettingsTab('automation')
-              }}
-            >
-              Open automation settings
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate({ to: '/lotus' })}
-            >
-              View pipeline executions
-            </Button>
-          </div>
-        )}
-
-        {activeStep.id === 'search' && (
-          <div className="pt-2 flex flex-wrap gap-2">
             <Button onClick={() => navigate({ to: '/search' })}>
               Open search
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate({ to: '/lotus' })}
-            >
-              Explore Lotus workflows
-            </Button>
           </div>
-        )}
+        </div>
       </Card>
 
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={handleSkip}>
+        <Button variant="ghost" onClick={() => onComplete?.()}>
           Skip for now
         </Button>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={stepIndex === 0}
-          >
-            Back
-          </Button>
-          <Button onClick={handleNext}>
-            {stepIndex >= steps.length - 1 ? 'Finish' : 'Next'}
-          </Button>
-        </div>
+        <Button onClick={() => onComplete?.()}>Finish onboarding</Button>
       </div>
     </div>
   )

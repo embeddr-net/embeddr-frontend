@@ -1,14 +1,14 @@
 import React from 'react'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Textarea } from '@embeddr/react-ui/components/textarea'
-import { Switch } from '@embeddr/react-ui/components/switch'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Textarea } from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import { normalizeSchemaType } from './schema'
 import { ConfigArrayEditor } from './ConfigArrayEditor'
 import { ConfigObjectEditor } from './ConfigObjectEditor'

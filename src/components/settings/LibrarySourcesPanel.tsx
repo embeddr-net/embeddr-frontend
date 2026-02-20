@@ -11,34 +11,34 @@ import {
   HardDrive,
   Settings2,
 } from 'lucide-react'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Label } from '@embeddr/react-ui/components/label'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
-import { Spinner } from '@embeddr/react-ui/components/spinner'
-import { Checkbox } from '@embeddr/react-ui/components/checkbox'
+} from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Spinner } from '@embeddr/react-ui/components/ui'
+import { Checkbox } from '@embeddr/react-ui/components/ui'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/components/dialog'
-import { Textarea } from '@embeddr/react-ui/components/textarea'
+} from '@embeddr/react-ui/components/ui'
+import { Textarea } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { embeddrApi } from '@/lib/api/client'

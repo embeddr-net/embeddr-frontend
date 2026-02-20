@@ -6,11 +6,11 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Switch } from '@embeddr/react-ui/components/switch'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Label } from '@embeddr/react-ui/components/label'
-import { Button } from '@embeddr/react-ui/components/button'
+} from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { toast } from 'sonner'
 import { useState, useEffect } from 'react'
 import { RefreshCcw, Save } from 'lucide-react'

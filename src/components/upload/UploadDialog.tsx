@@ -7,19 +7,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/components/dialog'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Label } from '@embeddr/react-ui/components/label'
-import { Textarea } from '@embeddr/react-ui/components/textarea'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+} from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { Textarea } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import { toast } from 'sonner'
 import { AlertTriangle, Check, Loader2, RefreshCw, X } from 'lucide-react'
 import { fetchCollections } from '@/lib/api/endpoints/collections'

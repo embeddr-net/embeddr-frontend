@@ -66,7 +66,11 @@ export function PluginWindowBootstrap() {
             pluginId={pluginId}
             componentName={componentName}
             api={extendApiForPlugin(api, pluginId)}
-            windowId={props.id}
+            panel={{
+              id: props.id,
+              defaultPosition: props.defaultPosition,
+              isActive: props.isActive,
+            }}
             {...(def.props || {})}
             {...props}
           />

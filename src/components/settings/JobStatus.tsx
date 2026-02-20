@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Progress } from '@embeddr/react-ui/components/progress'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Progress } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { CheckCircle2, Loader2, X, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useState } from 'react'

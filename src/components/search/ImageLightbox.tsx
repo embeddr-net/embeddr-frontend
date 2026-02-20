@@ -3,8 +3,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/components/dialog'
-import { Button } from '@embeddr/react-ui/components/button'
+} from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { ExternalLink, X } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import type { PromptImage } from '@/lib/api/types'

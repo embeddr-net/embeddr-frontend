@@ -4,14 +4,14 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/tabs'
-import { Card } from '@embeddr/react-ui/components/card'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Label } from '@embeddr/react-ui/components/label'
-import { Separator } from '@embeddr/react-ui/components/separator'
-import { Badge } from '@embeddr/react-ui/components/badge'
+} from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { Separator } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import {
   Dialog,
   DialogContent,
@@ -20,20 +20,20 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@embeddr/react-ui/components/dialog'
+} from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/components/accordion'
+} from '@embeddr/react-ui/components/ui'
 import {
   BookCopyIcon,
   Database,
@@ -297,10 +297,13 @@ export function ExploreSidebar({
   const resolvePluginAssetUrl = (iconUrl?: string | null) => {
     if (!iconUrl) return null
     if (iconUrl.startsWith('http')) return iconUrl
+    if (iconUrl.startsWith('/api/v1/plugins/')) {
+      return `${BASE_URL}${iconUrl.replace('/api/v1/plugins/', '/api/plugins/')}`
+    }
     if (iconUrl.startsWith('/api/plugins/')) return `${BASE_URL}${iconUrl}`
-    if (iconUrl.startsWith('/plugins/')) return `${BASE_URL}/api${iconUrl}`
-    if (iconUrl.startsWith('/')) return `${BASE_URL}/api/plugins${iconUrl}`
-    return `${BASE_URL}/api/plugins/${iconUrl}`
+    if (iconUrl.startsWith('/plugins/')) return `${BASE_URL}${iconUrl}`
+    if (iconUrl.startsWith('/')) return `${BASE_URL}/plugins${iconUrl}`
+    return `${BASE_URL}/plugins/${iconUrl}`
   }
 
   const renderProviderIcon = (

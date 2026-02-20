@@ -6,7 +6,7 @@ import { usePluginLogos } from '@/hooks/usePluginLogos'
 
 import { windowRegistry } from './windowRegistry'
 import { DraggablePanel } from './DraggablePanel'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import {
   Minus,
   X,
@@ -25,13 +25,13 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@embeddr/react-ui/components/tooltip'
+} from '@embeddr/react-ui/components/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/components/dropdown-menu'
+} from '@embeddr/react-ui/components/ui'
 import { useEmbeddrAPI, extendApiForPlugin } from '@/plugins/store'
 import { useGlobalStore } from '@/store/globalStore'
 import { DynamicPluginComponent } from '@/plugins/DynamicLoader'
@@ -51,14 +51,18 @@ const PluginContent = React.memo(
     pluginId,
     componentName,
     api,
-    windowId,
+    panel,
     context,
     pluginProps,
   }: {
     pluginId: string
     componentName: string
     api: any
-    windowId: string
+    panel: {
+      id: string
+      defaultPosition?: { x: number; y: number }
+      isActive?: boolean
+    }
     context: any
     pluginProps: any
   }) => (
@@ -67,7 +71,7 @@ const PluginContent = React.memo(
         pluginId={pluginId}
         componentName={componentName}
         api={api}
-        windowId={windowId}
+        panel={panel}
         context={context}
         {...pluginProps}
       />
@@ -77,7 +81,7 @@ const PluginContent = React.memo(
     prev.pluginId === next.pluginId &&
     prev.componentName === next.componentName &&
     prev.api === next.api &&
-    prev.windowId === next.windowId &&
+    prev.panel === next.panel &&
     prev.context === next.context &&
     prev.pluginProps === next.pluginProps,
 )
@@ -584,7 +588,11 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
               pluginId={pluginId}
               componentName={componentName}
               api={api}
-              windowId={windowState.id}
+              panel={{
+                id: windowState.id,
+                defaultPosition,
+                isActive,
+              }}
               context={context}
               pluginProps={pluginProps}
             />
@@ -779,7 +787,11 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
             pluginId={pluginId}
             componentName={componentName}
             api={api}
-            windowId={activeTabId}
+            panel={{
+              id: activeTabId,
+              defaultPosition,
+              isActive,
+            }}
             context={context}
             pluginProps={pluginProps}
           />

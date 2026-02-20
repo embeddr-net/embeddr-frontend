@@ -4,7 +4,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/components/dialog'
+} from '@embeddr/react-ui/components/ui'
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
 
 interface OnboardingDialogProps {

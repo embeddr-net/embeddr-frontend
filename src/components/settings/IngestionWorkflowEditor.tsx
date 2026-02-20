@@ -1,25 +1,25 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Badge } from '@embeddr/react-ui/components/badge'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@embeddr/react-ui/components/card'
+} from '@embeddr/react-ui/components/ui'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@embeddr/react-ui/components/popover'
+} from '@embeddr/react-ui/components/ui'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/components/dialog'
+} from '@embeddr/react-ui/components/ui'
 import {
   fetchAnalysisConfigs,
   fetchAnalysisCapabilities,
@@ -28,7 +28,7 @@ import {
 } from '@/lib/api/endpoints/analysis'
 import { embeddrApi } from '@/lib/api/client'
 import type { LotusCapability } from '@/lib/api/types'
-import { Spinner } from '@embeddr/react-ui/components/spinner'
+import { Spinner } from '@embeddr/react-ui/components/ui'
 import { ArrowUp, ArrowDown, Settings2, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PluginConfigCard } from './PluginSettings'

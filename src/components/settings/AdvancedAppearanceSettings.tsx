@@ -5,10 +5,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Textarea } from '@embeddr/react-ui/components/textarea'
-import { Label } from '@embeddr/react-ui/components/label'
-import { Switch } from '@embeddr/react-ui/components/switch'
+} from '@embeddr/react-ui/components/ui'
+import { Textarea } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
 import { useSettingsStore } from '@/store/settingsStore'
 
 export function AdvancedAppearanceSettings() {

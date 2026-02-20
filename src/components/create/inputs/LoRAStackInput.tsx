@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { Plus, X, Settings2 } from 'lucide-react'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Label } from '@embeddr/react-ui/components/label'
-import { Slider } from '@embeddr/react-ui/components/slider'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { Slider } from '@embeddr/react-ui/components/ui'
 import { cn } from '@/lib/utils'
 import { LoRASelectorDialog } from '@/components/dialogs/LoRASelectorDialog'
 

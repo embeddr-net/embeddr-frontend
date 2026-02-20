@@ -1,14 +1,14 @@
 import React from 'react'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Card } from '@embeddr/react-ui/components/card'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/components/ui'
 import { Dice5, Info, Terminal } from 'lucide-react'
 import type { EmbeddrAPI, PluginDefinition } from '@embeddr/react-ui/types'
 
 // --- Plugin 1: Workflow Metadata Viewer (UI) ---
 const WorkflowInfoComponent: React.FC<{ api: EmbeddrAPI }> = ({ api }) => {
-  const { selectedWorkflow } = api.stores.generation
+  const { selectedPipeline } = api.stores.execution
 
-  if (!selectedWorkflow) {
+  if (!selectedPipeline) {
     return (
       <div className="text-sm text-muted-foreground p-4">
         No workflow selected
@@ -21,17 +21,17 @@ const WorkflowInfoComponent: React.FC<{ api: EmbeddrAPI }> = ({ api }) => {
       <h3 className="font-medium text-sm">Workflow Details</h3>
       <div className="text-xs space-y-1 text-muted-foreground">
         <p>
-          <span className="font-semibold">ID:</span> {selectedWorkflow.id}
+          <span className="font-semibold">ID:</span> {selectedPipeline.id}
         </p>
         <p>
-          <span className="font-semibold">Name:</span> {selectedWorkflow.name}
+          <span className="font-semibold">Name:</span> {selectedPipeline.name}
         </p>
         <p>
           <span className="font-semibold">Nodes:</span>{' '}
-          {Object.keys(selectedWorkflow.data).length}
+          {Object.keys(selectedPipeline.data).length}
         </p>
-        {selectedWorkflow.description && (
-          <p className="italic mt-2">{selectedWorkflow.description}</p>
+        {selectedPipeline.description && (
+          <p className="italic mt-2">{selectedPipeline.description}</p>
         )}
       </div>
     </div>
@@ -66,15 +66,15 @@ export const WorkflowInfoPlugin: PluginDefinition = {
 //       label: 'Randomize Seed',
 //       icon: Dice5,
 //       handler: (api: EmbeddrAPI) => {
-//         const { selectedWorkflow, setWorkflowInput } = api.stores.generation
+//         const { selectedPipeline, setPipelineInput } = api.stores.execution
 
-//         if (!selectedWorkflow) {
-//           api.toast.error('No workflow selected')
+//         if (!selectedPipeline) {
+//           api.toast.error('No pipeline selected')
 //           return
 //         }
 
 //         // Find a seed input (heuristic)
-//         const inputs = selectedWorkflow.meta?.exposed_inputs || []
+//         const inputs = selectedPipeline.meta?.exposed_inputs || []
 //         const seedInput = inputs.find(
 //           (i: any) =>
 //             i.field.includes('seed') || i.label?.toLowerCase().includes('seed'),
@@ -82,10 +82,10 @@ export const WorkflowInfoPlugin: PluginDefinition = {
 
 //         if (seedInput) {
 //           const newSeed = Math.floor(Math.random() * 1000000000)
-//           setWorkflowInput(seedInput.node_id, seedInput.field, newSeed)
+//           setPipelineInput(seedInput.node_id, seedInput.field, newSeed)
 //           api.toast.success(`Seed set to ${newSeed}`)
 //         } else {
-//           api.toast.info('No exposed seed input found in this workflow')
+//           api.toast.info('No exposed seed input found in this pipeline')
 //         }
 //       },
 //     },
@@ -108,8 +108,8 @@ export const WorkflowInfoPlugin: PluginDefinition = {
 //         console.log('--- Embeddr State Debug ---')
 //         console.log('Selected Image:', api.stores.global.selectedImage)
 //         console.log(
-//           'Selected Workflow:',
-//           api.stores.generation.selectedWorkflow,
+//           'Selected Pipeline:',
+//           api.stores.execution.selectedPipeline,
 //         )
 //         api.toast.info('State logged to console')
 //       },

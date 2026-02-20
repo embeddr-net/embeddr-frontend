@@ -5,18 +5,18 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Button } from '@embeddr/react-ui/components/button'
+} from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Switch } from '@embeddr/react-ui/components/switch'
+} from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
 import { toast } from 'sonner'
 import type { ResourceAdapterInfo } from '@/lib/api/client'
 import { embeddrApi } from '@/lib/api/client'
@@ -108,40 +108,55 @@ export function LotusStoragePanel({
         throw new Error('Confirmation required')
       }
 
-      const artifact = await embeddrApi.artifacts.create({
-        type_name: 'image',
-        base_type_name: 'artifact',
-        metadata_json: { name: uploadFile.name },
-      })
+      let artifact: { id: string } | null = null
+      try {
+        artifact = await embeddrApi.artifacts.create({
+          type_name: 'image',
+          base_type_name: 'artifact',
+          metadata_json: { name: uploadFile.name },
+        })
 
-      const init = await api.lotus.invoke('embeddr-core.artifact.upload.init', {
-        artifact_id: artifact.id,
-        filename: uploadFile.name,
-        content_type: uploadFile.type || undefined,
-        size: uploadFile.size,
-        storage_backend: uploadProvider || undefined,
-        confirm: true,
-      })
+        const init = await api.lotus.invoke(
+          'embeddr-core.artifact.upload.init',
+          {
+            artifact_id: artifact.id,
+            filename: uploadFile.name,
+            content_type: uploadFile.type || undefined,
+            size: uploadFile.size,
+            storage_backend: uploadProvider || undefined,
+            confirm: true,
+          },
+        )
 
-      const uploadId = init?.upload_id as string | undefined
-      if (!uploadId) {
-        throw new Error('Upload init failed')
+        const uploadId = init?.upload_id as string | undefined
+        if (!uploadId) {
+          throw new Error('Upload init failed')
+        }
+
+        const uploadPath = init?.upload_path as string | undefined
+        const uploaded = uploadPath
+          ? await embeddrApi.artifacts.uploadToPath(uploadPath, uploadFile)
+          : await embeddrApi.artifacts.uploadFile(uploadId, uploadFile)
+
+        const complete = await api.lotus.invoke(
+          'embeddr-core.artifact.upload.complete',
+          {
+            upload_id: uploadId,
+            confirm: true,
+          },
+        )
+
+        return { artifact, init, uploaded, complete }
+      } catch (error) {
+        if (artifact?.id) {
+          try {
+            await embeddrApi.artifacts.delete(artifact.id)
+          } catch {
+            // no-op cleanup failure
+          }
+        }
+        throw error
       }
-
-      const uploaded = await embeddrApi.artifacts.uploadFile(
-        uploadId,
-        uploadFile,
-      )
-
-      const complete = await api.lotus.invoke(
-        'embeddr-core.artifact.upload.complete',
-        {
-          upload_id: uploadId,
-          confirm: true,
-        },
-      )
-
-      return { artifact, init, uploaded, complete }
     },
     onSuccess: (data) => {
       setUploadResult(data || null)

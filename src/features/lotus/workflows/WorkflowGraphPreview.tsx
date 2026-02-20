@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Badge } from '@embeddr/react-ui/components/badge'
+import { Badge } from '@embeddr/react-ui/components/ui'
 
 function extractBindings(value: unknown): string[] {
   if (typeof value !== 'string') return []

@@ -8,7 +8,7 @@ import {
 import { embeddrApi } from '@/lib/api/client'
 import { Umap3DExplorer } from '@embeddr/react-ui'
 import { cn } from '@/lib/utils'
-import { Spinner } from '@embeddr/react-ui/components/spinner'
+import { Spinner } from '@embeddr/react-ui/components/ui'
 
 import type { Point3D, GraphEdge, SearchResult } from './atlas/types'
 import { AtlasControls } from './atlas/AtlasControls'
@@ -39,6 +39,56 @@ export const VectorAtlas = () => {
 
   const [graphEdges, setGraphEdges] = useState<GraphEdge[]>([])
   const [traversalLoading, setTraversalLoading] = useState(false)
+  const [themeTick, setThemeTick] = useState(0)
+
+  const resolveCssColor = (cssVar: string, fallback: string) => {
+    if (typeof window === 'undefined') return fallback
+    const raw = getComputedStyle(document.documentElement)
+      .getPropertyValue(cssVar)
+      .trim()
+    if (!raw) return fallback
+
+    const probe = document.createElement('span')
+    probe.style.color = raw
+    document.body.appendChild(probe)
+    const resolved = getComputedStyle(probe).color
+    probe.remove()
+    return resolved || fallback
+  }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const observer = new MutationObserver(() => {
+      setThemeTick((prev) => prev + 1)
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style', 'data-theme'],
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  const vizColors = useMemo(
+    () => ({
+      searchPalette: [
+        resolveCssColor('--primary', '#ffffff'),
+        resolveCssColor('--accent-foreground', '#ffff00'),
+        resolveCssColor('--secondary-foreground', '#00ffff'),
+        resolveCssColor('--destructive', '#ff00ff'),
+        resolveCssColor('--muted-foreground', '#ff9900'),
+      ],
+      pointImage: resolveCssColor('--primary', '#ff5555'),
+      pointText: resolveCssColor('--accent-foreground', '#5555ff'),
+      pointOther: resolveCssColor('--secondary-foreground', '#55ff55'),
+      connectionParent: resolveCssColor('--primary', '#00ffff'),
+      connectionChild: resolveCssColor('--accent-foreground', '#ff00ff'),
+      connectionContains: resolveCssColor('--secondary-foreground', '#00ff00'),
+      connectionRelation: resolveCssColor('--muted-foreground', '#ffd700'),
+    }),
+    [themeTick],
+  )
 
   const queryClient = useQueryClient()
 
@@ -106,9 +156,10 @@ export const VectorAtlas = () => {
 
     try {
       // Find unused color from a simple palette
-      const palette = ['#ffffff', '#ffff00', '#00ffff', '#ff00ff', '#ff9900']
+      const palette = vizColors.searchPalette
       const usedColors = new Set(activeSearches.map((s) => s.color))
-      const color = palette.find((c) => !usedColors.has(c)) || '#ffffff'
+      const color =
+        palette.find((c) => !usedColors.has(c)) || vizColors.searchPalette[0]
 
       // Semantic Search Only
       const semanticRes = await embeddrApi.plugins
@@ -213,7 +264,7 @@ export const VectorAtlas = () => {
     return () => {
       isMounted = false
     }
-  }, [selectedPoint, depth])
+  }, [selectedPoint, depth, activeSearches])
 
   // Fetch details for selected point (full metadata)
   const { data: details } = useQuery<any>({
@@ -330,10 +381,10 @@ export const VectorAtlas = () => {
           z: embedding[i][2] * 2,
           color:
             a.type_name === 'image'
-              ? '#FF5555'
+              ? vizColors.pointImage
               : a.type_name === 'text'
-                ? '#5555FF'
-                : '#55FF55',
+                ? vizColors.pointText
+                : vizColors.pointOther,
           label:
             (a.metadata_json as any)?.name ||
             (a.metadata_json as any)?.label ||
@@ -351,7 +402,15 @@ export const VectorAtlas = () => {
       console.error(e)
       return []
     }
-  }, [artifacts, nNeighbors, minDist, spread, useBackend, backendPoints])
+  }, [
+    artifacts,
+    nNeighbors,
+    minDist,
+    spread,
+    useBackend,
+    backendPoints,
+    vizColors,
+  ])
 
   const { points, searchMarkers } = useMemo(() => {
     const base = rawPoints || []
@@ -459,7 +518,7 @@ export const VectorAtlas = () => {
         if (allSearchIds.has(idStr)) {
           return {
             ...p,
-            color: searchColorMap.get(idStr) || '#ffffff',
+            color: searchColorMap.get(idStr) || vizColors.searchPalette[0],
             opacity: 1.0,
           }
         }
@@ -488,6 +547,7 @@ export const VectorAtlas = () => {
     focusMode,
     selectedPoint,
     graphEdges,
+    vizColors,
   ])
 
   // Connections to draw
@@ -497,14 +557,14 @@ export const VectorAtlas = () => {
       endId: edge.target,
       color:
         edge.type === 'parent'
-          ? '#00ffff'
+          ? vizColors.connectionParent
           : edge.type === 'child'
-            ? '#ff00ff'
+            ? vizColors.connectionChild
             : edge.label === 'contains'
-              ? '#00FF00' // Green for containers
-              : '#FFD700', // Gold/Orange for semantic
+              ? vizColors.connectionContains
+              : vizColors.connectionRelation,
     }))
-  }, [graphEdges])
+  }, [graphEdges, vizColors])
 
   if (isLoading)
     return (
@@ -572,19 +632,34 @@ export const VectorAtlas = () => {
         />
 
         {/* Legend */}
-        <div className="absolute top-2 right-2 z-10 bg-black/50 p-2  backdrop-blur text-[10px] text-white space-y-1 pointer-events-none">
+        <div className="absolute top-2 right-2 z-10 bg-card/80 border border-border p-2 backdrop-blur text-[10px] text-foreground space-y-1 pointer-events-none">
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2  bg-[#00ffff]"></div> Parent (Input/Source)
+            <div
+              className="w-2 h-2"
+              style={{ backgroundColor: vizColors.connectionParent }}
+            ></div>{' '}
+            Parent (Input/Source)
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2  bg-[#ff00ff]"></div> Child (Derived/Output)
+            <div
+              className="w-2 h-2"
+              style={{ backgroundColor: vizColors.connectionChild }}
+            ></div>{' '}
+            Child (Derived/Output)
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2  bg-[#00FF00]"></div> Contains
-            (Folder/Group)
+            <div
+              className="w-2 h-2"
+              style={{ backgroundColor: vizColors.connectionContains }}
+            ></div>{' '}
+            Contains (Folder/Group)
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2  bg-[#FFD700]"></div> Relation (Reference)
+            <div
+              className="w-2 h-2"
+              style={{ backgroundColor: vizColors.connectionRelation }}
+            ></div>{' '}
+            Relation (Reference)
           </div>
         </div>
 

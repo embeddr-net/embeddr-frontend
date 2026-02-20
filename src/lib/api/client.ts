@@ -14,6 +14,7 @@ import type {
   CollectionResponse,
   CommandResult,
   Execution,
+  ExecutionArtifactLink,
   ExecutionEvent,
   IngestionPipelineConfig,
   InstanceProfile,
@@ -24,6 +25,7 @@ import type {
   MaintenanceRunResponse,
   MaintenanceScript,
   ArtifactRegistryResponse,
+  RelationOntologyResponse,
   PaginatedResponse,
   PublicSystemInfo,
   PluginAction,
@@ -92,6 +94,41 @@ export interface ResourceResolveRequest {
   adapter_id?: string
 }
 
+export interface AuthSessionOperatorInfo {
+  id: string
+  name: string
+  display_name?: string | null
+  is_root?: boolean
+}
+
+export interface AuthSessionUserInfo {
+  id: string
+  username: string
+  display_name?: string | null
+  avatar_url?: string | null
+  is_admin?: boolean
+}
+
+export interface AuthSessionClientKeyInfo {
+  id: string
+  name: string
+  key_prefix?: string | null
+  scopes: string[]
+  permissions: string[]
+  is_active?: boolean
+  expires_at?: string | null
+  last_used_at?: string | null
+}
+
+export interface AuthSessionInfo {
+  auth_mode: string
+  auth_enabled: boolean
+  operator?: AuthSessionOperatorInfo | null
+  user?: AuthSessionUserInfo | null
+  client_key?: AuthSessionClientKeyInfo | null
+  permissions: string[]
+}
+
 class EmbeddrApi {
   private baseUrl: string
 
@@ -104,15 +141,7 @@ class EmbeddrApi {
     options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.baseUrl}${path}`
-
-    const token = useUserStore.getState().apiKey
     const headers = new Headers(options.headers || {})
-
-    if (token) {
-      headers.set('X-API-Key', token)
-    } else {
-      console.warn('[API] No client key found in store')
-    }
 
     const config: RequestInit = {
       ...options,
@@ -120,7 +149,7 @@ class EmbeddrApi {
       credentials: options.credentials ?? 'include',
     }
 
-    const response = await fetch(url, config)
+    const response = await fetchWithAuth(url, config)
 
     if (!response.ok) {
       throw new Error(`API Error: ${response.status} ${response.statusText}`)
@@ -169,7 +198,10 @@ class EmbeddrApi {
     list: (params: {
       limit?: number
       offset?: number
+      q?: string
+      access_scope?: 'personal' | 'instance'
       type_name?: string
+      visibility?: 'all' | 'public' | 'private'
       media_type?: string
       tags?: string[]
       collection_id?: string
@@ -186,7 +218,12 @@ class EmbeddrApi {
       const q = new URLSearchParams()
       q.append('limit', (params.limit || 50).toString())
       q.append('offset', (params.offset || 0).toString())
+      if (params.q) q.append('q', params.q)
+      if (params.access_scope) q.append('access_scope', params.access_scope)
       if (params.type_name) q.append('type_name', params.type_name)
+      if (params.visibility && params.visibility !== 'all') {
+        q.append('visibility', params.visibility)
+      }
       if (params.media_type) q.append('media_type', params.media_type)
       if (params.collection_id) q.append('collection_id', params.collection_id)
       if (params.library_id) q.append('library_id', params.library_id)
@@ -213,7 +250,15 @@ class EmbeddrApi {
       )
     },
 
-    get: (id: string) => this.request<Artifact>(`/artifacts/${id}`),
+    get: (id: string, input?: { include_owner_profiles?: boolean }) => {
+      const q = new URLSearchParams()
+      if (input?.include_owner_profiles) {
+        q.append('include_owner_profiles', 'true')
+      }
+      return this.request<Artifact>(
+        `/artifacts/${id}${q.toString() ? `?${q.toString()}` : ''}`,
+      )
+    },
 
     getEmbeddings: (id: string) =>
       this.request<ArtifactEmbedding[]>(`/artifacts/${id}/embeddings`),
@@ -276,6 +321,7 @@ class EmbeddrApi {
         uri?: string | null
         type_name?: string
         base_type_name?: string
+        visibility?: 'public' | 'private'
       },
     ) =>
       this.request<Artifact>(`/artifacts/${id}`, {
@@ -290,9 +336,38 @@ class EmbeddrApi {
     uploadFile: (uploadId: string, file: File) => {
       const form = new FormData()
       form.append('file', file)
-      return this.request(`/artifacts/upload/${uploadId}`, {
+      return this.request(`/artifacts/uploads/${uploadId}`, {
         method: 'POST',
         body: form,
+      })
+    },
+
+    uploadToPath: (uploadPath: string, file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+
+      const normalizedPath = (uploadPath || '').trim()
+      if (!normalizedPath) {
+        throw new Error('upload_path is required')
+      }
+
+      const url = normalizedPath.startsWith('http')
+        ? normalizedPath
+        : normalizedPath.startsWith('/api/')
+          ? `${BASE_URL}${normalizedPath}`
+          : `${BACKEND_URL}${normalizedPath}`
+
+      return fetchWithAuth(url, {
+        method: 'POST',
+        body: form,
+        credentials: 'include',
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(
+            `API Error: ${response.status} ${response.statusText}`,
+          )
+        }
+        return response.json()
       })
     },
 
@@ -446,6 +521,8 @@ class EmbeddrApi {
       this.request<BlobRegistryResponse>(`/system/blob-registry`),
     getArtifactRegistry: () =>
       this.request<ArtifactRegistryResponse>(`/system/artifact-registry`),
+    getRelationOntology: () =>
+      this.request<RelationOntologyResponse>(`/system/relation-ontology`),
     getArtifactTypeCounts: () =>
       this.request<ArtifactTypeCountsResponse>(`/system/artifact-type-counts`),
     setBlobDefaults: (input: {
@@ -457,6 +534,10 @@ class EmbeddrApi {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
       }),
+  }
+
+  public security = {
+    whoami: () => this.request<AuthSessionInfo>(`/security/whoami`),
   }
 
   public lotus = {
@@ -564,6 +645,20 @@ class EmbeddrApi {
         `/executions/${id}/events${qs ? `?${qs}` : ''}`,
       )
     },
+    cancel: (id: string) =>
+      this.request<Execution>(`/executions/${id}/cancel`, {
+        method: 'POST',
+      }),
+    artifacts: (id: string, action?: string) => {
+      const q = new URLSearchParams()
+      if (action) q.append('action', action)
+      const qs = q.toString()
+      return this.request<ExecutionArtifactLink[]>(
+        `/executions/${id}/artifacts${qs ? `?${qs}` : ''}`,
+      )
+    },
+    children: (id: string) =>
+      this.request<Execution[]>(`/executions/${id}/children`),
   }
 
   public plugins = {
@@ -757,12 +852,18 @@ class EmbeddrApi {
 export const embeddrApi = new EmbeddrApi()
 export default EmbeddrApi
 
+// ─── Legacy Standalone Functions ─────────────────────────────────────
+// These are DEPRECATED. Use embeddrApi.* and hooks from @/hooks/useExecutions instead.
+// Kept for backward compatibility during migration.
+
+/** @deprecated Use embeddrApi.executions.list() */
 async function fetchActions(): Promise<PluginAction[]> {
   const res = await fetchWithAuth(`${BACKEND_URL}/executions/actions`)
   if (!res.ok) throw new Error('Failed to fetch actions')
   return res.json()
 }
 
+/** @deprecated Use embeddrApi.executions.list() via useExecutions hook */
 async function fetchExecutions(params?: {
   plugin_name?: string
   status?: string
@@ -802,6 +903,7 @@ async function fetchArtifacts(params?: {
   return res.json()
 }
 
+/** @deprecated Use embeddrApi.executions.create() via useCreateExecution hook from @/hooks/useExecutions */
 async function createExecution(payload: {
   plugin_name: string
   action_name: string
@@ -820,6 +922,7 @@ async function createExecution(payload: {
   return res.json()
 }
 
+/** @deprecated Use useActions from proper hook */
 export function useActions() {
   return useQuery({
     queryKey: ['actions'],
@@ -827,6 +930,7 @@ export function useActions() {
   })
 }
 
+/** @deprecated Use useExecutions from @/hooks/useExecutions */
 export function useExecutions(params?: {
   plugin_name?: string
   status?: string
@@ -852,6 +956,7 @@ export function useArtifacts(params?: {
   })
 }
 
+/** @deprecated Use useCreateExecution from @/hooks/useExecutions */
 export function useCreateExecution() {
   const queryClient = useQueryClient()
   return useMutation({

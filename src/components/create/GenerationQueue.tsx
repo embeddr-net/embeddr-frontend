@@ -1,11 +1,11 @@
-import { Card } from '@embeddr/react-ui/components/card'
+import { Card } from '@embeddr/react-ui/components/ui'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/tabs'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+} from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import {
   AlertCircle,
   ArrowLeft,
@@ -18,14 +18,14 @@ import {
   Repeat,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { toast } from 'sonner'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@embeddr/react-ui/components/tooltip'
-import type { Generation } from '@/lib/api/types'
+} from '@embeddr/react-ui/components/ui'
+import type { ExecutionRecord } from '@/lib/api/types'
 import { useGeneration } from '@/context/GenerationContext'
 import { useGlobalStore } from '@/store/globalStore'
 import { ImageDetailDialog } from '@/components/dialogs/ImageDetailDialog'
@@ -40,7 +40,7 @@ export function QueueItem({
   onSelect,
   onRepeat,
 }: {
-  generation: Generation
+  generation: ExecutionRecord
   isSelected: boolean
   onSelect: () => void
   onOpenImage?: (id: string) => void
@@ -238,7 +238,7 @@ export function GenerationQueue() {
     setWorkflowInput,
   } = useGeneration()
 
-  const handleRepeat = (generation: Generation) => {
+  const handleRepeat = (generation: ExecutionRecord) => {
     if (!generation.inputs) return
 
     Object.entries(generation.inputs).forEach(([nodeId, inputs]) => {

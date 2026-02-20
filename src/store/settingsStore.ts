@@ -1,6 +1,35 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+const LEGACY_PLUGIN_SETTINGS_STORAGE_KEY = 'zen-plugin-settings'
+
+const readLegacyPluginSettings = (): Record<string, Record<string, any>> => {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = window.localStorage.getItem(LEGACY_PLUGIN_SETTINGS_STORAGE_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+const syncLegacyPluginSettings = (
+  pluginSettings: Record<string, Record<string, any>>,
+) => {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(
+      LEGACY_PLUGIN_SETTINGS_STORAGE_KEY,
+      JSON.stringify(pluginSettings),
+    )
+    window.dispatchEvent(new Event('local-storage'))
+  } catch {
+    // no-op: keep settings functional even if storage is unavailable
+  }
+}
+
 interface SettingsState {
   // Appearance
   backgroundImage: string | null
@@ -121,7 +150,7 @@ export const useSettingsStore = create<SettingsState>()(
       vhsEnabled: false,
       setVhsEnabled: (enabled) => set({ vhsEnabled: enabled }),
 
-      effectsEnabled: true,
+      effectsEnabled: false,
       setEffectsEnabled: (enabled) => set({ effectsEnabled: enabled }),
       globalEffectsEnabled: false,
       setGlobalEffectsEnabled: (enabled) =>
@@ -149,14 +178,14 @@ export const useSettingsStore = create<SettingsState>()(
       themePackSources: [],
       setThemePackSources: (sources) => set({ themePackSources: sources }),
 
-      commandBarPosition: 'bottom',
+      commandBarPosition: 'top',
       setCommandBarPosition: (pos) => set({ commandBarPosition: pos }),
 
       commandBarShowDividers: false,
       setCommandBarShowDividers: (show) =>
         set({ commandBarShowDividers: show }),
 
-      commandBarCompact: true,
+      commandBarCompact: false,
       setCommandBarCompact: (compact) => set({ commandBarCompact: compact }),
 
       commandBarHoverParams: { enabled: false, delay: 0 },
@@ -199,17 +228,21 @@ export const useSettingsStore = create<SettingsState>()(
         return val !== undefined ? val : defaultValue
       },
 
-      pluginSettings: {},
+      pluginSettings: readLegacyPluginSettings(),
       setPluginSetting: (pluginId, key, value) =>
-        set((state) => ({
-          pluginSettings: {
+        set((state) => {
+          const nextPluginSettings = {
             ...state.pluginSettings,
             [pluginId]: {
               ...(state.pluginSettings[pluginId] || {}),
               [key]: value,
             },
-          },
-        })),
+          }
+          syncLegacyPluginSettings(nextPluginSettings)
+          return {
+            pluginSettings: nextPluginSettings,
+          }
+        }),
       getPluginSetting: (pluginId, key, defaultValue) => {
         const val = get().pluginSettings[pluginId]?.[key]
         return val !== undefined ? val : defaultValue
@@ -223,6 +256,23 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'embeddr-client-settings',
+      version: 3,
+      migrate: (persistedState: any) => {
+        const state = persistedState && typeof persistedState === 'object'
+          ? persistedState
+          : {}
+        const legacyPluginSettings = readLegacyPluginSettings()
+        const mergedPluginSettings =
+          state.pluginSettings && Object.keys(state.pluginSettings).length > 0
+            ? state.pluginSettings
+            : legacyPluginSettings
+
+        return {
+          ...state,
+          pluginSettings: mergedPluginSettings,
+          effectsEnabled: false,
+        }
+      },
     },
   ),
 )

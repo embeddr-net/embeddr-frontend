@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Dialog, DialogContent } from '@embeddr/react-ui/components/dialog'
+import { Dialog, DialogContent } from '@embeddr/react-ui/components/ui'
 import { LotusSearchBar } from './LotusSearchBar'
 import { LotusResultsList } from './LotusResultsList'
 import { LotusInspector } from './LotusInspector'
@@ -7,7 +7,7 @@ import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
-} from '@embeddr/react-ui/components/resizable'
+} from '@embeddr/react-ui/components/ui'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
 import { embeddrApi } from '@/lib/api/client'
@@ -84,12 +84,14 @@ export function LotusCommandPalette({
       ...(item.data || {}),
       inputs: inputs || {},
     } as Record<string, any>
-    const pluginName = payloadData.plugin_name as string | undefined
-    const actionName = payloadData.action_name as string | undefined
+    const pluginName = (payloadData.plugin_name || payloadData.plugin) as string | undefined
+    const actionName = (payloadData.action_name || payloadData.action) as string | undefined
     if (!pluginName || !actionName) {
       toast.error('Action missing plugin or action name.')
       return
     }
+    payloadData.plugin_name = pluginName
+    payloadData.action_name = actionName
 
     setDispatching(true)
     try {

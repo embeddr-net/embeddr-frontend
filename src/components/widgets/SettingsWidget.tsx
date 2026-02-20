@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { Link } from '@tanstack/react-router'
 import { Settings, CircleHelp, Sun, Moon, Laptop } from 'lucide-react'
 import {
@@ -7,12 +7,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/components/dropdown-menu'
+} from '@embeddr/react-ui/components/ui'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@embeddr/react-ui/components/tooltip'
+} from '@embeddr/react-ui/components/ui'
 import { useLotus } from '@/providers/LotusProvider'
 import { useTheme } from '@/hooks/useTheme'
 

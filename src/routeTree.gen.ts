@@ -25,7 +25,6 @@ import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as DebugRouteImport } from './routes/debug'
 import { Route as DatasetsRouteImport } from './routes/datasets'
-import { Route as ComfyRouteImport } from './routes/comfy'
 import { Route as AccessRouteImport } from './routes/access'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PipelinesIndexRouteImport } from './routes/pipelines.index'
@@ -117,11 +116,6 @@ const DatasetsRoute = DatasetsRouteImport.update({
   path: '/datasets',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ComfyRoute = ComfyRouteImport.update({
-  id: '/comfy',
-  path: '/comfy',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AccessRoute = AccessRouteImport.update({
   id: '/access',
   path: '/access',
@@ -176,7 +170,6 @@ const PluginsPluginIdPageIdRoute = PluginsPluginIdPageIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/access': typeof AccessRoute
-  '/comfy': typeof ComfyRoute
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
@@ -205,7 +198,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/access': typeof AccessRoute
-  '/comfy': typeof ComfyRoute
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
@@ -234,7 +226,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/access': typeof AccessRoute
-  '/comfy': typeof ComfyRoute
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
@@ -265,7 +256,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/access'
-    | '/comfy'
     | '/datasets'
     | '/debug'
     | '/docs'
@@ -294,7 +284,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/access'
-    | '/comfy'
     | '/datasets'
     | '/debug'
     | '/docs'
@@ -322,7 +311,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/access'
-    | '/comfy'
     | '/datasets'
     | '/debug'
     | '/docs'
@@ -352,7 +340,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccessRoute: typeof AccessRoute
-  ComfyRoute: typeof ComfyRoute
   DatasetsRoute: typeof DatasetsRoute
   DebugRoute: typeof DebugRoute
   DocsRoute: typeof DocsRoute
@@ -490,13 +477,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DatasetsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/comfy': {
-      id: '/comfy'
-      path: '/comfy'
-      fullPath: '/comfy'
-      preLoaderRoute: typeof ComfyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/access': {
       id: '/access'
       path: '/access'
@@ -599,7 +579,6 @@ const PluginsPluginIdRouteWithChildren = PluginsPluginIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccessRoute: AccessRoute,
-  ComfyRoute: ComfyRoute,
   DatasetsRoute: DatasetsRoute,
   DebugRoute: DebugRoute,
   DocsRoute: DocsRoute,

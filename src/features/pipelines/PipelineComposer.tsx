@@ -1,21 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Card } from '@embeddr/react-ui/components/card'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Label } from '@embeddr/react-ui/components/label'
-import { Textarea } from '@embeddr/react-ui/components/textarea'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { Textarea } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
-import { Switch } from '@embeddr/react-ui/components/switch'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Separator } from '@embeddr/react-ui/components/separator'
+} from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Separator } from '@embeddr/react-ui/components/ui'
 import { embeddrApi } from '@/lib/api/client'
 import type {
   AutomationListResponse,

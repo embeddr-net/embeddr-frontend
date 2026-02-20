@@ -1,8 +1,14 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useState } from 'react'
 import type { ReactNode } from 'react'
+import { useHotkey } from '@tanstack/react-hotkeys'
 import { ZenSettingsDialog } from '@/components/create/zen/ZenSettingsDialog'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { LotusFinder } from '@/features/lotus/LotusFinder'
+import {
+  getEffectiveHotkeyBinding,
+  HOTKEY_OVERRIDES_STORAGE_KEY,
+  type HotkeyOverrides,
+} from '@/lib/hotkeys/registry'
 
 interface LotusContextType {
   finderOpen: boolean
@@ -28,7 +34,7 @@ export function useLotus() {
 export function LotusProvider({ children }: { children: ReactNode }) {
   const [finderOpen, setFinderOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsTab, setSettingsTab] = useState('general')
+  const [settingsTab, setSettingsTab] = useState('profile')
 
   // Keep your existing lifted state
   const [hiddenWorkflows, setHiddenWorkflows] = useLocalStorage<string[]>(
@@ -39,32 +45,34 @@ export function LotusProvider({ children }: { children: ReactNode }) {
     'zen-pinned-workflows',
     [],
   )
+  const [hotkeyOverrides] = useLocalStorage<HotkeyOverrides>(
+    HOTKEY_OVERRIDES_STORAGE_KEY,
+    {},
+  )
 
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      // Cmd/Ctrl+K -> Finder
-      if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setFinderOpen((v) => !v)
-        return
-      }
+  useHotkey(
+    getEffectiveHotkeyBinding('lotus.finder.toggle', hotkeyOverrides),
+    () => {
+      setFinderOpen((value) => !value)
+    },
+    { preventDefault: true },
+  )
 
-      // Cmd/Ctrl+, -> Settings (nice convention)
-      if (e.key === ',' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setSettingsOpen(true)
-        return
-      }
+  useHotkey(
+    getEffectiveHotkeyBinding('lotus.settings.open', hotkeyOverrides),
+    () => {
+      setSettingsOpen(true)
+    },
+    { preventDefault: true },
+  )
 
-      // Escape closes finder if open
-      if (e.key === 'Escape') {
-        setFinderOpen(false)
-      }
-    }
-
-    document.addEventListener('keydown', down)
-    return () => document.removeEventListener('keydown', down)
-  }, [])
+  useHotkey(
+    getEffectiveHotkeyBinding('lotus.finder.close', hotkeyOverrides),
+    () => {
+      setFinderOpen(false)
+    },
+    { enabled: finderOpen },
+  )
 
   return (
     <LotusContext.Provider
@@ -88,8 +96,6 @@ export function LotusProvider({ children }: { children: ReactNode }) {
       <ZenSettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        hiddenWorkflows={hiddenWorkflows}
-        setHiddenWorkflows={setHiddenWorkflows}
         activeTab={settingsTab}
         onActiveTabChange={setSettingsTab}
       />

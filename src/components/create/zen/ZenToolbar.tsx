@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import {
   Box,
   Database,
@@ -11,19 +11,19 @@ import {
   Settings2,
   Sliders,
 } from 'lucide-react'
-import { Separator } from '@embeddr/react-ui/components/separator'
+import { Separator } from '@embeddr/react-ui/components/ui'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@embeddr/react-ui/components/tooltip'
-import type { Generation } from '@/lib/api/types'
+} from '@embeddr/react-ui/components/ui'
 import { cn } from '@/lib/utils'
 
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { usePluginStore } from '@/plugins/store'
 import { useWindowStore } from '@/store/windowStore'
+import { useSettingsStore } from '@/store/settingsStore'
 import { lucideIconFromName } from '@/lib/lucide'
 
 interface ZenToolbarProps {
@@ -55,15 +55,12 @@ export function ZenToolbar({
 }: ZenToolbarProps) {
   const [generateText] = useLocalStorage('zen-generate-text', 'Generate')
   const [generateTheme] = useLocalStorage('zen-generate-theme', 'default')
-  const emptySettings = React.useMemo(() => ({}), [])
-  const [pluginSettings] = useLocalStorage<Record<string, Record<string, any>>>(
-    'zen-plugin-settings',
-    emptySettings,
+  const showTimer = useSettingsStore(
+    (state) => state.pluginSettings['core.zen-mode']?.showTimer ?? true,
   )
   const [pinnedPanels] = useLocalStorage<string[]>('zen-pinned-panels', [])
   const getComponents = usePluginStore((s) => s.getComponents)
   const spawnWindow = useWindowStore((s) => s.spawnWindow)
-  const showTimer = pluginSettings['core.zen-mode']?.showTimer ?? true
   const pinnedPanelDefs = React.useMemo(() => {
     if (!pinnedPanels.length) return []
     const defs = getComponents('zen-overlay').filter(

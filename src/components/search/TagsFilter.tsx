@@ -1,13 +1,13 @@
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/components/dropdown-menu'
-import { Input } from '@embeddr/react-ui/components/input'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
-import { Badge } from '@embeddr/react-ui/components/badge'
+} from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import { Search, Tag } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'

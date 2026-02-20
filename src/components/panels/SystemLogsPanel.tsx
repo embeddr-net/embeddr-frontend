@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import { Loader2 } from 'lucide-react'
 import { fetchSystemLogs } from '@/lib/api'
 

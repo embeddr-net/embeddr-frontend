@@ -5,8 +5,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Button } from '@embeddr/react-ui/components/button'
+} from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { AlertTriangle } from 'lucide-react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { fetchSecurityOverviewStatus } from '@/lib/api/endpoints/security'

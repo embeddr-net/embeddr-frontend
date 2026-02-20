@@ -1,7 +1,6 @@
-// Frontend auth provider for the shared client fetch helper
-import { setAuthTokenProvider, fetchWithAuth } from '@embeddr/client-typescript'
+import { createFetchWithAuth } from '@embeddr/client-typescript'
 import { useUserStore } from '@/store/userStore'
 
-setAuthTokenProvider(() => useUserStore.getState().apiKey)
-
-export { fetchWithAuth }
+export const fetchWithAuth = createFetchWithAuth({
+	getToken: () => useUserStore.getState().apiKey,
+})

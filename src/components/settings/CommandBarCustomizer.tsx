@@ -1,6 +1,6 @@
 import React from 'react'
 import { VisualCommandBarEditor } from '@/components/settings/VisualCommandBarEditor'
-import { Badge } from '@embeddr/react-ui/components/badge'
+import { Badge } from '@embeddr/react-ui/components/ui'
 
 export function CommandBarCustomizer() {
   return (

@@ -7,19 +7,19 @@ import {
   CardContent,
   CardDescription,
   CardFooter,
-} from '@embeddr/react-ui/components/card'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Label } from '@embeddr/react-ui/components/label'
-import { Spinner } from '@embeddr/react-ui/components/spinner'
+} from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { Spinner } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
-import { Switch } from '@embeddr/react-ui/components/switch'
+} from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
 import {
   Play,
   ArrowRight,
@@ -35,7 +35,7 @@ import {
   Type,
 } from 'lucide-react'
 import { ImageSelectorDialog } from '@/components/dialogs/ImageSelectorDialog'
-import { Badge } from '@embeddr/react-ui/components/badge'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import { useWebSocket } from '@/providers/WebSocketProvider'
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -43,9 +43,9 @@ import {
   fetchAvailableActions,
   type AvailableAction,
 } from '@/lib/api/endpoints/actions'
-import { Checkbox } from '@embeddr/react-ui/components/checkbox'
+import { Checkbox } from '@embeddr/react-ui/components/ui'
 import { toast } from 'sonner'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 
 const getIconForPlugin = (pluginName: string) => {
   if (pluginName.includes('scraper')) return <Database className="h-4 w-4" />
@@ -91,8 +91,8 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
     queryFn: fetchAvailableActions,
   })
 
-  // ComfyUI plugin workflows for selection inputs
-  const { data: pluginWorkflows } = usePluginWorkflows('embeddr-comfyui')
+  // Workflow provider plugin workflows for selection inputs (registry-resolved)
+  const { data: pluginWorkflows } = usePluginWorkflows()
 
   // Sync initial graph
   useEffect(() => {

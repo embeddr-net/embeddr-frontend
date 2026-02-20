@@ -5,13 +5,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Badge } from '@embeddr/react-ui/components/badge'
+} from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@embeddr/react-ui/components/avatar'
+} from '@embeddr/react-ui/components/ui'
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { SecurityOperator } from './operator-types'
 import { fetchSecurityOperators } from '@/lib/api'

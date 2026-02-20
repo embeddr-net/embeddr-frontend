@@ -1,33 +1,32 @@
-import React, { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Card } from '@embeddr/react-ui/components/card'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Separator } from '@embeddr/react-ui/components/separator'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
-import { Switch } from '@embeddr/react-ui/components/switch'
+import { Card } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Separator } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/tabs'
+} from '@embeddr/react-ui/components/ui'
 import { PlugZap } from 'lucide-react'
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { useThemePacks } from '@/hooks/useThemePacks'
 import { embeddrApi } from '@/lib/api/client'
 import { fetchPluginLogos } from '@/lib/api/endpoints/plugins'
-import type { IngestionPipelineConfig } from '@/lib/api/types'
 import { useUserStore } from '@/store/userStore'
 import { useSettingsStore } from '@/store/settingsStore'
 
@@ -41,32 +40,16 @@ const OnboardingPage = () => {
     themePackDarkId,
     setThemePackDarkId,
   } = useSettingsStore()
-  const [onboardingDismissed, setOnboardingDismissed] = useLocalStorage(
+  const [, setOnboardingDismissed] = useLocalStorage(
     'zen-onboarding-dismissed',
     false,
   )
   const { displayName, setDisplayName, apiKey, setApiKey } = useUserStore()
   const [showKey, setShowKey] = useState(false)
-  const [connectionStatus, setConnectionStatus] = useState<
-    'idle' | 'checking' | 'ok' | 'error'
-  >('idle')
-  const [authStatus, setAuthStatus] = useState<
-    'idle' | 'checking' | 'ok' | 'error'
-  >('idle')
-  const [authRequiredStatus, setAuthRequiredStatus] = useState<
-    'idle' | 'checking' | 'required' | 'optional' | 'error'
-  >('idle')
-  const [authError, setAuthError] = useState<string | null>(null)
 
   const { data: plugins, isLoading: pluginsLoading } = useQuery({
     queryKey: ['plugins', 'onboarding'],
     queryFn: () => embeddrApi.plugins.list(),
-    staleTime: 30_000,
-  })
-
-  const { data: pipelineConfig } = useQuery<IngestionPipelineConfig>({
-    queryKey: ['system', 'ingestion', 'pipeline', 'onboarding'],
-    queryFn: () => embeddrApi.system.getIngestionPipeline(),
     staleTime: 30_000,
   })
 
@@ -92,8 +75,6 @@ const OnboardingPage = () => {
 
   const pluginList = useMemo(() => plugins || [], [plugins])
 
-  const missingPipeline = !pipelineConfig?.pipeline_id
-
   const getPluginStats = (plugin: any) => {
     const actions = Array.isArray(plugin?.actions) ? plugin.actions.length : 0
     const components =
@@ -110,226 +91,53 @@ const OnboardingPage = () => {
     navigate({ to: '/' })
   }
 
-  const handleTestConnection = async () => {
-    setConnectionStatus('checking')
-    try {
-      await embeddrApi.system.info()
-      setConnectionStatus('ok')
-    } catch (err) {
-      console.error(err)
-      setConnectionStatus('error')
-    }
-  }
-
-  const handleTestApiKey = async () => {
-    if (!apiKey) {
-      setAuthStatus('error')
-      setAuthError('Client key is empty.')
-      return
-    }
-    setAuthStatus('checking')
-    setAuthError(null)
-    try {
-      await embeddrApi.auth.setSession({ apiKey })
-      setAuthStatus('ok')
-    } catch (err) {
-      console.error(err)
-      setAuthStatus('error')
-      setAuthError('Client key rejected by server.')
-    }
-  }
-
-  const handleCheckAuthRequired = async () => {
-    setAuthRequiredStatus('checking')
-    try {
-      await embeddrApi.auth.setSession({ apiKey: null, clear: true })
-      setAuthRequiredStatus('optional')
-      if (apiKey) {
-        await embeddrApi.auth.setSession({ apiKey })
-      }
-    } catch (err) {
-      console.error(err)
-      setAuthRequiredStatus('required')
-      if (apiKey) {
-        try {
-          await embeddrApi.auth.setSession({ apiKey })
-        } catch (restoreErr) {
-          console.error(restoreErr)
-        }
-      }
-    }
-  }
-
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
-      <Card className="mx-auto w-full max-w-6xl p-6 space-y-2">
+      <Card className="mx-auto w-full max-w-6xl p-6 space-y-4">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Welcome to Embeddr</h1>
             <p className="text-sm text-muted-foreground">
-              Set up your workspace, personalize the UI, and discover plugins
-              before you start ingesting artifacts.
+              Start with sensible defaults, ingest content quickly, and tune
+              advanced options only when you need them.
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate({ to: '/' })}>
-              Skip for now
+              Enter app
             </Button>
             <Button onClick={handleComplete}>Finish setup</Button>
           </div>
         </div>
         <Separator />
 
-        <Tabs defaultValue="profile" className="space-y-4">
-          <TabsList className="w-full justify-start gap-2">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="theme">Theme</TabsTrigger>
-            <TabsTrigger value="plugins">Plugins</TabsTrigger>
-            <TabsTrigger value="system">System</TabsTrigger>
-          </TabsList>
+        <Card className="p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">Quick start</h2>
+              <p className="text-sm text-muted-foreground">
+                Beginner path with minimal clicks. Nelumbo and Lotus handle the
+                heavy lifting; defaults can be applied in one action.
+              </p>
+            </div>
+            <Badge variant="default">Recommended</Badge>
+          </div>
+          <OnboardingWizard
+            onComplete={handleComplete}
+            onOpenSettingsTab={(tab) =>
+              navigate({ to: '/settings', search: { tab } })
+            }
+          />
+        </Card>
 
-          <TabsContent value="profile">
-            <Card className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold">
-                    Profile & client access
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Add your client key if your server requires one.
-                  </p>
-                </div>
-                <Badge variant={apiKey ? 'default' : 'secondary'}>
-                  {apiKey ? 'Client key set' : 'Client key missing'}
-                </Badge>
-              </div>
-              {instanceProfile && (
-                <div className="rounded-md border border-border/60 bg-muted/30 p-3">
-                  <div className="flex items-start gap-3">
-                    {instanceProfile.logo_url ? (
-                      <img
-                        src={instanceProfile.logo_url}
-                        alt="Instance logo"
-                        className="h-12 w-12 rounded-md object-contain bg-background"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center text-xs text-muted-foreground">
-                        LOGO
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <div className="text-sm font-semibold">
-                        {instanceProfile.name || 'Embeddr Instance'}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {instanceProfile.description ||
-                          'Connected to your local Embeddr instance.'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wide">
-                    Display name
-                  </label>
-                  <Input
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Your name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wide">
-                    Client key
-                  </label>
-                  <Input
-                    type={showKey ? 'text' : 'password'}
-                    value={apiKey ?? ''}
-                    onChange={(e) =>
-                      setApiKey(e.target.value ? e.target.value : null)
-                    }
-                    placeholder="Paste your client key"
-                  />
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Switch checked={showKey} onCheckedChange={setShowKey} />
-                    <span>Show client key</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-            <Card className="mt-4 p-4 space-y-3">
-              <div>
-                <h2 className="text-lg font-semibold">Connection checks</h2>
-                <p className="text-sm text-muted-foreground">
-                  Verify the server is reachable and whether your client key is
-                  required.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleTestConnection}
-                  disabled={connectionStatus === 'checking'}
-                >
-                  {connectionStatus === 'checking'
-                    ? 'Testing connection...'
-                    : 'Test connection'}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleTestApiKey}
-                  disabled={authStatus === 'checking'}
-                >
-                  {authStatus === 'checking'
-                    ? 'Testing client key...'
-                    : 'Test client key'}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleCheckAuthRequired}
-                  disabled={authRequiredStatus === 'checking'}
-                >
-                  {authRequiredStatus === 'checking'
-                    ? 'Checking requirement...'
-                    : 'Check client key requirement'}
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                <Badge variant="outline">
-                  Connection:{' '}
-                  {connectionStatus === 'ok'
-                    ? 'OK'
-                    : connectionStatus === 'error'
-                      ? 'Error'
-                      : 'Not tested'}
-                </Badge>
-                <Badge variant="outline">
-                  Client key:{' '}
-                  {authStatus === 'ok'
-                    ? 'Valid'
-                    : authStatus === 'error'
-                      ? 'Invalid'
-                      : 'Not tested'}
-                </Badge>
-                <Badge variant="outline">
-                  Required:{' '}
-                  {authRequiredStatus === 'required'
-                    ? 'Yes'
-                    : authRequiredStatus === 'optional'
-                      ? 'No'
-                      : 'Unknown'}
-                </Badge>
-              </div>
-              {authError && (
-                <div className="text-xs text-destructive">{authError}</div>
-              )}
-              <div className="text-xs text-muted-foreground">
-                Embeddr is local-first. No account or cloud sync is required.
-              </div>
-            </Card>
-          </TabsContent>
+        <Separator />
+
+        <Tabs defaultValue="theme" className="space-y-4">
+          <TabsList className="w-full justify-start gap-2">
+            <TabsTrigger value="theme">Personalize (optional)</TabsTrigger>
+            <TabsTrigger value="plugins">Plugins (optional)</TabsTrigger>
+            <TabsTrigger value="advanced">Advanced (optional)</TabsTrigger>
+          </TabsList>
 
           <TabsContent value="theme">
             <Card className="p-4 space-y-3">
@@ -337,7 +145,7 @@ const OnboardingPage = () => {
                 <div>
                   <h2 className="text-lg font-semibold">Theme preferences</h2>
                   <p className="text-sm text-muted-foreground">
-                    Choose how Embeddr should look by default.
+                    Optional visual preferences. You can skip this for now.
                   </p>
                 </div>
                 <Badge variant="outline">Current: {themeMode}</Badge>
@@ -423,14 +231,14 @@ const OnboardingPage = () => {
                 <div>
                   <h2 className="text-lg font-semibold">Plugins</h2>
                   <p className="text-sm text-muted-foreground">
-                    Plugins in your local plugins folder are auto-loaded.
+                    Auto-detected plugins in your local environment.
                   </p>
                 </div>
                 <Badge variant="secondary">{pluginList.length} available</Badge>
               </div>
               <div className="text-xs text-muted-foreground">
-                Disabling plugins is not wired yet. This list reflects what the
-                server has loaded.
+                Beginner setup works without touching plugins. Use this list for
+                visibility and optional tuning.
               </div>
               <ScrollArea className="h-90 pr-2">
                 <div className="space-y-2">
@@ -512,42 +320,100 @@ const OnboardingPage = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="system">
+          <TabsContent value="advanced">
             <Card className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold">System readiness</h2>
+                  <h2 className="text-lg font-semibold">
+                    Profile & client access
+                  </h2>
                   <p className="text-sm text-muted-foreground">
-                    Confirm automation, pipelines, and ingest capabilities.
+                    Optional fields for managed or secured deployments. Local
+                    installs can leave these blank.
                   </p>
                 </div>
+                <Badge variant={apiKey ? 'default' : 'secondary'}>
+                  {apiKey ? 'Client key set' : 'Client key optional'}
+                </Badge>
               </div>
-              {missingPipeline && (
-                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-900 dark:text-amber-100">
-                  <div className="text-sm font-semibold">
-                    Ingestion pipeline not set
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Open Lotus Defaults to set an ingestion workflow for new
-                    artifacts.
-                  </div>
-                  <div className="mt-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => navigate({ to: '/lotus' })}
-                    >
-                      Open Lotus
-                    </Button>
+
+              {instanceProfile && (
+                <div className="rounded-md border border-border/60 bg-muted/30 p-3">
+                  <div className="flex items-start gap-3">
+                    {instanceProfile.logo_url ? (
+                      <img
+                        src={instanceProfile.logo_url}
+                        alt="Instance logo"
+                        className="h-12 w-12 rounded-md object-contain bg-background"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                        LOGO
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <div className="text-sm font-semibold">
+                        {instanceProfile.name || 'Embeddr Instance'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {instanceProfile.description ||
+                          'Connected to your local Embeddr instance.'}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
-              <OnboardingWizard
-                onComplete={() => undefined}
-                onOpenSettingsTab={(tab) =>
-                  navigate({ to: '/settings', search: { tab } })
-                }
-              />
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wide">
+                    Display name
+                  </label>
+                  <Input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Your name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wide">
+                    Client key
+                  </label>
+                  <Input
+                    type={showKey ? 'text' : 'password'}
+                    value={apiKey ?? ''}
+                    onChange={(e) =>
+                      setApiKey(e.target.value ? e.target.value : null)
+                    }
+                    placeholder="Optional client key"
+                  />
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Switch checked={showKey} onCheckedChange={setShowKey} />
+                    <span>Show client key</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate({ to: '/access' })}
+                >
+                  Open access setup
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    navigate({ to: '/settings', search: { tab: 'automation' } })
+                  }
+                >
+                  Open advanced settings
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Local-first by default: no username/password is required unless
+                your deployment enforces it.
+              </div>
             </Card>
           </TabsContent>
         </Tabs>

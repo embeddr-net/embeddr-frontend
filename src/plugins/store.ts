@@ -12,7 +12,7 @@ import { useWorkspaceStore } from '@/store/workspaceStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { registerWindowComponent } from '@/components/ui/windowRegistry'
 import { uploadItem } from '@/lib/api/endpoints/images'
-import { BACKEND_URL } from '@/lib/api/config'
+import { BACKEND_URL, BASE_URL } from '@/lib/api/config'
 import { globalEventBus } from '@/lib/eventBus'
 import { fetchWithAuth } from '@/lib/api/fetch'
 import {
@@ -42,7 +42,7 @@ interface PluginState {
   getActions: (location: string) => Array<{ pluginId: string; def: any }>
 
   // External Plugin Loading
-  loadExternalPlugins: () => Promise<void>
+  loadExternalPlugins: (options?: { force?: boolean }) => Promise<void>
 
   // Storage for backend metadata to merge later
   backendMetadata: Record<string, any>
@@ -58,7 +58,18 @@ export const usePluginStore = create<PluginState>()(
       isLoadingExternal: false,
       hasLoadedExternal: false,
 
-      loadExternalPlugins: async () => {
+      loadExternalPlugins: async (options) => {
+        const force = options?.force ?? false
+        const state = get()
+        if (state.isLoadingExternal) {
+          return
+        }
+        if (!force && state.hasLoadedExternal) {
+          return
+        }
+        if (force) {
+          set({ hasLoadedExternal: false })
+        }
         set({ isLoadingExternal: true })
         try {
           const ensureRegistrySync = () => {
@@ -101,7 +112,7 @@ export const usePluginStore = create<PluginState>()(
           }
 
           ensureRegistrySync()
-          await loadExternalPluginsZen({ adapter })
+          await loadExternalPluginsZen({ adapter, cacheBust: force })
           set({ hasLoadedExternal: true })
         } catch (e) {
           console.error('Failed to load external plugins', e)
@@ -337,6 +348,18 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
     return {
       backendUrl: BACKEND_URL,
       getApiKey: () => useUserStore.getState().apiKey,
+      withApiKey: (url: string) => {
+        const apiKey = useUserStore.getState().apiKey
+        if (!apiKey || !url) return url
+        try {
+          const u = new URL(url, window.location.origin)
+          if (u.pathname.includes('/api/')) {
+            u.searchParams.set('api_key', apiKey)
+            return u.toString()
+          }
+        } catch {}
+        return url
+      },
       getPanels,
       subscribePanelState: (listener: (panels: any[]) => void) => {
         const store = useWindowStore
@@ -380,14 +403,22 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
     const list = async (input: {
       limit?: number
       offset?: number
+      q?: string
+      access_scope?: 'personal' | 'instance'
       type_name?: string
+      visibility?: 'all' | 'public' | 'private'
       sort?: 'new' | 'random'
       ids?: string[]
     }) => {
       const q = new URLSearchParams()
       if (input.limit !== undefined) q.append('limit', `${input.limit}`)
       if (input.offset !== undefined) q.append('offset', `${input.offset}`)
+      if (input.q) q.append('q', input.q)
+      if (input.access_scope) q.append('access_scope', input.access_scope)
       if (input.type_name) q.append('type_name', input.type_name)
+      if (input.visibility && input.visibility !== 'all') {
+        q.append('visibility', input.visibility)
+      }
       if (input.sort) q.append('sort', input.sort)
       if (input.ids?.length) input.ids.forEach((id) => q.append('ids', id))
 
@@ -404,6 +435,16 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
 
     const getContentUrl = (id: string) => {
       const base = `${BACKEND_URL}/artifacts/${id}/content`
+      const apiKey = useUserStore.getState().apiKey
+      if (apiKey) {
+        try {
+          const url = new URL(base)
+          url.searchParams.set('api_key', apiKey)
+          return url.toString()
+        } catch {
+          return `${base}?api_key=${encodeURIComponent(apiKey)}`
+        }
+      }
       return base
     }
 
@@ -457,6 +498,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
         uri?: string
         type_name?: string
         base_type_name?: string
+        visibility?: 'public' | 'private'
       },
     ) => {
       const res = await fetchWithAuth(`${BACKEND_URL}/artifacts/${id}`, {
@@ -544,7 +586,13 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       const formData = new FormData()
       formData.append('file', input.file)
 
-      const uploadRes = await fetchWithAuth(`${BACKEND_URL}${uploadPath}`, {
+      const uploadUrl = uploadPath.startsWith('http')
+        ? uploadPath
+        : uploadPath.startsWith('/api/')
+          ? `${BASE_URL}${uploadPath}`
+          : `${BACKEND_URL}${uploadPath}`
+
+      const uploadRes = await fetchWithAuth(uploadUrl, {
         method: 'POST',
         body: formData,
       })
@@ -563,8 +611,18 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       return { init, uploaded, complete }
     }
 
-    const get = async (id: string) => {
-      const res = await fetchWithAuth(`${BACKEND_URL}/artifacts/${id}`)
+    const get = async (
+      id: string,
+      input?: { include_owner_profiles?: boolean },
+    ) => {
+      const q = new URLSearchParams()
+      if (input?.include_owner_profiles) {
+        q.append('include_owner_profiles', 'true')
+      }
+
+      const res = await fetchWithAuth(
+        `${BACKEND_URL}/artifacts/${id}${q.toString() ? `?${q.toString()}` : ''}`,
+      )
       if (!res.ok) {
         const txt = await res.text()
         throw new Error(txt || 'Failed to get artifact')
@@ -650,11 +708,26 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       }
 
       if (artifactId && !url) {
+        const apiKey = useUserStore.getState().apiKey
+        const appendAuth = (base: string) => {
+          if (!apiKey) return base
+          try {
+            const u = new URL(base)
+            u.searchParams.set('api_key', apiKey)
+            return u.toString()
+          } catch {
+            return `${base}?api_key=${encodeURIComponent(apiKey)}`
+          }
+        }
         return {
           id: artifactId,
           type: hintType || 'image',
-          content_url: `${BACKEND_URL}/artifacts/${artifactId}/content`,
-          preview_url: `${BACKEND_URL}/artifacts/${artifactId}/preview`,
+          content_url: appendAuth(
+            `${BACKEND_URL}/artifacts/${artifactId}/content`,
+          ),
+          preview_url: appendAuth(
+            `${BACKEND_URL}/artifacts/${artifactId}/preview`,
+          ),
         }
       }
 
@@ -705,45 +778,30 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
     [],
   )
 
-  const comfy = useMemo(
+  const models = useMemo(
     () => ({
-      getLoras: async (page = 1, limit = 60) => {
+      list: async (input: { category: string; page?: number; limit?: number }) => {
+        const page = input.page || 1
+        const limit = input.limit || 60
+        const category = (input.category || '').trim().toLowerCase()
+        let endpoint = 'loras'
+        if (category === 'checkpoints') endpoint = 'checkpoints'
+        else if (category === 'embeddings') endpoint = 'embeddings'
+
         try {
           const res = await fetchWithAuth(
-            `${BACKEND_URL}/comfy/loras?page=${page}&limit=${limit}`,
+            `${BACKEND_URL}/comfy/${endpoint}?page=${page}&limit=${limit}`,
           )
-          if (!res.ok) return { items: [], total: 0, page, limit, pages: 0 }
-          return await res.json()
+          if (!res.ok)
+            return { items: [], total: 0, page, limit, pages: 0, category }
+          const payload = await res.json()
+          return { ...payload, category }
         } catch (e) {
-          console.error('Failed to fetch LoRAs', e)
-          return { items: [], total: 0, page, limit, pages: 0 }
+          console.error(`Failed to fetch model catalog category=${category}`, e)
+          return { items: [], total: 0, page, limit, pages: 0, category }
         }
       },
-      getCheckpoints: async (page = 1, limit = 60) => {
-        try {
-          const res = await fetchWithAuth(
-            `${BACKEND_URL}/comfy/checkpoints?page=${page}&limit=${limit}`,
-          )
-          if (!res.ok) return { items: [], total: 0, page, limit, pages: 0 }
-          return await res.json()
-        } catch (e) {
-          console.error('Failed to fetch Checkpoints', e)
-          return { items: [], total: 0, page, limit, pages: 0 }
-        }
-      },
-      getEmbeddings: async (page = 1, limit = 60) => {
-        try {
-          const res = await fetchWithAuth(
-            `${BACKEND_URL}/comfy/embeddings?page=${page}&limit=${limit}`,
-          )
-          if (!res.ok) return { items: [], total: 0, page, limit, pages: 0 }
-          return await res.json()
-        } catch (e) {
-          console.error('Failed to fetch Embeddings', e)
-          return { items: [], total: 0, page, limit, pages: 0 }
-        }
-      },
-      getSamplers: async () => {
+      listSamplers: async () => {
         try {
           const res = await fetchWithAuth(`${BACKEND_URL}/comfy/samplers`)
           if (!res.ok) return { samplers: [], schedulers: [] }
@@ -786,14 +844,14 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
           selectedImage: globalStore.selectedImage,
           selectImage: globalStore.selectImage,
         },
-        generation: {
-          workflows: generation.workflows,
-          selectedWorkflow: generation.selectedWorkflow,
-          generations: generation.generations,
-          isGenerating: generation.isGenerating,
-          generate: generation.generate,
-          setWorkflowInput: generation.setWorkflowInput,
-          selectWorkflow: generation.selectWorkflow,
+        execution: {
+          pipelines: generation.workflows,
+          selectedPipeline: generation.selectedWorkflow,
+          runs: generation.generations,
+          isRunning: generation.isGenerating,
+          run: generation.generate,
+          setPipelineInput: generation.setWorkflowInput,
+          selectPipeline: generation.selectWorkflow,
         },
       },
       ui: {
@@ -1016,7 +1074,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
         },
       },
       events: events,
-      comfy: comfy,
+      models: models,
     }
 
     return api
@@ -1034,7 +1092,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
     toastApi,
     settings,
     utils,
-    comfy,
+    models,
     security,
   ])
 }

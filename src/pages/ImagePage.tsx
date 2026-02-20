@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from '@tanstack/react-router'
-import { Spinner } from '@embeddr/react-ui/components/spinner'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Card } from '@embeddr/react-ui/components/card'
+import { Spinner } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/components/ui'
 import { ArrowLeft, GitBranch, GitCommit } from 'lucide-react'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import { fetchItem } from '@/lib/api'
 
 export default function ImagePage() {

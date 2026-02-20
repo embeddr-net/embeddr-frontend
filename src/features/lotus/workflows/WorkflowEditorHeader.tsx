@@ -1,7 +1,7 @@
 import React from 'react'
 import type { Workflow } from '@/lib/api/endpoints/workflows'
-import { Button } from '@embeddr/react-ui/components/button'
-import { CardHeader, CardTitle } from '@embeddr/react-ui/components/card'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { CardHeader, CardTitle } from '@embeddr/react-ui/components/ui'
 import { Copy, Play, Save, Trash2 } from 'lucide-react'
 
 type WorkflowEditorHeaderProps = {

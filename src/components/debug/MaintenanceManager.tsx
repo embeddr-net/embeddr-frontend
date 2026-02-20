@@ -7,8 +7,8 @@ import type {
   MaintenanceRunResponse,
   MaintenanceScript,
 } from '@/lib/api/types'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Checkbox } from '@embeddr/react-ui/components/checkbox'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Checkbox } from '@embeddr/react-ui/components/ui'
 import {
   Table,
   TableBody,
@@ -16,7 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@embeddr/react-ui/components/table'
+} from '@embeddr/react-ui/components/ui'
 import {
   Loader2,
   Trash2,
@@ -29,8 +29,8 @@ import {
   Play,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 
 interface OrphanItem {
   id: string

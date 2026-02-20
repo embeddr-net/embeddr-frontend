@@ -6,10 +6,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Badge } from '@embeddr/react-ui/components/badge'
+} from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import { AlertTriangle, LockKeyhole } from 'lucide-react'
 import {
   fetchSecurityOverviewStatus,
@@ -112,7 +112,6 @@ const AccessPage = () => {
         username: username.trim(),
         password,
       })
-      await embeddrApi.auth.setSession({ apiKey: result.key })
       setApiKey(result.key)
       await checkAuth()
     } catch (err) {

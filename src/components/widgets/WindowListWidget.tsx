@@ -1,18 +1,18 @@
 import React, { useState } from 'react'
 import { useWindowStore } from '@/store/windowStore'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@embeddr/react-ui/components/popover'
+} from '@embeddr/react-ui/components/ui'
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@embeddr/react-ui/components/context-menu'
+} from '@embeddr/react-ui/components/ui'
 import {
   Box,
   Layers,

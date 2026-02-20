@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { Check, ChevronsUpDown, Plus, Folder, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@embeddr/react-ui/components/popover'
-import { Input } from '@embeddr/react-ui/components/input'
+} from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
 import { searchArtifacts, createArtifact } from '@/lib/api/endpoints/artifacts'
 import { type Artifact } from '@/lib/api/types'
 import { toast } from 'sonner'

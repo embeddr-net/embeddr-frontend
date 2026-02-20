@@ -1,16 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Slider } from '@embeddr/react-ui/components/slider'
-import { Label } from '@embeddr/react-ui/components/label'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Slider } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/components/dropdown-menu'
+} from '@embeddr/react-ui/components/ui'
 import {
   Archive,
   Filter,

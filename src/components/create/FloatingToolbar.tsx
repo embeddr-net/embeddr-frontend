@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import {
   Check,
   FileJson,
@@ -11,7 +11,7 @@ import {
   PanelRightOpen,
   Play,
 } from 'lucide-react'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import { QueueItem } from './GenerationQueue'
 import { ZenInterface } from './ZenInterface'
 import { useGeneration } from '@/context/GenerationContext'

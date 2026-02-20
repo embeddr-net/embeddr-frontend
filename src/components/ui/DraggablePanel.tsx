@@ -6,7 +6,7 @@ import { useSettingsStore } from '@/store/settingsStore'
 import { DraggablePanel as LibDraggablePanel } from '@embeddr/react-ui'
 import { cn } from '@/lib/utils'
 import { createLogger } from '@/lib/logger'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 
 interface DraggablePanelProps {
   id: string
@@ -81,8 +81,8 @@ export function DraggablePanel({
   const mergeHoverTargetId = useWindowStore((s) => s.mergeHoverTargetId)
   const setMergeHoverTarget = useWindowStore((s) => s.setMergeHoverTarget)
   const setHoverPanelId = useWindowStore((s) => s.setHoverPanelId)
-  const windows = useWindowStore((s) => s.windows)
-  const { panelOrder, backdropWindowId } = useWindowStore()
+  const panelOrder = useWindowStore((s) => s.panelOrder)
+  const backdropWindowId = useWindowStore((s) => s.backdropWindowId)
   const safeArea = useSafeArea()
 
   // Explicitly select only this window's state to prevent re-renders when other windows update
@@ -165,7 +165,10 @@ export function DraggablePanel({
   const sizeRef = useRef(size)
   const positionRef = useRef(position)
   const lastMouseRef = useRef<{ x: number; y: number } | null>(null)
-  const liveUpdateFrameRef = useRef<number | null>(null)
+  const liveUpdateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  )
+  const lastLiveUpdateAtRef = useRef(0)
   const liveUpdatePosRef = useRef<{ x: number; y: number } | null>(null)
   const liveUpdateSizeRef = useRef<{ width: number; height: number } | null>(
     null,
@@ -182,9 +185,13 @@ export function DraggablePanel({
   }, [position])
 
   const scheduleLiveUpdate = useCallback(() => {
-    if (liveUpdateFrameRef.current) return
-    liveUpdateFrameRef.current = requestAnimationFrame(() => {
-      liveUpdateFrameRef.current = null
+    const throttleMs = 90
+    if (liveUpdateTimeoutRef.current) return
+    const elapsed = Date.now() - lastLiveUpdateAtRef.current
+    const waitMs = Math.max(0, throttleMs - elapsed)
+    liveUpdateTimeoutRef.current = setTimeout(() => {
+      liveUpdateTimeoutRef.current = null
+      lastLiveUpdateAtRef.current = Date.now()
       const nextPos = liveUpdatePosRef.current
       const nextSize = liveUpdateSizeRef.current
       if (nextPos || nextSize) {
@@ -193,8 +200,63 @@ export function DraggablePanel({
           size: nextSize ?? sizeRef.current,
         })
       }
-    })
+    }, waitMs)
   }, [id, updateWindow])
+
+  useEffect(() => {
+    return () => {
+      if (liveUpdateTimeoutRef.current) {
+        clearTimeout(liveUpdateTimeoutRef.current)
+        liveUpdateTimeoutRef.current = null
+      }
+    }
+  }, [])
+
+  const clampPositionToSafeArea = useCallback(
+    (
+      nextPos: { x: number; y: number },
+      panelSize: { width: number; height: number },
+    ) => {
+      const minX = safeArea.left
+      const minY = safeArea.top
+      const maxX = Math.max(
+        minX,
+        window.innerWidth - safeArea.right - panelSize.width,
+      )
+      const maxY = Math.max(
+        minY,
+        window.innerHeight - safeArea.bottom - panelSize.height,
+      )
+
+      return {
+        x: Math.min(Math.max(nextPos.x, minX), maxX),
+        y: Math.min(Math.max(nextPos.y, minY), maxY),
+      }
+    },
+    [safeArea.bottom, safeArea.left, safeArea.right, safeArea.top],
+  )
+
+  const clampSizeToSafeArea = useCallback(
+    (
+      nextSize: { width: number; height: number },
+      atPos: { x: number; y: number },
+    ) => {
+      const maxWidth = Math.max(
+        minWidth,
+        window.innerWidth - safeArea.right - atPos.x,
+      )
+      const maxHeight = Math.max(
+        minHeight,
+        window.innerHeight - safeArea.bottom - atPos.y,
+      )
+
+      return {
+        width: Math.min(Math.max(nextSize.width, minWidth), maxWidth),
+        height: Math.min(Math.max(nextSize.height, minHeight), maxHeight),
+      }
+    },
+    [minHeight, minWidth, safeArea.bottom, safeArea.right],
+  )
 
   useEffect(() => {
     if (windowState?.positionMode !== 'absolute') return
@@ -398,7 +460,7 @@ export function DraggablePanel({
       const el = node as HTMLElement
       const targetId = el.getAttribute('data-panel-id')
       if (!targetId || targetId === id) continue
-      const targetState = windows[targetId]
+      const targetState = useWindowStore.getState().windows[targetId]
       if (!targetState || targetState.isMinimized || targetState.groupHostId)
         continue
       const rect = el.getBoundingClientRect()
@@ -410,12 +472,18 @@ export function DraggablePanel({
       if (isInside) return targetId
     }
     return null
-  }, [id, windowState?.groupHostId, windows])
+  }, [id, windowState?.groupHostId])
 
   // Handle drag/resize end - calculate new anchor and offset
   const handleInteractionEnd = useCallback(() => {
-    const { x, y } = position
-    const { width, height } = size
+    const clampedSize = clampSizeToSafeArea(size, position)
+    const clampedPosition = clampPositionToSafeArea(position, clampedSize)
+
+    const { x, y } = clampedPosition
+    const { width, height } = clampedSize
+
+    setPosition(clampedPosition)
+    setSize(clampedSize)
 
     let anchorX: PanelState['anchorX'] = 'left'
     let offsetX = x - safeArea.left
@@ -473,8 +541,8 @@ export function DraggablePanel({
 
     // Update store for layout persistence
     updateWindow(id, {
-      position: { x, y },
-      size: { width, height },
+      position: clampedPosition,
+      size: clampedSize,
     })
 
     const targetId = findMergeTarget()
@@ -489,6 +557,8 @@ export function DraggablePanel({
     id,
     position,
     size,
+    clampPositionToSafeArea,
+    clampSizeToSafeArea,
     setState,
     updateWindow,
     findMergeTarget,
@@ -536,8 +606,9 @@ export function DraggablePanel({
       position={position}
       onPositionChange={(pos: { x: number; y: number }) => {
         isInteracting.current = true
-        setPosition(pos)
-        liveUpdatePosRef.current = pos
+        const clampedPos = clampPositionToSafeArea(pos, sizeRef.current)
+        setPosition(clampedPos)
+        liveUpdatePosRef.current = clampedPos
         scheduleLiveUpdate()
         const targetId = findMergeTarget()
         if (targetId !== mergeHoverTargetId) setMergeHoverTarget(targetId)
@@ -545,8 +616,15 @@ export function DraggablePanel({
       size={size}
       onSizeChange={(s: { width: number; height: number }) => {
         isInteracting.current = true
-        setSize(s)
-        liveUpdateSizeRef.current = s
+        const clampedSize = clampSizeToSafeArea(s, positionRef.current)
+        const clampedPos = clampPositionToSafeArea(
+          positionRef.current,
+          clampedSize,
+        )
+        setSize(clampedSize)
+        setPosition(clampedPos)
+        liveUpdateSizeRef.current = clampedSize
+        liveUpdatePosRef.current = clampedPos
         scheduleLiveUpdate()
       }}
       className={cn(className, 'embeddr-draggable-panel')}

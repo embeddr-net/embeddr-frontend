@@ -5,7 +5,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
+} from '@embeddr/react-ui/components/ui'
 
 export const OperatorArtifactsSection = () => (
   <Card>

@@ -49,10 +49,10 @@ export async function loadThemePacks(
 
   try {
     const baseUrl = (BACKEND_URL || '').replace(/\/+$/, '')
-    const hasApiPrefix = /\/api\/v1$/.test(baseUrl)
-    const apiBase = baseUrl ? `${baseUrl}${hasApiPrefix ? '' : '/api/v1'}` : ''
-    const assetBase = baseUrl ? baseUrl.replace(/\/api\/v1$/, '') : ''
-    const themeUrl = apiBase ? `${apiBase}/themes` : '/api/v1/themes'
+    const hasApiPrefix = /\/api(\/v\d+)?$/.test(baseUrl)
+    const apiBase = baseUrl ? `${baseUrl}${hasApiPrefix ? '' : '/api'}` : ''
+    const assetBase = baseUrl ? baseUrl.replace(/\/api(\/v\d+)?$/, '') : ''
+    const themeUrl = apiBase ? `${apiBase}/themes` : '/api/themes'
     const res = await fetchWithAuth(themeUrl, { cache: 'no-store' })
     if (res.ok) {
       const data = (await res.json()) as ThemePackIndex
@@ -81,13 +81,17 @@ export async function loadThemePacks(
 
   for (const url of sources) {
     try {
-      const res = await fetch(url, { cache: 'no-store' })
+      const resolvedUrl = new URL(url, window.location.href)
+      const isSameOrigin = resolvedUrl.origin === window.location.origin
+      const res = isSameOrigin
+        ? await fetchWithAuth(resolvedUrl.toString(), { cache: 'no-store' })
+        : await fetch(resolvedUrl.toString(), { cache: 'no-store' })
       if (!res.ok) continue
       const data = (await res.json()) as ThemePackIndex | ThemePackManifest
       if ('packs' in data) {
         addIndex(data)
       } else {
-        const baseUrl = new URL(url, window.location.href)
+        const baseUrl = resolvedUrl
         const withResolvedAssets: ThemePack = {
           ...data,
           iconUrl:

@@ -6,22 +6,22 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Button } from '@embeddr/react-ui/components/button'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
-import { Skeleton } from '@embeddr/react-ui/components/skeleton'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Label } from '@embeddr/react-ui/components/label'
-import { Textarea } from '@embeddr/react-ui/components/textarea'
-import { Switch } from '@embeddr/react-ui/components/switch'
+} from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Skeleton } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { Textarea } from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import { Play, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -31,7 +31,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@embeddr/react-ui/components/dialog'
+} from '@embeddr/react-ui/components/ui'
 import type { LotusCapability } from '@/lib/api/types'
 
 type LotusActionCapability = LotusCapability & {
@@ -85,7 +85,8 @@ export const PluginsList = () => {
   const actions = useMemo(() => {
     const items = (data?.items || []) as LotusActionCapability[]
     return items.filter((cap) => {
-      const expose = cap.data?.expose
+      // Check both typed action.expose and legacy data.expose
+      const expose = (cap as any).action?.expose || cap.data?.expose
       return !expose || expose.api !== false
     })
   }, [data])

@@ -1,5 +1,5 @@
-import { Card } from '@embeddr/react-ui/components/card'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Card } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
 import {
   ArrowLeftRight,
   Eye,
@@ -14,7 +14,7 @@ import {
   ZoomIn,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { MediaCanvas } from '@embeddr/react-ui/components/lightbox'
+import { MediaCanvas } from '@embeddr/react-ui/components/embeddr'
 import { useGeneration } from '@/context/GenerationContext'
 import { useGlobalStore } from '@/store/globalStore'
 import { usePanelStore } from '@/store/panelStore'

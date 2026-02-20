@@ -1,8 +1,8 @@
 // src/features/lotus/LotusPreviewPane.tsx
 import React from 'react'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Button } from '@embeddr/react-ui/components/button'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import type { LotusResultItem } from './types'
 import { cn } from '@/lib/utils'
 import {

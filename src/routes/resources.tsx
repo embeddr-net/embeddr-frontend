@@ -6,15 +6,15 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
+} from '@embeddr/react-ui/components/ui'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/tabs'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Badge } from '@embeddr/react-ui/components/badge'
+} from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import { Search, Database, FileBox, Cpu, Activity } from 'lucide-react'
 import { SystemResourceBar } from '@embeddr/react-ui'
 
@@ -54,15 +54,19 @@ function ResourcesPage() {
   }, [api])
 
   const loadLoras = (page: number) => {
-    api.comfy.getLoras(page, limit).then(setLoras)
+    api.models.list({ category: 'loras', page, limit }).then(setLoras)
   }
 
   const loadCheckpoints = (page: number) => {
-    api.comfy.getCheckpoints(page, limit).then(setCheckpoints)
+    api.models
+      .list({ category: 'checkpoints', page, limit })
+      .then(setCheckpoints)
   }
 
   const loadEmbeddings = (page: number) => {
-    api.comfy.getEmbeddings(page, limit).then(setEmbeddings)
+    api.models
+      .list({ category: 'embeddings', page, limit })
+      .then(setEmbeddings)
   }
 
   const filterItems = (items: string[]) =>

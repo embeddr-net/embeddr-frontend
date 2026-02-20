@@ -1,6 +1,6 @@
 import React from 'react'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Textarea } from '@embeddr/react-ui/components/textarea'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Textarea } from '@embeddr/react-ui/components/ui'
 
 export function ZenInput({
   input,

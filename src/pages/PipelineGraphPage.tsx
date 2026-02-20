@@ -2,39 +2,39 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Card } from '@embeddr/react-ui/components/card'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Label } from '@embeddr/react-ui/components/label'
-import { Switch } from '@embeddr/react-ui/components/switch'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/components/dialog'
+} from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
-import { Separator } from '@embeddr/react-ui/components/separator'
-import { Textarea } from '@embeddr/react-ui/components/textarea'
+} from '@embeddr/react-ui/components/ui'
+import { Separator } from '@embeddr/react-ui/components/ui'
+import { Textarea } from '@embeddr/react-ui/components/ui'
 import {
   ResizablePanel,
   ResizablePanelGroup,
   ResizableHandle,
-} from '@embeddr/react-ui/components/resizable'
+} from '@embeddr/react-ui/components/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/components/dropdown-menu'
+} from '@embeddr/react-ui/components/ui'
 import { PipelineGraphEditor } from '@/features/pipelines/PipelineGraphEditor'
 import type { AutomationListResponse, LotusCapability } from '@/lib/api/types'
 import { embeddrApi } from '@/lib/api/client'
@@ -256,7 +256,7 @@ export default function PipelineGraphPage({
     setInputErrors({})
   }, [selectedRule?.id])
 
-  const { data: comfyWorkflows } = usePluginWorkflows('embeddr-comfyui')
+  const { data: comfyWorkflows } = usePluginWorkflows()
   const pluginContext = useMemo(
     () => ({ comfyWorkflows: comfyWorkflows || [] }),
     [comfyWorkflows],

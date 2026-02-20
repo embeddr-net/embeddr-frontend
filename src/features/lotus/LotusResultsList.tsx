@@ -1,8 +1,8 @@
 // src/features/lotus/LotusResultsList.tsx
 import React from 'react'
 import { cn } from '@/lib/utils'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
-import { Badge } from '@embeddr/react-ui/components/badge'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import type { LotusResultItem } from './types'
 import {
   Sparkles,

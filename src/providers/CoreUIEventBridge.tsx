@@ -85,8 +85,8 @@ export function CoreUIEventBridge() {
 
       // If targetWindowId provided, emit to that window instead of spawning new.
       // (Optional: you can implement "target existing window" later.)
-      const windowId = p.targetWindowId ?? panelId
-      const componentId = 'embeddr-mediaframe-media-frame-panel'
+      const windowId = p.targetWindowId ?? panelId ?? 'core-media-frame'
+      const componentId = 'embeddr-core-media-frame-panel'
       const props = {
         // ✅ critical: pass windowId down so storage keys are unique per instance
         // your DynamicPluginComponent already passes windowId prop
@@ -95,15 +95,11 @@ export function CoreUIEventBridge() {
         initialSelectIndex: p.selectIndex ?? 0,
         // you can add "replace" semantics inside the panel with these
         intent: { mode },
-        panelId,
+        panelId: panelId ?? windowId,
       }
 
-      if (windowId) {
-        // if you want "open or reuse", use open() with stable id
-        api.windows.open(windowId, title, componentId, props)
-      } else {
-        api.windows.spawn(componentId, title, props)
-      }
+      // Open-or-reuse with stable ID so local panel state survives refreshes.
+      api.windows.open(windowId, title, componentId, props)
 
       if (focus) {
         // bringToFront is on window store, but API doesn’t expose it directly;
@@ -132,21 +128,17 @@ export function CoreUIEventBridge() {
         return
       }
 
-      const windowId = p.targetWindowId ?? panelId
-      const componentId = 'embeddr-mediaframe-lightbox-panel'
+      const windowId = p.targetWindowId ?? panelId ?? 'core-lightbox'
+      const componentId = 'embeddr-media-tools-lightbox-panel'
       const props = {
         initialItems: items,
         initialMode: mode,
         initialSelectIndex: p.selectIndex ?? 0,
         showThumbnails: p.showThumbnails ?? true,
-        panelId,
+        panelId: panelId ?? windowId,
       }
 
-      if (windowId) {
-        api.windows.open(windowId, title, componentId, props)
-      } else {
-        api.windows.spawn(componentId, title, props)
-      }
+      api.windows.open(windowId, title, componentId, props)
 
       if (focus) {
         // optional: add focus behavior later
@@ -164,18 +156,14 @@ export function CoreUIEventBridge() {
         : Array.isArray(p.artifact_ids)
           ? p.artifact_ids.slice(0, 2).map((id: string) => ({ artifactId: id }))
           : [p.primary, p.secondary].filter(Boolean)
-      const windowId = p.targetWindowId ?? panelId
-      const componentId = 'embeddr-mediaframe-compare-panel'
+      const windowId = p.targetWindowId ?? panelId ?? 'core-compare'
+      const componentId = 'embeddr-media-tools-compare-panel'
       const props = {
         initialItems: items,
-        panelId,
+        panelId: panelId ?? windowId,
       }
 
-      if (windowId) {
-        api.windows.open(windowId, title, componentId, props)
-      } else {
-        api.windows.spawn(componentId, title, props)
-      }
+      api.windows.open(windowId, title, componentId, props)
 
       if (focus) {
         // optional: add focus behavior later

@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Spinner } from '@embeddr/react-ui/components/spinner'
+import { Spinner } from '@embeddr/react-ui/components/ui'
 
 const ZenPage = React.lazy(() => import('@/pages/ZenPage'))
 

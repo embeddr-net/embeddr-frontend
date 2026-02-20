@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button } from '@embeddr/react-ui/components/button'
+import { Button } from '@embeddr/react-ui/components/ui'
 import { FileJson, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Workflow } from '@/lib/api/endpoints/workflows'

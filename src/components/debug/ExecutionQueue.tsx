@@ -7,26 +7,26 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@embeddr/react-ui/components/table'
-import { Input } from '@embeddr/react-ui/components/input'
+} from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
+} from '@embeddr/react-ui/components/ui'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/components/accordion'
-import { Badge } from '@embeddr/react-ui/components/badge'
-import { Card, CardHeader, CardTitle } from '@embeddr/react-ui/components/card'
-import { Button } from '@embeddr/react-ui/components/button'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
-import { Separator } from '@embeddr/react-ui/components/separator'
+} from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
+import { Card, CardHeader, CardTitle } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Separator } from '@embeddr/react-ui/components/ui'
 import { globalEventBus } from '@/lib/eventBus'
 import { cn } from '@embeddr/react-ui'
 import {

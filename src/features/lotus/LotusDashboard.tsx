@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Button } from '@embeddr/react-ui/components/button'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import { toast } from 'sonner'
 import { useEmbeddrAPI } from '@/plugins/store'
 import { embeddrApi } from '@/lib/api/client'
@@ -13,14 +13,12 @@ import { LotusConfigsTab } from './components/tabs/LotusConfigsTab'
 import { LotusDefaultsTab } from './components/tabs/LotusDefaultsTab'
 import { LotusFinderTab } from './components/tabs/LotusFinderTab'
 import { LotusCapabilitiesTab } from './components/tabs/LotusCapabilitiesTab'
-import { LotusFeaturesTab } from './components/tabs/LotusFeaturesTab'
 import {
   LayoutDashboard,
   HardDrive,
   Settings,
   Search,
   Cpu,
-  Paperclip,
 } from 'lucide-react'
 import { useCommandBarStore } from '@/store/commandBarStore'
 import { globalEventBus } from '@/lib/eventBus'
@@ -222,19 +220,6 @@ export function LotusDashboard() {
           size="icon-sm"
           className={cn(
             'h-6 w-6',
-            activeTab === 'features' && 'bg-accent text-accent-foreground',
-          )}
-          onClick={() => setActiveTab('features')}
-          title="Features"
-        >
-          <Paperclip className="w-3.5 h-3.5" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className={cn(
-            'h-6 w-6',
             activeTab === 'storage' && 'bg-accent text-accent-foreground',
           )}
           onClick={() => setActiveTab('storage')}
@@ -415,7 +400,6 @@ export function LotusDashboard() {
 
   const tabs = [
     { value: 'overview', label: 'Overview' },
-    { value: 'features', label: 'Features' },
     { value: 'storage', label: 'Storage' },
     { value: 'configs', label: 'Configs' },
     { value: 'defaults', label: 'Defaults' },
@@ -529,7 +513,7 @@ export function LotusDashboard() {
                 } else if (section === 'defaults') {
                   setActiveTab('defaults')
                 } else if (section === 'compute') {
-                  setActiveTab('workflows')
+                  setActiveTab('configs')
                 } else if (section === 'llm' || section === 'embedding') {
                   setActiveTab('configs')
                 } else {
@@ -540,13 +524,7 @@ export function LotusDashboard() {
           </div>
         )}
 
-        {activeTab !== 'overview' && activeTab === 'features' && (
-          <div className="h-full">
-            <LotusFeaturesTab />
-          </div>
-        )}
-
-        {activeTab !== 'overview' && activeTab !== 'features' && (
+        {activeTab !== 'overview' && (
           <ScrollArea className="h-full pr-3" type="always">
             <div className="mx-auto w-full">
               {activeTab === 'storage' && (

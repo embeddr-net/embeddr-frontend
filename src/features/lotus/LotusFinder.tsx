@@ -1,6 +1,6 @@
 // src/features/lotus/LotusFinder.tsx
 import React from 'react'
-import { Dialog, DialogContent } from '@embeddr/react-ui/components/dialog'
+import { Dialog, DialogContent } from '@embeddr/react-ui/components/ui'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
@@ -823,10 +823,14 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
     ) {
       try {
         const data = item.data ?? {}
-        if (!data.plugin_name || !data.action_name) {
+        const pluginName = data.plugin_name || data.plugin
+        const actionName = data.action_name || data.action
+        if (!pluginName || !actionName) {
           toast.error('Capability missing plugin or action name.')
           return
         }
+        data.plugin_name = pluginName
+        data.action_name = actionName
         const out = (await embeddrApi.lotus.dispatch(
           item.id,
           item.kind as 'action',
@@ -882,10 +886,12 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
       const title = resolved?.title || resource?.title || item.title
       const type = resolved?.type || resource?.type || 'web'
       if (!url) return toast.info('No resource URL available.')
-      apiRef.current.windows.spawn(
-        'embeddr-mediaframe-media-frame-panel',
+      apiRef.current.windows.open(
+        'core-media-frame',
         'Media Frame',
+        'embeddr-core-media-frame-panel',
         {
+          panelId: 'core-media-frame',
           initialItems: [
             {
               id: resource?.id || item.id,

@@ -2,20 +2,21 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import { toast } from 'sonner'
-import type { Generation, Workflow } from '@/lib/api/types'
+import type { ExecutionRecord, PipelineSpec } from '@/lib/api/types'
 import { BACKEND_URL } from '@/lib/api/config'
 import { globalEventBus } from '@/lib/eventBus'
+import { getWorkflowEventSourceAliases } from '@/lib/plugins/workflowProvider'
 // import type { EmbeddrMessage } from '@embeddr/react-ui/types/websocket'
 // Using any for message type to avoid build issues with deep imports
 type EmbeddrMessage = any
 
 interface GenerationState {
   // Data
-  workflows: Array<Workflow>
-  selectedWorkflow: Workflow | null
+  workflows: Array<PipelineSpec>
+  selectedWorkflow: PipelineSpec | null
   workflowInputs: Record<string, any> // Map of nodeId -> inputs
   savedInputs: Record<string, Record<string, any>> // Map of workflowId -> inputs
-  generations: Array<Generation>
+  generations: Array<ExecutionRecord>
   selectedGenerationId: string | null
 
   // UI State
@@ -33,10 +34,10 @@ interface GenerationState {
   currentPreview: string | null
 
   // Actions
-  setWorkflows: (workflows: Array<Workflow>) => void
-  selectWorkflow: (workflow: Workflow) => void
+  setWorkflows: (workflows: Array<PipelineSpec>) => void
+  selectWorkflow: (workflow: PipelineSpec) => void
   setWorkflowInput: (nodeId: string, field: string, value: any) => void
-  selectGeneration: (generation: Generation) => void
+  selectGeneration: (generation: ExecutionRecord) => void
   toggleFollowLatest: () => void
   selectNextGeneration: () => void
   selectPreviousGeneration: () => void
@@ -100,7 +101,7 @@ export const useGenerationStore = create<GenerationState>()(
 
         // Embeddr Events
         globalEventBus.on('generation_submitted', (genData: unknown) => {
-          const payload = genData as Generation
+          const payload = genData as ExecutionRecord
           set((state) => {
             const exists = state.generations.some((g) => g.id === payload.id)
             if (exists) {
@@ -195,15 +196,16 @@ export const useGenerationStore = create<GenerationState>()(
           }
         })
 
-        // ComfyUI Events (via Provider mapping to comfyui:type)
-        globalEventBus.on('comfyui:status', (data: any) => {
+        const workflowSourceAliases = getWorkflowEventSourceAliases()
+
+        const handleWorkflowStatus = (data: any) => {
           const remaining = data?.status?.exec_info?.queue_remaining
           if (typeof remaining === 'number') {
             set({ queueStatus: { remaining } })
           }
-        })
+        }
 
-        globalEventBus.on('comfyui:execution_start', (data: any) => {
+        const handleWorkflowExecutionStart = (data: any) => {
           console.log('Execution started for prompt:', data.prompt_id)
           set((state) => ({
             isGenerating: true,
@@ -215,18 +217,18 @@ export const useGenerationStore = create<GenerationState>()(
             ),
           }))
           globalEventBus.emit('generation:start', data.prompt_id)
-        })
+        }
 
-        globalEventBus.on('comfyui:preview', (data: any) => {
+        const handleWorkflowPreview = (data: any) => {
           set((state) => ({
             currentPreview: data,
             generations: state.generations.map((g) =>
               g.status === 'processing' ? { ...g, preview_url: data } : g,
             ),
           }))
-        })
+        }
 
-        globalEventBus.on('comfyui:execution_error', (data: any) => {
+        const handleWorkflowExecutionError = (data: any) => {
           set((state) => ({
             isGenerating: false,
             currentPreview: null,
@@ -244,9 +246,9 @@ export const useGenerationStore = create<GenerationState>()(
             prompt_id: data.prompt_id,
             error: data.exception_message,
           })
-        })
+        }
 
-        globalEventBus.on('comfyui:executed', (data: any) => {
+        const handleWorkflowExecuted = (data: any) => {
           const { generations, followLatest } = get()
           const gen = generations.find((g) => g.prompt_id === data.prompt_id)
           if (gen) {
@@ -321,6 +323,20 @@ export const useGenerationStore = create<GenerationState>()(
               prompt_id: data.prompt_id,
             })
           }
+        }
+
+        workflowSourceAliases.forEach((source) => {
+          globalEventBus.on(`${source}:status`, handleWorkflowStatus)
+          globalEventBus.on(
+            `${source}:execution_start`,
+            handleWorkflowExecutionStart,
+          )
+          globalEventBus.on(`${source}:preview`, handleWorkflowPreview)
+          globalEventBus.on(
+            `${source}:execution_error`,
+            handleWorkflowExecutionError,
+          )
+          globalEventBus.on(`${source}:executed`, handleWorkflowExecuted)
         })
       },
 
@@ -445,7 +461,7 @@ export const useGenerationStore = create<GenerationState>()(
 
           // Map backend Generation to frontend Generation
           // The backend returns the exact shape we want now, mostly
-          const historyItems: Array<Generation> = data.map((gen: any) => {
+          const historyItems: Array<ExecutionRecord> = data.map((gen: any) => {
             // Extract images from outputs if not present
             let images = gen.images || []
 
@@ -598,7 +614,7 @@ export const useGenerationStore = create<GenerationState>()(
         )
 
         const generationId = uuidv4()
-        const newGeneration: Generation = {
+        const newGeneration: ExecutionRecord = {
           id: generationId,
           status: 'pending',
           prompt: selectedWorkflow.name,

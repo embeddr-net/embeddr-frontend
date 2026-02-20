@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Button } from '@embeddr/react-ui/components/button'
-import { Input } from '@embeddr/react-ui/components/input'
-import { Label } from '@embeddr/react-ui/components/label'
-import { ScrollArea } from '@embeddr/react-ui/components/scroll-area'
+import { Button } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/components/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/select'
-import { Slider } from '@embeddr/react-ui/components/slider'
-import { Switch } from '@embeddr/react-ui/components/switch'
+} from '@embeddr/react-ui/components/ui'
+import { Slider } from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/components/ui'
 import {
   Eye,
   EyeOff,
@@ -55,19 +55,20 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/card'
-import { Badge } from '@embeddr/react-ui/components/badge'
+} from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/components/ui'
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@embeddr/react-ui/components/avatar'
+} from '@embeddr/react-ui/components/ui'
 import { toast } from 'sonner'
 import { useGeneration } from '@/context/GenerationContext'
 import { useLotus } from '@/providers/LotusProvider'
 import { usePluginStore, useEmbeddrAPI } from '@/plugins/store'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { CommandBarCustomizer } from '@/components/settings/CommandBarCustomizer'
+import { HotkeysSettings } from '@/components/settings/HotkeysSettings'
 
 function TabScrollArea({ children }: { children: React.ReactNode }) {
   return <div className="min-h-full w-full p-3 flex flex-col">{children}</div>
@@ -215,20 +216,15 @@ export function ZenPluginsTab() {
   const { plugins, activePlugins, activatePlugin, deactivatePlugin } =
     usePluginStore()
   const api = useEmbeddrAPI()
-  const [pluginSettings, setPluginSettings] = useLocalStorage<
-    Record<string, Record<string, any>>
-  >('zen-plugin-settings', {})
+  const { pluginSettings, setPluginSetting } = useSettingsStore(
+    useShallow((s) => ({
+      pluginSettings: s.pluginSettings,
+      setPluginSetting: s.setPluginSetting,
+    })),
+  )
 
   const onUpdateSetting = (pluginId: string, key: string, value: any) => {
-    setPluginSettings((prev) => ({
-      ...prev,
-      [pluginId]: {
-        ...(prev[pluginId] || {}),
-        [key]: value,
-      },
-    }))
-    // Trigger update for other listeners if needed
-    window.dispatchEvent(new Event('local-storage'))
+    setPluginSetting(pluginId, key, value)
   }
 
   const onResetPanels = (plugin: any) => {
@@ -818,6 +814,8 @@ export function ZenPersonalizationTab() {
                 </div>
               </div>
             </div>
+
+            <HotkeysSettings />
           </div>
         </div>
 
