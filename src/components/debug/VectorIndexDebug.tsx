@@ -1,17 +1,17 @@
 import React from 'react'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Card } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Card } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
-import { Checkbox } from '@embeddr/react-ui/components/ui'
-import { Separator } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Checkbox } from '@embeddr/react-ui/ui'
+import { Separator } from '@embeddr/react-ui/ui'
 import { RefreshCcw, Database, AlertTriangle } from 'lucide-react'
 import { embeddrApi } from '@/lib/api/client'
 

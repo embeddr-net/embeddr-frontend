@@ -1,18 +1,18 @@
 import React, { useState } from 'react'
 import { useWindowStore } from '@/store/windowStore'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Box,
   Layers,
@@ -32,6 +32,7 @@ export function WindowListWidget() {
     panelOrder,
     backdropWindowId,
     openWindow,
+    spawnWindow,
     minimizeWindow,
     restoreWindow,
     bringToFront,
@@ -44,6 +45,7 @@ export function WindowListWidget() {
       panelOrder: s.panelOrder,
       backdropWindowId: s.backdropWindowId,
       openWindow: s.openWindow,
+      spawnWindow: s.spawnWindow,
       minimizeWindow: s.minimizeWindow,
       restoreWindow: s.restoreWindow,
       bringToFront: s.bringToFront,
@@ -106,30 +108,19 @@ export function WindowListWidget() {
       >
         <div className="flex flex-col gap-1 pb-2">
           <Button
-            variant={
-              windows['zen-toolbox'] && !windows['zen-toolbox'].isMinimized
-                ? 'secondary'
-                : 'ghost'
-            }
+            variant="ghost"
             size="sm"
             className="w-full justify-start h-8 text-xs font-normal"
             onClick={() => {
-              const windowId = 'zen-toolbox'
-              const win = windows[windowId]
-              if (!win) {
-                openWindow({
-                  id: windowId,
-                  title: 'Toolbox',
-                  componentId: 'core-toolbox',
-                })
-                return
-              }
-              if (win.isMinimized) restoreWindow(windowId)
-              bringToFront(windowId)
+              spawnWindow('embeddr-core-control-panel', 'Control Panel', {
+                pluginId: 'embeddr-core',
+                componentName: 'ControlPanel',
+                panelMode: 'single',
+              })
             }}
           >
             <Box className="h-3.5 w-3.5 mr-2" />
-            Toolbox
+            Control Panel
           </Button>
           <div className="h-px bg-border/60 mx-1" />
         </div>

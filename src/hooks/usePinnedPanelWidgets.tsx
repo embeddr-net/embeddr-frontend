@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import { Box } from 'lucide-react'
 import { useCommandBarStore } from '@/store/commandBarStore'
 import { usePluginStore } from '@/plugins/store'

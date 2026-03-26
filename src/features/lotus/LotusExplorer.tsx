@@ -3,7 +3,7 @@ import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { LotusInspector } from './LotusInspector'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
@@ -16,10 +16,10 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import { embeddrApi } from '@/lib/api/client'
 
 interface LotusQueryResponse {

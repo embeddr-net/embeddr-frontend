@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import { EmbeddrDnDTypes } from '@embeddr/react-ui'
 import {
   Archive,
@@ -24,7 +24,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import type { PromptImage } from '@/lib/api'
 import { useGlobalStore } from '@/store/globalStore'
 import { useLineageStore } from '@/store/lineageStore'

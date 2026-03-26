@@ -5,8 +5,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import {
   Dialog,
   DialogContent,
@@ -14,14 +14,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { Database, FileImage, Folder, RefreshCw } from 'lucide-react'
 import { embeddrApi } from '@/lib/api/client'
 import { useMemo, useState } from 'react'

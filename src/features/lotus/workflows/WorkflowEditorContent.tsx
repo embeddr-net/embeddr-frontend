@@ -1,17 +1,17 @@
 import React, { useMemo, useState } from 'react'
 import type { Workflow } from '@/lib/api/endpoints/workflows'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
-import { Separator } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Separator } from '@embeddr/react-ui/ui'
 import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react'
 import type { LotusResultItem } from '../types'
 import { type PrimitiveDefinition } from './PrimitiveCard'

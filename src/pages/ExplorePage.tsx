@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Card } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/ui'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { Switch } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Switch } from '@embeddr/react-ui/ui'
 
-import { Label } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import {
   ClockPlus,
   FolderSyncIcon,
@@ -23,10 +23,10 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import { Spinner } from '@embeddr/react-ui/components/ui'
+import { Spinner } from '@embeddr/react-ui/ui'
 import { useNavigate } from '@tanstack/react-router'
 import { useImageDialog } from '@embeddr/react-ui/hooks'
-import { Input } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/ui'
 import type { PromptImage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import {

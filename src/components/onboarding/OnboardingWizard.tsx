@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Card } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { Separator } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Card } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { Separator } from '@embeddr/react-ui/ui'
 import { embeddrApi } from '@/lib/api/client'
 import type {
   AutomationListResponse,

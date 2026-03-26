@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Card } from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { Label } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
-import { Switch } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Card } from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { Label } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
+import { Switch } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { embeddrApi } from '@/lib/api/client'
 
@@ -61,6 +62,7 @@ export function TransportAccessSettings() {
     capability_allow: {},
   })
   const [capSearch, setCapSearch] = useState('')
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   const { data: policyResponse, isLoading: isPolicyLoading } = useQuery({
     queryKey: ['config', 'transport-policy'],
@@ -269,12 +271,17 @@ export function TransportAccessSettings() {
       <div className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold">Transport Access</h3>
         <p className="text-xs text-muted-foreground">
-          Use this policy to control which transports can invoke plugin
-          capabilities. When enabled, this policy is the base allow list even
-          for admin client keys.
+          Control which transports (API, Lotus, MCP, CLI) can invoke plugin
+          capabilities. When enabled, this policy applies as the base allow list
+          even for admin client keys.
         </p>
       </div>
 
+      {isPolicyLoading && (
+        <div className="text-xs text-muted-foreground">Loading policy…</div>
+      )}
+
+      {/* Policy enable + default transport toggles */}
       <Card className="p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -291,32 +298,43 @@ export function TransportAccessSettings() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {enabledTransports.map((transport) => (
-            <div
-              key={transport.key}
-              className="flex items-center justify-between gap-3 rounded border border-border/60 p-3"
-            >
-              <div>
+        <div
+          className={cn(
+            'space-y-3 transition-opacity',
+            !policy.enabled && 'opacity-40 pointer-events-none',
+          )}
+        >
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Default transport access
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {enabledTransports.map((transport) => (
+              <div
+                key={transport.key}
+                className="flex items-center justify-between gap-3 rounded border border-border/60 p-3"
+              >
                 <div className="flex items-center gap-2">
                   {renderLogo(transport.plugin)}
                   <div className="text-sm font-medium">{transport.label}</div>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Default allow
-                </div>
+                <Switch
+                  checked={Boolean(policy.default_allow?.[transport.key])}
+                  onCheckedChange={(value) =>
+                    updateDefaultAllow(transport.key, Boolean(value))
+                  }
+                />
               </div>
-              <Switch
-                checked={Boolean(policy.default_allow?.[transport.key])}
-                onCheckedChange={(value) =>
-                  updateDefaultAllow(transport.key, Boolean(value))
-                }
-              />
-            </div>
-          ))}
+            ))}
+          </div>
+          {enabledTransports.length === 1 && (
+            <p className="text-xs text-muted-foreground">
+              Only the API transport is available. Install transport plugins to
+              manage MCP/CLI access.
+            </p>
+          )}
         </div>
 
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-2 pt-2 border-t">
           <Button
             variant="outline"
             size="sm"
@@ -335,138 +353,178 @@ export function TransportAccessSettings() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <Card className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-semibold">Plugin access</div>
-            <Badge variant="outline">{plugins.length} plugins</Badge>
-          </div>
-          <ScrollArea className="h-[360px] pr-2">
-            <div className="space-y-2">
-              {plugins.map((plugin) => (
-                <div
-                  key={plugin}
-                  className="flex items-center justify-between gap-3 rounded border border-border/60 p-2"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    {renderLogo(plugin)}
-                    <div className="text-xs font-medium truncate">{plugin}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {enabledTransports.map((transport) => {
-                      const fallback =
-                        policy.default_allow?.[transport.key] ?? false
-                      const explicit =
-                        policy.plugin_allow?.[plugin]?.[transport.key]
-                      const checked = explicit ?? fallback
-                      return (
-                        <div
-                          key={`${plugin}-${transport.key}`}
-                          className="flex items-center gap-1"
-                        >
-                          <Label className="text-[10px] uppercase text-muted-foreground">
-                            {transport.label}
-                          </Label>
-                          <Switch
-                            checked={checked}
-                            onCheckedChange={(value) =>
-                              updatePluginAllow(
-                                plugin,
-                                transport.key,
-                                Boolean(value),
-                              )
-                            }
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-              {plugins.length === 0 && (
-                <div className="text-xs text-muted-foreground">
-                  No plugins found.
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </Card>
+      {/* Advanced overrides — collapsed by default */}
+      <button
+        type="button"
+        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full"
+        onClick={() => setShowAdvanced((v) => !v)}
+      >
+        {showAdvanced ? (
+          <ChevronDown className="h-4 w-4" />
+        ) : (
+          <ChevronRight className="h-4 w-4" />
+        )}
+        Advanced overrides
+        <span className="text-xs font-normal ml-1">
+          (per-plugin and per-capability)
+        </span>
+      </button>
 
-        <Card className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-semibold">Capability access</div>
-            <Badge variant="outline">{caps.length} actions</Badge>
-          </div>
-          <Input
-            value={capSearch}
-            onChange={(event) => setCapSearch(event.target.value)}
-            placeholder="Filter capabilities by id or title"
-          />
-          <ScrollArea className="h-[320px] pr-2">
-            <div className="space-y-2">
-              {caps.map((cap) => (
-                <div
-                  key={cap.id}
-                  className={cn(
-                    'flex items-center justify-between gap-3 rounded border border-border/60 p-2',
-                  )}
-                >
-                  <div className="min-w-0 flex items-center gap-2">
-                    {renderLogo(cap.plugin)}
-                    <div className="text-xs font-medium truncate">{cap.id}</div>
-                    <div className="text-[10px] text-muted-foreground truncate">
-                      {cap.title}
+      {showAdvanced && (
+        <div
+          className={cn(
+            'grid grid-cols-1 xl:grid-cols-2 gap-4 transition-opacity',
+            !policy.enabled && 'opacity-40 pointer-events-none',
+          )}
+        >
+          <Card className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold">Plugin overrides</div>
+              <Badge variant="outline">{plugins.length} plugins</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Override default access per plugin. Switches shown in{' '}
+              <span className="text-foreground">bold</span> differ from the
+              default.
+            </p>
+            <ScrollArea className="h-90 pr-2">
+              <div className="space-y-2">
+                {plugins.map((plugin) => (
+                  <div
+                    key={plugin}
+                    className="flex items-center justify-between gap-3 rounded border border-border/60 p-2"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {renderLogo(plugin)}
+                      <div className="text-xs font-medium truncate">
+                        {plugin}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {enabledTransports.map((transport) => {
+                        const fallback =
+                          policy.default_allow?.[transport.key] ?? false
+                        const explicit =
+                          policy.plugin_allow?.[plugin]?.[transport.key]
+                        const checked = explicit ?? fallback
+                        const hasOverride = explicit !== undefined
+                        return (
+                          <div
+                            key={`${plugin}-${transport.key}`}
+                            className="flex items-center gap-1"
+                          >
+                            <Label
+                              className={cn(
+                                'text-[10px] uppercase',
+                                hasOverride
+                                  ? 'text-foreground font-semibold'
+                                  : 'text-muted-foreground',
+                              )}
+                            >
+                              {transport.label}
+                            </Label>
+                            <Switch
+                              checked={checked}
+                              onCheckedChange={(value) =>
+                                updatePluginAllow(
+                                  plugin,
+                                  transport.key,
+                                  Boolean(value),
+                                )
+                              }
+                            />
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {enabledTransports.map((transport) => {
-                      const fallback =
-                        policy.default_allow?.[transport.key] ?? false
-                      const explicit =
-                        policy.capability_allow?.[cap.id]?.[transport.key]
-                      const checked = explicit ?? fallback
-                      return (
-                        <div
-                          key={`${cap.id}-${transport.key}`}
-                          className="flex items-center gap-1"
-                        >
-                          <Label className="text-[10px] uppercase text-muted-foreground">
-                            {transport.label}
-                          </Label>
-                          <Switch
-                            checked={checked}
-                            onCheckedChange={(value) =>
-                              updateCapabilityAllow(
-                                cap.id,
-                                transport.key,
-                                Boolean(value),
-                              )
-                            }
-                          />
-                        </div>
-                      )
-                    })}
+                ))}
+                {plugins.length === 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    No plugins found.
                   </div>
-                </div>
-              ))}
-              {caps.length === 0 && (
-                <div className="text-xs text-muted-foreground">
-                  No action capabilities found.
-                </div>
-              )}
+                )}
+              </div>
+            </ScrollArea>
+          </Card>
+
+          <Card className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold">Capability overrides</div>
+              <Badge variant="outline">{caps.length} actions</Badge>
             </div>
-          </ScrollArea>
-        </Card>
-      </div>
-
-      {isPolicyLoading && (
-        <div className="text-xs text-muted-foreground">Loading policy…</div>
-      )}
-
-      {enabledTransports.length === 1 && (
-        <div className="text-xs text-muted-foreground">
-          Only API transport is available. Install transport plugins to manage
-          MCP/CLI access.
+            <Input
+              value={capSearch}
+              onChange={(event) => setCapSearch(event.target.value)}
+              placeholder="Filter by id or title…"
+            />
+            <ScrollArea className="h-80 pr-2">
+              <div className="space-y-2">
+                {caps.map((cap) => (
+                  <div
+                    key={cap.id}
+                    className="flex items-center justify-between gap-3 rounded border border-border/60 p-2"
+                  >
+                    <div className="min-w-0 flex items-center gap-2">
+                      {renderLogo(cap.plugin)}
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium truncate">
+                          {cap.id}
+                        </div>
+                        {cap.title && cap.title !== cap.id && (
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            {cap.title}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {enabledTransports.map((transport) => {
+                        const fallback =
+                          policy.default_allow?.[transport.key] ?? false
+                        const explicit =
+                          policy.capability_allow?.[cap.id]?.[transport.key]
+                        const checked = explicit ?? fallback
+                        const hasOverride = explicit !== undefined
+                        return (
+                          <div
+                            key={`${cap.id}-${transport.key}`}
+                            className="flex items-center gap-1"
+                          >
+                            <Label
+                              className={cn(
+                                'text-[10px] uppercase',
+                                hasOverride
+                                  ? 'text-foreground font-semibold'
+                                  : 'text-muted-foreground',
+                              )}
+                            >
+                              {transport.label}
+                            </Label>
+                            <Switch
+                              checked={checked}
+                              onCheckedChange={(value) =>
+                                updateCapabilityAllow(
+                                  cap.id,
+                                  transport.key,
+                                  Boolean(value),
+                                )
+                              }
+                            />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+                {caps.length === 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    No action capabilities found.
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </Card>
         </div>
       )}
     </div>

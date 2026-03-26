@@ -20,20 +20,21 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { Separator } from '@embeddr/react-ui/components/ui'
-import { Skeleton } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { Separator } from '@embeddr/react-ui/ui'
+import { Skeleton } from '@embeddr/react-ui/ui'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { embeddrApi } from '@/lib/api/client'
 import type { PromptImage } from '@/lib/api'
 import type { LineageResponse } from '@/lib/api/types'
+import { ProvenanceTimeline } from '@/components/provenance/ProvenanceTimeline'
 import { cn } from '@/lib/utils'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 
@@ -57,9 +58,8 @@ interface ArtifactDetail {
 const DEFAULT_SECTIONS = [
   'prompt',
   'info',
+  'provenance',
   'metadata',
-  'parents',
-  'children',
   'collections',
   'tags',
 ]
@@ -67,21 +67,24 @@ const DEFAULT_SECTIONS = [
 const SECTION_LABELS: Record<string, string> = {
   prompt: 'Prompt',
   info: 'Info',
+  provenance: 'Provenance',
   metadata: 'Metadata',
-  parents: 'Parents',
-  children: 'Children',
   collections: 'Collections',
   tags: 'Tags',
+  // Legacy — kept for backward compat with stored preferences
+  parents: 'Parents',
+  children: 'Children',
 }
 
 const SECTION_ICONS: Record<string, React.ElementType> = {
   prompt: FileText,
   info: Info,
+  provenance: GitFork,
   metadata: Database,
-  parents: GitFork,
-  children: GitFork,
   collections: Folder,
   tags: Tag,
+  parents: GitFork,
+  children: GitFork,
 }
 
 const MetadataViewer = ({ data }: { data: Record<string, any> }) => {
@@ -308,6 +311,14 @@ export function ImageDetailsSidebar({
         return artifact?.metadata_json ? (
           <MetadataViewer data={artifact.metadata_json} />
         ) : null
+
+      case 'provenance':
+        return (
+          <ProvenanceTimeline
+            artifactId={String(image.id)}
+            onSelectArtifact={onSelectImage}
+          />
+        )
 
       case 'parents':
         if (!lineage?.parents?.length)

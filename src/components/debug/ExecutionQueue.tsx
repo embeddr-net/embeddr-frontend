@@ -7,26 +7,26 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { Card, CardHeader, CardTitle } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
-import { Separator } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { Card, CardHeader, CardTitle } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
+import { Separator } from '@embeddr/react-ui/ui'
 import { globalEventBus } from '@/lib/eventBus'
 import { cn } from '@embeddr/react-ui'
 import {

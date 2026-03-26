@@ -1,13 +1,13 @@
 import React from 'react'
 import { useWindowStore } from '@/store/windowStore'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import { Eye, EyeOff } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 
 export function HidePanelsWidget() {
   const { toggleHidePanels, windows, backdropWindowId, arePanelsHidden } =

@@ -1,6 +1,6 @@
 // src/features/lotus/LotusFinder.tsx
 import React from 'react'
-import { Dialog, DialogContent } from '@embeddr/react-ui/components/ui'
+import { Dialog, DialogContent } from '@embeddr/react-ui/ui'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
@@ -9,11 +9,12 @@ import { usePluginStore } from '@/plugins/store'
 import { useEmbeddrAPI } from '@/plugins/store'
 import { useLotus } from '@/providers/LotusProvider'
 import { useSettingsStore } from '@/store/settingsStore'
-import type { LotusResultItem } from './types'
+import type { LotusResultItem, FinderMode, FinderKind, LotusMessage } from './types'
 import type { Artifact, PaginatedResponse } from '@/lib/api/types'
 import { LotusSearchBar } from './LotusSearchBar'
 import { LotusPreviewPane } from './LotusPreviewPane'
 import { LotusResultsList } from './LotusResultsList'
+import { LotusChat } from './LotusChat'
 
 type LotusQueryResponse = { query: string; results: LotusResultItem[] }
 
@@ -144,6 +145,128 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
     string,
     any
   > | null>(null)
+
+  // --- Mode system ---
+  const [mode, setMode] = React.useState<FinderMode>(() => {
+    try {
+      const stored = window.localStorage.getItem('lotus-finder-mode')
+      return stored === 'lotus' ? 'lotus' : 'search'
+    } catch {
+      return 'search'
+    }
+  })
+  const [lotusAvailable, setLotusAvailable] = React.useState(false)
+  const [messages, setMessages] = React.useState<LotusMessage[]>([])
+  const [lotusLoading, setLotusLoading] = React.useState(false)
+
+  // --- Kind filter ---
+  const [hiddenKinds, setHiddenKinds] = React.useState<Set<FinderKind>>(() => {
+    try {
+      const stored = window.localStorage.getItem('lotus-finder-hidden-kinds')
+      return stored ? new Set(JSON.parse(stored)) : new Set()
+    } catch {
+      return new Set()
+    }
+  })
+
+  const toggleKind = React.useCallback((kind: FinderKind) => {
+    setHiddenKinds(prev => {
+      const next = new Set(prev)
+      if (next.has(kind)) next.delete(kind)
+      else next.add(kind)
+      try { window.localStorage.setItem('lotus-finder-hidden-kinds', JSON.stringify([...next])) } catch {}
+      return next
+    })
+  }, [])
+
+  const handleModeChange = React.useCallback((next: FinderMode) => {
+    setMode(next)
+    try { window.localStorage.setItem('lotus-finder-mode', next) } catch {}
+  }, [])
+
+  // Check if embeddr-lotus plugin is available
+  React.useEffect(() => {
+    if (!open) return
+    let active = true
+    const check = async () => {
+      try {
+        const res = await embeddrApi.lotus.list({ plugin: 'embeddr-lotus', limit: 1 })
+        if (active) {
+          const items = (res as any)?.items ?? []
+          setLotusAvailable(items.length > 0)
+        }
+      } catch {
+        if (active) setLotusAvailable(false)
+      }
+    }
+    check()
+    return () => { active = false }
+  }, [open])
+
+  // Lotus chat handler
+  const sendLotusMessage = React.useCallback(async (message: string) => {
+    if (!message.trim()) return
+    const userMsg: LotusMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: message.trim(),
+      timestamp: Date.now(),
+    }
+    setMessages(prev => [...prev, userMsg])
+    setQuery('')
+    setLotusLoading(true)
+
+    try {
+      const res = await embeddrApi.lotus.invoke('embeddr-lotus.chat', {
+        message: message.trim(),
+        history: messages.map(m => ({ role: m.role, content: m.content })),
+      })
+      const data = res as any
+      // The backend may return content at various paths depending on
+      // whether it comes from the execution spine or direct invoke
+      const content =
+        data?.content ||
+        data?.response ||
+        data?.outputs?.content ||
+        data?.outputs?.response ||
+        data?.message ||
+        data?.text ||
+        (typeof data === 'string' ? data : JSON.stringify(data))
+
+      // Suggestions can be strings or {label, action, capId} objects
+      const rawSuggestions = data?.suggestions || data?.outputs?.suggestions || []
+      const suggestions = rawSuggestions.map((s: any) =>
+        typeof s === 'string' ? { label: s } : s,
+      )
+
+      const assistantMsg: LotusMessage = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content,
+        timestamp: Date.now(),
+        suggestions: suggestions.length > 0 ? suggestions : undefined,
+      }
+      setMessages(prev => [...prev, assistantMsg])
+    } catch (err: any) {
+      const errorMsg: LotusMessage = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: err?.message?.includes('not found') || err?.message?.includes('404')
+          ? 'Lotus chat is not configured yet. Install and configure the embeddr-lotus plugin to enable conversational mode.'
+          : `Error: ${err?.message || 'Failed to reach Lotus'}`,
+        timestamp: Date.now(),
+      }
+      setMessages(prev => [...prev, errorMsg])
+    } finally {
+      setLotusLoading(false)
+    }
+  }, [])
+
+  // Filter items by hidden kinds
+  const filteredItems = React.useMemo(() => {
+    if (!hiddenKinds.size) return items
+    return items.filter((it) => !hiddenKinds.has(it.kind as FinderKind))
+  }, [items, hiddenKinds])
 
   const inputRef = React.useRef<HTMLInputElement>(null)
 
@@ -408,9 +531,16 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
     [],
   )
 
-  // Debounced server search
+  // Debounced server search — only in search mode
   React.useEffect(() => {
     if (!open) return
+    if (mode === 'lotus') {
+      // In lotus mode, show only local items (panels/nav/actions) — no server search
+      setItems(filteredLocal)
+      setSelectedId(filteredLocal[0]?.id ?? null)
+      setLoading(false)
+      return
+    }
 
     const { text, shebang, tags } = parsedQuery
     let cancelled = false
@@ -743,6 +873,7 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
   }, [
     parsedQuery,
     open,
+    mode,
     filteredLocal,
     defaults.text_provider,
     buildArtifactItems,
@@ -855,9 +986,9 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
       const artifactId = item.data?.artifact_id || item.id
       if (!artifactId) return
       apiRef.current.windows.spawn(
-        'embeddr-core-artifact-details-panel',
-        'Artifact Details',
-        { artifactId, defaultSize: { width: 520, height: 720 } },
+        'embeddr-editor-types-artifact-detail',
+        'Artifact Detail',
+        { artifactId, defaultSize: { width: 500, height: 600 } },
       )
       onOpenChange(false)
       return
@@ -933,7 +1064,7 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
   // ✅ Keyboard model:
   // - Input always keeps focus.
   // - ArrowDown moves selection into list (but focus stays on input).
-  // - ArrowUp at index 0 does nothing special; still at top, you’re effectively “back at input”.
+  // - ArrowUp at index 0 does nothing special; still at top, you're effectively "back at input".
   // - Escape closes.
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
@@ -991,46 +1122,92 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
           <LotusSearchBar
             value={query}
             onChange={setQuery}
-            onSubmit={() =>
-              resolvedSelectedItem && dispatch(resolvedSelectedItem)
-            }
-            loading={loading}
+            onSubmit={() => {
+              if (mode === 'lotus') {
+                sendLotusMessage(query)
+              } else {
+                resolvedSelectedItem && dispatch(resolvedSelectedItem)
+              }
+            }}
+            loading={mode === 'lotus' ? lotusLoading : loading}
             autoFocus
             inputRef={inputRef}
             onKeyDown={handleInputKeyDown}
+            mode={mode}
+            onModeChange={handleModeChange}
+            lotusAvailable={lotusAvailable}
+            hiddenKinds={hiddenKinds}
+            onToggleKind={toggleKind}
           />
         </div>
 
         {/* Body */}
-        <div className="flex-1 min-h-0 grid grid-cols-2">
-          <div className="min-h-0 border-r border-border/60">
-            <LotusResultsList
-              items={items}
-              selectedId={selectedId}
-              onSelect={(it) => setSelectedId(it.id)}
-              onConfirm={dispatch}
-              onRequestFocusInput={focusInput}
-              keyboard={false} // ✅ input owns keyboard
-            />
-          </div>
-
-          <div className="min-h-0">
-            <LotusPreviewPane
-              item={resolvedSelectedItem}
-              onRun={() =>
-                resolvedSelectedItem && dispatch(resolvedSelectedItem)
+        {mode === 'lotus' ? (
+          <LotusChat
+            messages={messages}
+            loading={lotusLoading}
+            onSuggestionClick={(s) => {
+              if (s.capId) {
+                // Invoke a Lotus capability directly
+                embeddrApi.lotus.invoke(s.capId, {})
+                  .then((res: any) => {
+                    const text = typeof res === 'string' ? res : JSON.stringify(res, null, 2)
+                    setMessages(prev => [...prev, {
+                      id: 'cap-' + Date.now(),
+                      role: 'assistant',
+                      content: text,
+                      timestamp: Date.now(),
+                    }])
+                  })
+                  .catch((e: any) => toast.error(e?.message || 'Failed'))
+              } else if (s.action && s.action.startsWith('!')) {
+                // Switch to search mode with the action as query
+                handleModeChange('search')
+                setQuery(s.action)
+              } else if (s.action === 'settings') {
+                // Open settings
+                onOpenChange(false)
+                setSettingsOpen(true)
+              } else {
+                // Treat as a follow-up chat message
+                sendLotusMessage(s.label)
               }
-            />
+            }}
+          />
+        ) : (
+          <div className="flex-1 min-h-0 grid grid-cols-2">
+            <div className="min-h-0 border-r border-border/60">
+              <LotusResultsList
+                items={filteredItems}
+                selectedId={selectedId}
+                onSelect={(it) => setSelectedId(it.id)}
+                onConfirm={dispatch}
+                onRequestFocusInput={focusInput}
+                keyboard={false}
+              />
+            </div>
+            <div className="min-h-0">
+              <LotusPreviewPane
+                item={resolvedSelectedItem}
+                onRun={() =>
+                  resolvedSelectedItem && dispatch(resolvedSelectedItem)
+                }
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Footer */}
         <div className="px-3 py-2 border-t border-border/60 text-[10px] text-muted-foreground/70 flex items-center justify-between">
           <span>
-            Tip: “!stash cats”, “!arxiv diffusion”, “!openverse mountains”,
-            “!stocks AAPL”
+            {mode === 'lotus'
+              ? 'Lotus mode \u2014 conversational intelligence'
+              : 'Tip: !stash cats, !arxiv diffusion, !openverse mountains, !stocks AAPL'}
           </span>
-          <span>{items.length} results</span>
+          <span>
+            {mode === 'lotus'
+              ? messages.length + ' messages'
+              : filteredItems.length + ' results'}
+          </span>
         </div>
       </DialogContent>
     </Dialog>

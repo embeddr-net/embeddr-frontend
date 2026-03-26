@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { useSettingsStore } from '@/store/settingsStore'
 import { useShallow } from 'zustand/react/shallow'
 import { cn } from '@/lib/utils'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import {
   Eye,
   EyeOff,
@@ -11,10 +11,10 @@ import {
   ArrowRight,
   RotateCcw,
 } from 'lucide-react'
-import { Badge } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import { usePluginStore } from '@/plugins/store'
-import { Switch } from '@embeddr/react-ui/components/ui'
-import { Label } from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/ui'
+import { Label } from '@embeddr/react-ui/ui'
 import { DEFAULT_WIDGETS } from '@/lib/commandBar/defaultWidgets'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 

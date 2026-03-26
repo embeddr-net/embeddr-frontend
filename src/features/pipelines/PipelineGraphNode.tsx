@@ -1,6 +1,6 @@
 import type React from 'react'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import { Settings2, Trash2, X } from 'lucide-react'
 import {
   ContextMenu,
@@ -8,14 +8,14 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
   ContextMenuSeparator,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 
 export type PipelineGraphNodeProps = {
   index: number

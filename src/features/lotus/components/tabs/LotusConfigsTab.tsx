@@ -5,16 +5,16 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import { toast } from 'sonner'
 import { globalEventBus } from '@/lib/eventBus'
 import { useEmbeddrAPI } from '@/plugins/store'

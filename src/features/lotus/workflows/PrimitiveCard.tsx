@@ -1,6 +1,6 @@
 import React from 'react'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 
 export type PrimitivePort = {
   name: string

@@ -1,11 +1,11 @@
-import { Card } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/ui'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import {
   AlertCircle,
   ArrowLeft,
@@ -18,13 +18,13 @@ import {
   Repeat,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import { toast } from 'sonner'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import type { ExecutionRecord } from '@/lib/api/types'
 import { useGeneration } from '@/context/GenerationContext'
 import { useGlobalStore } from '@/store/globalStore'

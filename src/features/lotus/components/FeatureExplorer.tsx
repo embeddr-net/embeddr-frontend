@@ -4,20 +4,20 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { ApiExplorer } from '@/components/debug/ApiExplorer'
 import { ArtifactFileManager } from '@/components/debug/ArtifactFileManager'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { HardDrive, Search } from 'lucide-react'
 
 export const FeatureExplorer = ({

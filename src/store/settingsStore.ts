@@ -57,6 +57,10 @@ interface SettingsState {
   showPluginLogos: boolean
   setShowPluginLogos: (enabled: boolean) => void
 
+  // Layout
+  tilingEnabled: boolean
+  setTilingEnabled: (enabled: boolean) => void
+
   themeMode: 'light' | 'dark' | 'system'
   setThemeMode: (mode: 'light' | 'dark' | 'system') => void
 
@@ -167,6 +171,9 @@ export const useSettingsStore = create<SettingsState>()(
 
       showPluginLogos: true,
       setShowPluginLogos: (enabled) => set({ showPluginLogos: enabled }),
+
+      tilingEnabled: false,
+      setTilingEnabled: (enabled) => set({ tilingEnabled: enabled }),
 
       themeMode: 'system',
       setThemeMode: (mode) => set({ themeMode: mode }),

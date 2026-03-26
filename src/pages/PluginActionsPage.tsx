@@ -15,13 +15,13 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { Label } from '@embeddr/react-ui/components/ui'
-import { Textarea } from '@embeddr/react-ui/components/ui'
-import { Spinner } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { Label } from '@embeddr/react-ui/ui'
+import { Textarea } from '@embeddr/react-ui/ui'
+import { Spinner } from '@embeddr/react-ui/ui'
 import { Play, Terminal } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'

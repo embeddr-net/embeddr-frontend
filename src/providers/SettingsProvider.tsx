@@ -14,7 +14,7 @@ export const SettingsProvider = ({
 
   // Local state for optimistic UI / fallback
   const [selectedModel, setSelectedModel] = useState(
-    'Qwen/Qwen3-VL-Embedding-2B',
+    '',  // Empty = let the backend decide based on what's loaded/available
   )
   const [batchSize, setBatchSize] = useState(32)
   const [uploadConfig, setUploadConfig] = useState({

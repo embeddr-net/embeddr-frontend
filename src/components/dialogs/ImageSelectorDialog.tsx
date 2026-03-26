@@ -5,8 +5,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import type { PromptImage } from '@/lib/api/types'
 import { ImageBrowser } from '@/components/search/ImageBrowser'
 

@@ -5,8 +5,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import { AlertTriangle } from 'lucide-react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { fetchSecurityOverviewStatus } from '@/lib/api/endpoints/security'
@@ -41,7 +41,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         setStatus('ok')
         return
       }
-      if (result.status === 403) {
+      if (result.status === 401 || result.status === 403) {
         setIsOperator(false)
         setStatus('required')
         return

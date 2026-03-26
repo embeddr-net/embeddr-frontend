@@ -1,5 +1,5 @@
 import React from 'react'
-import { Card } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/ui'
 
 export function DatasetWorkspace() {
   return (

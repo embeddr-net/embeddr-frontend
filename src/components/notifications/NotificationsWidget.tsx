@@ -1,45 +1,32 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { Card } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Card } from '@embeddr/react-ui/ui'
 import { AlertTriangle, Bell, RefreshCw, Settings } from 'lucide-react'
 import { embeddrApi } from '@/lib/api/client'
-import type { IngestionPipelineConfig, LotusCapability } from '@/lib/api/types'
+import type { LotusCapability } from '@/lib/api/types'
 import { useEmbeddrAPI } from '@/plugins/store'
 import { useUserStore } from '@/store/userStore'
 
 const REQUIRED_CAPS = [
   {
-    key: 'collection.scanner',
-    label: 'Filesystem scanner',
-    match: (cap: LotusCapability) => cap.slot === 'collection.scanner',
-  },
-  {
     key: 'preview.thumbnail',
     label: 'Thumbnail generator',
-    match: (cap: LotusCapability) => cap.slot === 'preview.thumbnail',
-  },
-  {
-    key: 'feature.generator',
-    label: 'Embedding generator',
-    match: (cap: LotusCapability) => cap.slot === 'feature.generator',
+    match: (cap: LotusCapability) =>
+      cap.id?.includes('thumbnail') || cap.slot === 'preview.thumbnail',
   },
   {
     key: 'search.text',
     label: 'Text search',
-    match: (cap: LotusCapability) => cap.id === 'search.text',
-  },
-  {
-    key: 'artifact.ingest',
-    label: 'Artifact ingest',
-    match: (cap: LotusCapability) => cap.id === 'embeddr-core.artifact.ingest',
+    match: (cap: LotusCapability) =>
+      cap.id === 'search.text' || cap.slot === 'search.text',
   },
 ]
 
@@ -58,15 +45,15 @@ export function NotificationsWidget() {
   const queryClient = useQueryClient()
   const apiKey = useUserStore((state) => state.apiKey)
 
+  const { data: sysInfo } = useQuery({
+    queryKey: ['system', 'info', 'notifications'],
+    queryFn: () => embeddrApi.system.info(),
+    staleTime: 60_000,
+  })
+
   const { data: capsData, isLoading: capsLoading } = useQuery({
     queryKey: ['lotus', 'capabilities', 'notifications'],
     queryFn: () => embeddrApi.lotus.list({ limit: 500 }),
-    staleTime: 30_000,
-  })
-
-  const { data: pipelineConfig } = useQuery<IngestionPipelineConfig>({
-    queryKey: ['system', 'ingestion', 'pipeline', 'notifications'],
-    queryFn: () => embeddrApi.system.getIngestionPipeline(),
     staleTime: 30_000,
   })
 
@@ -77,12 +64,13 @@ export function NotificationsWidget() {
     )
   }, [capsData])
 
-  const missingPipeline = !pipelineConfig?.pipeline_id
-
   const notifications = useMemo<NotificationItem[]>(() => {
     const items: NotificationItem[] = []
 
-    if (!apiKey) {
+    // Only warn about missing API key if system info indicates auth is required.
+    // In open mode, no key is needed — suppress the warning.
+    const authMode = (sysInfo as any)?.auth_mode
+    if (!apiKey && authMode && authMode !== 'open') {
       items.push({
         id: 'missing-api-key',
         title: 'Client key not set',
@@ -90,18 +78,6 @@ export function NotificationsWidget() {
         level: 'warning',
         actionLabel: 'Open onboarding',
         onAction: () => navigate({ to: '/onboarding' }),
-      })
-    }
-
-    if (missingPipeline) {
-      items.push({
-        id: 'missing-ingest-pipeline',
-        title: 'Ingestion pipeline not set',
-        description: 'Set up ingestion defaults to process new artifacts.',
-        level: 'warning',
-        actionLabel: 'Open config',
-        onAction: () =>
-          api.windows.spawn('embeddr-core-config-panel', 'Config', {}),
       })
     }
 
@@ -117,7 +93,7 @@ export function NotificationsWidget() {
     })
 
     return items
-  }, [api, apiKey, missingCaps, missingPipeline, navigate])
+  }, [api, apiKey, sysInfo, missingCaps, navigate])
 
   const warningCount = notifications.filter((n) => n.level === 'warning').length
 

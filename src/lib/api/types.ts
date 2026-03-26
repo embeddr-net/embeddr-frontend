@@ -1,6 +1,17 @@
+/**
+ * Frontend API types.
+ *
+ * NOTE: Canonical domain types now live in @embeddr/client-typescript/src/embeddr-api-types.
+ * This file will be migrated to re-export from there in a future pass.
+ * For now, types are kept inline to avoid breaking the 109 consumer files.
+ */
+
 import type { PromptImage } from '@embeddr/react-ui/types'
 
 export type { PromptImage }
+
+// New response envelope types (from the 0.2.0 cleanup)
+export type { OkResponse, ErrorResponse, ErrorCode } from '@embeddr/client-typescript/src/embeddr-api-types'
 
 export interface PipelineSpec {
   id: number
@@ -90,6 +101,7 @@ export interface InstanceProfile {
 export interface PublicSystemInfo {
   instance: InstanceProfile
   dev_mode?: boolean
+  cloud_mode?: boolean
 }
 
 export interface LibraryStats {
@@ -293,6 +305,88 @@ export interface ArtifactRelation {
   source_namespace: string
 }
 
+export interface ArtifactGraphFilters {
+  relation_types_include?: string[]
+  relation_types_exclude?: string[]
+  relation_families_include?: string[]
+  source_namespaces_include?: string[]
+  source_namespaces_exclude?: string[]
+  artifact_types_include?: string[]
+  artifact_base_types_include?: string[]
+  include_legacy_stash_contains?: boolean
+}
+
+export interface ArtifactGraphQueryRequest {
+  seed_ids: string[]
+  max_depth?: number
+  direction?: 'incoming' | 'outgoing' | 'both'
+  include_lineage?: boolean
+  include_relations?: boolean
+  limit_nodes?: number
+  limit_edges?: number
+  include_overlay_counts?: boolean
+  filters?: ArtifactGraphFilters
+}
+
+export interface ArtifactGraphNode {
+  id: string
+  type_name: string
+  base_type_name: string
+  label: string
+  uri?: string | null
+  overlay_counts?: {
+    features?: number
+    embeddings?: number
+    annotations?: number
+  }
+  degree?: {
+    in?: number
+    out?: number
+    total?: number
+  }
+  is_seed?: boolean
+}
+
+export interface ArtifactGraphEdge {
+  id: string
+  source_id: string
+  target_id: string
+  relation_type_raw: string
+  relation_type_canonical: string
+  relation_family: string
+  source_namespace?: string
+  is_lineage?: boolean
+}
+
+export interface ArtifactGraphQueryResponse {
+  nodes: ArtifactGraphNode[]
+  edges: ArtifactGraphEdge[]
+  meta: {
+    truncated?: boolean
+    truncation_reason?: string | null
+    nodes_returned?: number
+    edges_returned?: number
+  }
+}
+
+export interface ArtifactGraphTaxonomy {
+  relation_families: Array<{
+    id: string
+    label: string
+  }>
+  relation_types: Array<{
+    relation_type_raw: string
+    relation_type_canonical: string
+    relation_family: string
+    description?: string
+  }>
+  source_namespaces: string[]
+  namespace_groups: Array<{
+    group: string
+    namespaces: string[]
+  }>
+}
+
 export interface ScannerTypeInfo {
   type_name: string
   display_name: string
@@ -424,3 +518,57 @@ export interface PluginAction {
  * but all new code should use the Execution interface.
  */
 export type ArtifactExecution = Execution
+
+// ── Provenance types ──────────────────────────────────────
+
+export interface ProvenanceSource {
+  namespace: string
+  name: string
+  icon_url?: string | null
+}
+
+export interface ProvenanceArtifactSummary {
+  id: string
+  type_name: string
+  base_type_name?: string | null
+  name?: string | null
+  uri?: string | null
+  created_at?: string | null
+}
+
+export interface ProvenanceExecution {
+  id: string
+  type: string
+  plugin_name: string
+  status: string
+  created_at?: string | null
+  finished_at?: string | null
+}
+
+export interface ProvenanceStep {
+  artifact: ProvenanceArtifactSummary
+  role: string
+  relation_type?: string | null
+  source?: ProvenanceSource | null
+  execution?: ProvenanceExecution | null
+  depth: number
+}
+
+export interface ProvenanceAnnotation {
+  id: string
+  annotation_type: string
+  plugin_name?: string | null
+  text?: string | null
+  data?: Record<string, any> | null
+  confidence?: number | null
+}
+
+export interface ProvenanceResponse {
+  artifact: ProvenanceArtifactSummary
+  sources: ProvenanceSource[]
+  creation_execution?: ProvenanceExecution | null
+  inputs: ProvenanceStep[]
+  outputs: ProvenanceStep[]
+  relations: ProvenanceStep[]
+  annotations: ProvenanceAnnotation[]
+}

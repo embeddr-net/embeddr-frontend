@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   Card,
@@ -6,10 +6,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import { AlertTriangle, LockKeyhole } from 'lucide-react'
 import {
   fetchSecurityOverviewStatus,
@@ -49,7 +49,7 @@ const AccessPage = () => {
         setStatus('ok')
         return
       }
-      if (result.status === 403) {
+      if (result.status === 401 || result.status === 403) {
         setIsOperator(false)
         setStatus('required')
         return
@@ -63,8 +63,25 @@ const AccessPage = () => {
     }
   }, [setAvatarUrl, setDisplayName, setIsOperator])
 
+  // Auto-login from query param (used by hosted dashboard)
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const keyFromUrl = params.get('api_key')
+    if (keyFromUrl && keyFromUrl !== apiKey) {
+      embeddrApi.auth.setSession({ apiKey: keyFromUrl }).then(() => {
+        setApiKey(keyFromUrl)
+        // Clean the key from the URL
+        const url = new URL(window.location.href)
+        url.searchParams.delete('api_key')
+        window.history.replaceState({}, '', url.pathname + url.search)
+      }).catch(console.error)
+      return
+    }
     checkAuth()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (apiKey) checkAuth()
   }, [checkAuth, apiKey])
 
   useEffect(() => {
@@ -73,7 +90,12 @@ const AccessPage = () => {
 
   useEffect(() => {
     if (status === 'ok') {
-      navigate({ to: '/' })
+      const nextUrl = new URLSearchParams(window.location.search).get('next')
+      if (nextUrl && nextUrl.startsWith('/')) {
+        window.location.href = nextUrl
+      } else {
+        navigate({ to: '/' })
+      }
     }
   }, [navigate, status])
 

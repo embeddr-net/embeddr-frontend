@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import {
   ArrowDownToLine,
   ArrowUp01,
@@ -8,13 +8,13 @@ import {
   Lock,
   X,
 } from 'lucide-react'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { ZenInput } from '../ZenInput'
 import { cn } from '@/lib/utils'
 import { DraggablePanel } from '@/components/ui/DraggablePanel'

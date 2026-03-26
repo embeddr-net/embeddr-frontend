@@ -8,9 +8,9 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { Separator } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Separator } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import {
   Server,
   Database,

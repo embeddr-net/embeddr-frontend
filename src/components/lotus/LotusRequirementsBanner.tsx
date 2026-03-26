@@ -1,38 +1,25 @@
 import React from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Card } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import { RefreshCw, Settings, X } from 'lucide-react'
 import { embeddrApi } from '@/lib/api/client'
 import { useEmbeddrAPI } from '@/plugins/store'
-import type { IngestionPipelineConfig, LotusCapability } from '@/lib/api/types'
+import type { LotusCapability } from '@/lib/api/types'
 
 const REQUIRED_CAPS = [
   {
-    key: 'collection.scanner',
-    label: 'Filesystem scanner',
-    match: (cap: LotusCapability) => cap.slot === 'collection.scanner',
-  },
-  {
     key: 'preview.thumbnail',
     label: 'Thumbnail generator',
-    match: (cap: LotusCapability) => cap.slot === 'preview.thumbnail',
-  },
-  {
-    key: 'feature.generator',
-    label: 'Feature/embedding generator',
-    match: (cap: LotusCapability) => cap.slot === 'feature.generator',
+    match: (cap: LotusCapability) =>
+      cap.id?.includes('thumbnail') || cap.slot === 'preview.thumbnail',
   },
   {
     key: 'search.text',
     label: 'Text search',
-    match: (cap: LotusCapability) => cap.id === 'search.text',
-  },
-  {
-    key: 'artifact.ingest',
-    label: 'Artifact ingest',
-    match: (cap: LotusCapability) => cap.id === 'embeddr-core.artifact.ingest',
+    match: (cap: LotusCapability) =>
+      cap.id === 'search.text' || cap.slot === 'search.text',
   },
 ]
 
@@ -47,12 +34,6 @@ export function LotusRequirementsBanner() {
     staleTime: 30_000,
   })
 
-  const { data: pipelineConfig } = useQuery<IngestionPipelineConfig>({
-    queryKey: ['system', 'ingestion', 'pipeline', 'requirements'],
-    queryFn: () => embeddrApi.system.getIngestionPipeline(),
-    staleTime: 30_000,
-  })
-
   const missing = React.useMemo(() => {
     const caps = (data?.items || []) as LotusCapability[]
     return REQUIRED_CAPS.filter(
@@ -60,9 +41,7 @@ export function LotusRequirementsBanner() {
     )
   }, [data])
 
-  const missingPipeline = !pipelineConfig?.pipeline_id
-
-  if (dismissed || isLoading || (missing.length === 0 && !missingPipeline))
+  if (dismissed || isLoading || missing.length === 0)
     return null
 
   return (
@@ -87,18 +66,13 @@ export function LotusRequirementsBanner() {
               {req.label}
             </Badge>
           ))}
-          {missingPipeline && (
-            <Badge variant="secondary" className="text-xs">
-              Ingestion pipeline not set
-            </Badge>
-          )}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
             variant="secondary"
             onClick={() =>
-              api.windows.spawn('embeddr-core-config-panel', 'Config', {})
+              api.windows.spawn('embeddr-core-control-panel', 'Control Panel', { defaultTab: 'config' })
             }
           >
             <Settings className="mr-2 h-4 w-4" />

@@ -8,6 +8,9 @@ import type {
   ArtifactEmbedding,
   ArtifactExecution,
   ArtifactRelation,
+  ArtifactGraphQueryRequest,
+  ArtifactGraphQueryResponse,
+  ArtifactGraphTaxonomy,
   ArtifactTypeCountsResponse,
   AutomationListResponse,
   AutomationUpsertResponse,
@@ -272,6 +275,9 @@ class EmbeddrApi {
     getRelations: (id: string) =>
       this.request<ArtifactRelation[]>(`/artifacts/${id}/relations`),
 
+    getProvenance: (id: string) =>
+      this.request<import('@/lib/api/types').ProvenanceResponse>(`/artifacts/${id}/provenance`),
+
     getSubgraph: (
       id: string,
       params: {
@@ -291,6 +297,16 @@ class EmbeddrApi {
       }
       return this.request(`/artifacts/${id}/subgraph?${q.toString()}`)
     },
+
+    queryGraph: (input: ArtifactGraphQueryRequest) =>
+      this.request<ArtifactGraphQueryResponse>(`/artifacts/graph/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      }),
+
+    getGraphTaxonomy: () =>
+      this.request<ArtifactGraphTaxonomy>(`/artifacts/graph/taxonomy`),
 
     getContentUrl: (id: string) =>
       this.withApiKey(`${this.baseUrl}/artifacts/${id}/content`),
@@ -623,6 +639,8 @@ class EmbeddrApi {
       )
     },
     get: (id: string) => this.request<Execution>(`/executions/${id}`),
+    activeCount: () =>
+      this.request<{ active: number }>(`/executions/active-count`),
     wait: (
       id: string,
       params?: { timeout_s?: number; poll_interval_s?: number },
@@ -648,6 +666,22 @@ class EmbeddrApi {
     cancel: (id: string) =>
       this.request<Execution>(`/executions/${id}/cancel`, {
         method: 'POST',
+      }),
+    nudge: (
+      id: string,
+      input:
+        | string
+        | {
+            message: string
+            mode?: 'steer' | 'goal_replace'
+            goal?: string
+          },
+    ) =>
+      this.request<{ ok: boolean; message: string }>(`/executions/${id}/nudge`, {
+        method: 'POST',
+        body: JSON.stringify(
+          typeof input === 'string' ? { message: input } : input,
+        ),
       }),
     artifacts: (id: string, action?: string) => {
       const q = new URLSearchParams()

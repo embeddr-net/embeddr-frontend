@@ -1,14 +1,14 @@
 import { useMemo, useRef, useState, useEffect } from 'react'
 import type React from 'react'
 import dagre from 'dagre'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/components/ui'
-import { Textarea } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Textarea } from '@embeddr/react-ui/ui'
 import type { LotusCapability } from '@/lib/api/types'
 import { PipelineGraphNode } from '@/features/pipelines/PipelineGraphNode'
 

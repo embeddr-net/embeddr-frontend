@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import {
   Layers as LayersIcon,
   Pin,
@@ -12,15 +12,15 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import { useWindowStore } from '@/store/windowStore'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import type { EmbeddrAPI } from '@embeddr/zen-shell'
 import { DraggablePanel } from '@/components/ui/DraggablePanel'
 import {
@@ -130,7 +130,7 @@ export function ZenToolbox(props: ZenToolboxProps) {
   const corePanelDefs = overlayPanels.filter(
     ({ pluginId, def }) =>
       pluginId === 'embeddr-core' &&
-      ['config-panel', 'workspace-panel'].includes(def.id),
+      ['control-panel'].includes(def.id),
   )
 
   const movePinnedPanel = (panelId: string, direction: 'up' | 'down') => {

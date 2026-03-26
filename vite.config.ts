@@ -84,4 +84,16 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: process.env.VITE_EMBEDDR_BACKEND_URL || 'http://localhost:8003',
+        changeOrigin: true,
+      },
+      '/plugins': {
+        target: process.env.VITE_EMBEDDR_BACKEND_URL || 'http://localhost:8003',
+        changeOrigin: true,
+      },
+    },
+  },
 })

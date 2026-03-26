@@ -1,11 +1,11 @@
 import React from 'react'
 import { useWindowStore } from '@/store/windowStore'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { Maximize2, Layout, X } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { cn } from '@/lib/utils'

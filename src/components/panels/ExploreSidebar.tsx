@@ -4,14 +4,14 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { Card } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { Label } from '@embeddr/react-ui/components/ui'
-import { Separator } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Card } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { Label } from '@embeddr/react-ui/ui'
+import { Separator } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import {
   Dialog,
   DialogContent,
@@ -20,20 +20,20 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   BookCopyIcon,
   Database,
@@ -297,8 +297,8 @@ export function ExploreSidebar({
   const resolvePluginAssetUrl = (iconUrl?: string | null) => {
     if (!iconUrl) return null
     if (iconUrl.startsWith('http')) return iconUrl
-    if (iconUrl.startsWith('/api/v1/plugins/')) {
-      return `${BASE_URL}${iconUrl.replace('/api/v1/plugins/', '/api/plugins/')}`
+    if (/^\/api\/v\d+\/plugins\//.test(iconUrl)) {
+      return `${BASE_URL}${iconUrl.replace(/^\/api\/v\d+\/plugins\//, '/api/plugins/')}`
     }
     if (iconUrl.startsWith('/api/plugins/')) return `${BASE_URL}${iconUrl}`
     if (iconUrl.startsWith('/plugins/')) return `${BASE_URL}${iconUrl}`

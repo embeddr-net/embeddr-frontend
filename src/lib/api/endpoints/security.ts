@@ -292,6 +292,18 @@ export const createSecurityRole = async (payload: {
   return res.json()
 }
 
+export const revokeSecurityKey = async (
+  keyId: string,
+): Promise<{ ok: boolean }> => {
+  const res = await fetchWithAuth(`${BACKEND_URL}/security/keys/${keyId}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    throw new Error('Failed to revoke key')
+  }
+  return res.json()
+}
+
 export const updateSecurityRole = async (payload: {
   role_id: string
   description?: string | null
@@ -334,6 +346,90 @@ export const updateSecurityProfile = async (payload: {
   })
   if (!res.ok) {
     throw new Error('Failed to update profile')
+  }
+  return res.json()
+}
+
+export const logoutCurrentKey = async (): Promise<void> => {
+  const res = await fetchWithAuth(`${BACKEND_URL}/security/logout`, {
+    method: 'POST',
+  })
+  if (!res.ok) {
+    throw new Error('Failed to logout')
+  }
+}
+
+export const logoutAllKeys = async (): Promise<void> => {
+  const res = await fetchWithAuth(`${BACKEND_URL}/security/logout-all`, {
+    method: 'POST',
+  })
+  if (!res.ok) {
+    throw new Error('Failed to logout all sessions')
+  }
+}
+
+// ── OAuth2 Authorization Code Flow ──────────────────────────────────
+
+export interface AuthorizationInfo {
+  client_name: string
+  client_description?: string | null
+  client_id: string
+  requested_scopes: string[]
+  scope_descriptions: Record<string, string>
+  redirect_uri: string
+  state?: string | null
+  user?: {
+    username: string
+    display_name?: string | null
+    operator_name?: string | null
+  } | null
+}
+
+export async function fetchAuthorizationInfo(params: {
+  client_id: string
+  scope?: string
+  redirect_uri: string
+  state?: string
+}): Promise<AuthorizationInfo> {
+  const qs = new URLSearchParams()
+  qs.set('client_id', params.client_id)
+  qs.set('redirect_uri', params.redirect_uri)
+  if (params.scope) qs.set('scope', params.scope)
+  if (params.state) qs.set('state', params.state)
+
+  const res = await fetchWithAuth(
+    `${BACKEND_URL}/security/auth/authorize?${qs.toString()}`,
+  )
+  if (res.status === 401) {
+    throw new Error('login_required')
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.detail || 'Failed to fetch authorization info')
+  }
+  return res.json()
+}
+
+export async function submitAuthorizationConsent(body: {
+  client_id: string
+  scope: string
+  redirect_uri: string
+  state?: string
+  code_challenge?: string
+  code_challenge_method?: string
+  approved: boolean
+}): Promise<{ redirect_to: string }> {
+  const res = await fetchWithAuth(
+    `${BACKEND_URL}/security/auth/authorize/consent`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  )
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.detail || 'Authorization consent failed')
   }
   return res.json()
 }

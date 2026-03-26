@@ -7,19 +7,19 @@ import {
   CardContent,
   CardDescription,
   CardFooter,
-} from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { Label } from '@embeddr/react-ui/components/ui'
-import { Spinner } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { Label } from '@embeddr/react-ui/ui'
+import { Spinner } from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
-import { Switch } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Switch } from '@embeddr/react-ui/ui'
 import {
   Play,
   ArrowRight,
@@ -35,7 +35,7 @@ import {
   Type,
 } from 'lucide-react'
 import { ImageSelectorDialog } from '@/components/dialogs/ImageSelectorDialog'
-import { Badge } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import { useWebSocket } from '@/providers/WebSocketProvider'
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -43,9 +43,9 @@ import {
   fetchAvailableActions,
   type AvailableAction,
 } from '@/lib/api/endpoints/actions'
-import { Checkbox } from '@embeddr/react-ui/components/ui'
+import { Checkbox } from '@embeddr/react-ui/ui'
 import { toast } from 'sonner'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 
 const getIconForPlugin = (pluginName: string) => {
   if (pluginName.includes('scraper')) return <Database className="h-4 w-4" />

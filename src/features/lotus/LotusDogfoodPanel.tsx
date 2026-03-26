@@ -5,17 +5,17 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { RefreshCw, Search } from 'lucide-react'
 import { useEmbeddrAPI } from '@/plugins/store'
 import type { LotusResultItem } from './types'

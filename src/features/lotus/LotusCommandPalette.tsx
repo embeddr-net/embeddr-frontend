@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Dialog, DialogContent } from '@embeddr/react-ui/components/ui'
+import { Dialog, DialogContent } from '@embeddr/react-ui/ui'
 import { LotusSearchBar } from './LotusSearchBar'
 import { LotusResultsList } from './LotusResultsList'
 import { LotusInspector } from './LotusInspector'
@@ -7,7 +7,7 @@ import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
 import { embeddrApi } from '@/lib/api/client'

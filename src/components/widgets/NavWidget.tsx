@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import {
   HomeIcon,
   SearchIcon,
@@ -13,7 +13,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +21,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { usePluginStore } from '@/plugins/store'
 import { useSystemStatus } from '@/hooks/useSystemStatus'
 import { BASE_URL } from '@/lib/api/config'

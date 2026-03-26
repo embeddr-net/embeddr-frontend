@@ -9,9 +9,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Checkbox } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Checkbox } from '@embeddr/react-ui/ui'
 import {
   Trash2,
   Folder,
@@ -25,14 +25,14 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { type Artifact } from '@/lib/api/types'
-import { Badge } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import {
   Card,
   CardHeader,
   CardTitle,
   CardContent,
   CardFooter,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { useImageDialog } from '@embeddr/react-ui'
 
 interface PathItem {

@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Card } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import { Activity, HardDrive, Play, Power } from 'lucide-react'
 import { toast } from 'sonner'
 import { JobStatus } from './JobStatus'

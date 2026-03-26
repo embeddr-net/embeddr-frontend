@@ -2,11 +2,12 @@ import { Outlet, createRootRoute, useRouterState } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { Toaster } from '@embeddr/react-ui/components/ui'
+import { Toaster } from '@embeddr/react-ui/ui'
 import Header from '../components/ui/Header'
 import AppProviders from '@/providers/AppProvider'
 import NotFoundPage from '@/pages/NotFoundPage'
 import { DragDropOverlay } from '@/components/upload/DragDropOverlay'
+import { AppLoadingScreen } from '@/components/AppLoadingScreen'
 import { useSettingsStore } from '@/store/settingsStore'
 import { GlobalCommandBar } from '@/components/GlobalCommandBar'
 import { CustomStyles } from '@/components/ui/CustomStyles'
@@ -19,7 +20,6 @@ import { AuthGate } from '@/components/auth/AuthGate'
 import { fetchSecurityOverviewStatus } from '@/lib/api/endpoints/security'
 import { useUserStore } from '@/store/userStore'
 import { usePluginStore } from '@/plugins/store'
-import { Spinner } from '@embeddr/react-ui/components/ui'
 import { DockManager } from '@/components/ui/DockManager'
 
 function Root() {
@@ -144,7 +144,8 @@ function Root() {
           {showChrome && commandBarPosition === 'top' && (
             <div
               className={cn(
-                isOverlay && 'absolute top-0 inset-x-0 z-50  transition-colors',
+                'relative z-60',
+                isOverlay && 'absolute top-0 inset-x-0 transition-colors',
               )}
             >
               <GlobalCommandBar />
@@ -161,8 +162,8 @@ function Root() {
           {showChrome && commandBarPosition === 'bottom' && (
             <div
               className={cn(
-                isOverlay &&
-                  'absolute bottom-0 inset-x-0 z-50  transition-colors',
+                'relative z-60',
+                isOverlay && 'absolute bottom-0 inset-x-0 transition-colors',
               )}
             >
               <GlobalCommandBar />
@@ -171,16 +172,11 @@ function Root() {
         </div>
         <div
           className={cn(
-            'absolute inset-0 z-20 flex items-center justify-center bg-background/90 backdrop-blur-sm transition-opacity duration-500',
+            'absolute inset-0 z-20 transition-opacity duration-500',
             pluginsReady ? 'opacity-0 pointer-events-none' : 'opacity-100',
           )}
         >
-          <div className="flex flex-col items-center gap-3">
-            <Spinner className="h-6 w-6" />
-            <div className="text-sm text-muted-foreground">
-              Loading workspace…
-            </div>
-          </div>
+          <AppLoadingScreen />
         </div>
       </div>
       <DragDropOverlay />

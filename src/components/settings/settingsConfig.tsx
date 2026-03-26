@@ -24,8 +24,8 @@ import {
   ZenUploadTab,
   ZenProfileTab,
   ZenSecurityTab,
+  ZenTransportTab,
 } from '@/components/settings/zen/ZenSettingsTabs'
-import { TransportAccessSettings } from '@/components/settings/TransportAccessSettings'
 import { DockSettings } from '@/components/settings/DockSettings'
 import { ZenEffectsSettings } from '@/components/settings/ZenEffectsSettings'
 
@@ -75,7 +75,7 @@ export const settingsConfig: SettingsSection[] = [
         id: 'transport',
         label: 'Transport',
         icon: <NetworkIcon className="h-4 w-4" />,
-        component: <TransportAccessSettings />,
+        component: <ZenTransportTab />,
       },
     ],
   },

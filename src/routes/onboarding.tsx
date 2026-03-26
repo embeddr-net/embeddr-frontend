@@ -1,27 +1,28 @@
 import { useMemo, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Card } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { Separator } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
-import { Switch } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { Separator } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
+import { Switch } from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { PlugZap } from 'lucide-react'
+import { CloudOnboarding } from '@/components/onboarding/CloudOnboarding'
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { useThemePacks } from '@/hooks/useThemePacks'
@@ -89,6 +90,11 @@ const OnboardingPage = () => {
   const handleComplete = () => {
     setOnboardingDismissed(true)
     navigate({ to: '/' })
+  }
+
+  // Cloud mode: show simplified onboarding flow
+  if (publicInfo?.cloud_mode) {
+    return <CloudOnboarding publicInfo={publicInfo} onComplete={handleComplete} />
   }
 
   return (

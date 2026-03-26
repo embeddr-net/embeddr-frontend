@@ -4,8 +4,8 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import { WebSocketMonitor } from '@/components/debug/WebSocketMonitor'
 import { ClientsMonitor } from '@/components/debug/ClientsMonitor'
 import { PluginsList } from '@/components/debug/PluginsList'

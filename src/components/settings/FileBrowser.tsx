@@ -8,9 +8,9 @@ import {
   Loader2,
   HardDrive,
 } from 'lucide-react'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
 import { cn } from '@/lib/utils'
 import { embeddrApi } from '@/lib/api/client'
 

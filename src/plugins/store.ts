@@ -641,6 +641,47 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       return res.json()
     }
 
+    const queryGraph = async (input: {
+      seed_ids: string[]
+      max_depth?: number
+      direction?: 'incoming' | 'outgoing' | 'both'
+      include_lineage?: boolean
+      include_relations?: boolean
+      limit_nodes?: number
+      limit_edges?: number
+      include_overlay_counts?: boolean
+      filters?: {
+        relation_types_include?: string[]
+        relation_types_exclude?: string[]
+        relation_families_include?: string[]
+        source_namespaces_include?: string[]
+        source_namespaces_exclude?: string[]
+        artifact_types_include?: string[]
+        artifact_base_types_include?: string[]
+        include_legacy_stash_contains?: boolean
+      }
+    }) => {
+      const res = await fetchWithAuth(`${BACKEND_URL}/artifacts/graph/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to query graph')
+      }
+      return res.json()
+    }
+
+    const getGraphTaxonomy = async () => {
+      const res = await fetchWithAuth(`${BACKEND_URL}/artifacts/graph/taxonomy`)
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt || 'Failed to fetch graph taxonomy')
+      }
+      return res.json()
+    }
+
     const addRelation = async (
       sourceId: string,
       input: {
@@ -674,6 +715,8 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       list,
       get,
       getRelations,
+      queryGraph,
+      getGraphTaxonomy,
       addRelation,
       getContentUrl,
       resolve,
@@ -963,6 +1006,44 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
           if (!res.ok) {
             const txt = await res.text()
             throw new Error(txt || 'Execution list failed')
+          }
+          return res.json()
+        },
+        cancel: async (executionId: string) => {
+          const res = await fetchWithAuth(
+            `${BACKEND_URL}/executions/${executionId}/cancel`,
+            {
+              method: 'POST',
+            },
+          )
+          if (!res.ok) {
+            const txt = await res.text()
+            throw new Error(txt || 'Execution cancel failed')
+          }
+          return res.json()
+        },
+        nudge: async (
+          executionId: string,
+          input:
+            | string
+            | {
+                message: string
+                mode?: 'steer' | 'goal_replace'
+                goal?: string
+              },
+        ) => {
+          const payload = typeof input === 'string' ? { message: input } : input
+          const res = await fetchWithAuth(
+            `${BACKEND_URL}/executions/${executionId}/nudge`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            },
+          )
+          if (!res.ok) {
+            const txt = await res.text()
+            throw new Error(txt || 'Execution nudge failed')
           }
           return res.json()
         },

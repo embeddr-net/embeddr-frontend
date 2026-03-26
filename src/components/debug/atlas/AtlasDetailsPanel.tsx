@@ -97,6 +97,23 @@ export const AtlasDetailsPanel: React.FC<AtlasDetailsPanelProps> = ({
       )
     }
 
+    if (
+      details.type_name === 'audio' ||
+      details.base_type_name === 'audio' ||
+      details.type_name?.startsWith('audio')
+    ) {
+      return (
+        <div className="aspect-square bg-muted overflow-hidden border flex items-center justify-center p-3">
+          <audio
+            src={safeUrl(details.id)}
+            controls
+            preload="metadata"
+            className="w-full"
+          />
+        </div>
+      )
+    }
+
     if (details.type_name === 'text' || details.base_type_name === 'text') {
       return (
         <div className="h-48 bg-muted  p-2 border overflow-hidden text-xs font-mono">

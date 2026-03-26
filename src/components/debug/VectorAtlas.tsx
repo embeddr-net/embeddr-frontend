@@ -8,7 +8,7 @@ import {
 import { embeddrApi } from '@/lib/api/client'
 import { Umap3DExplorer } from '@embeddr/react-ui'
 import { cn } from '@/lib/utils'
-import { Spinner } from '@embeddr/react-ui/components/ui'
+import { Spinner } from '@embeddr/react-ui/ui'
 
 import type { Point3D, GraphEdge, SearchResult } from './atlas/types'
 import { AtlasControls } from './atlas/AtlasControls'

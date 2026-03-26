@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Dialog, DialogContent } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Dialog, DialogContent } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import { ArrowUpRight, Settings, X as XIcon } from 'lucide-react'
 import { ImageSelectorDialog } from '@/components/dialogs/ImageSelectorDialog'
 import {

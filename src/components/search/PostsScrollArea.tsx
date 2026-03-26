@@ -1,6 +1,6 @@
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import { useEffect, useRef } from 'react'
-import { Spinner } from '@embeddr/react-ui/components/ui'
+import { Spinner } from '@embeddr/react-ui/ui'
 import PostCard from './PostCard'
 import type { PromptImage } from '@/lib/api'
 import { cn } from '@/lib/utils'

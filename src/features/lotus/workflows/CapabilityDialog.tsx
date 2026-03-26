@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/components/ui'
-import { Textarea } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Textarea } from '@embeddr/react-ui/ui'
 
 export type CapabilityPort = {
   name: string

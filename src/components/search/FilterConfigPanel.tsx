@@ -1,14 +1,14 @@
-import { Label } from '@embeddr/react-ui/components/ui'
-import { Slider } from '@embeddr/react-ui/components/ui'
-import { Switch } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/ui'
+import { Slider } from '@embeddr/react-ui/ui'
+import { Switch } from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
-import { Separator } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Separator } from '@embeddr/react-ui/ui'
 
 interface FilterConfigPanelProps {
   gridCols: number

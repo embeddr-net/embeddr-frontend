@@ -1,6 +1,6 @@
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { TooltipProvider } from '@embeddr/react-ui/components/ui'
+import { TooltipProvider } from '@embeddr/react-ui/ui'
 import {
   ExternalNavProvider,
   ImageDialogProvider,

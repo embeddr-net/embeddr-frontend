@@ -25,6 +25,7 @@ import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as DebugRouteImport } from './routes/debug'
 import { Route as DatasetsRouteImport } from './routes/datasets'
+import { Route as AuthorizeRouteImport } from './routes/authorize'
 import { Route as AccessRouteImport } from './routes/access'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PipelinesIndexRouteImport } from './routes/pipelines.index'
@@ -116,6 +117,11 @@ const DatasetsRoute = DatasetsRouteImport.update({
   path: '/datasets',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthorizeRoute = AuthorizeRouteImport.update({
+  id: '/authorize',
+  path: '/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccessRoute = AccessRouteImport.update({
   id: '/access',
   path: '/access',
@@ -170,6 +176,7 @@ const PluginsPluginIdPageIdRoute = PluginsPluginIdPageIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/access': typeof AccessRoute
+  '/authorize': typeof AuthorizeRoute
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/access': typeof AccessRoute
+  '/authorize': typeof AuthorizeRoute
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
@@ -226,6 +234,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/access': typeof AccessRoute
+  '/authorize': typeof AuthorizeRoute
   '/datasets': typeof DatasetsRoute
   '/debug': typeof DebugRoute
   '/docs': typeof DocsRoute
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/access'
+    | '/authorize'
     | '/datasets'
     | '/debug'
     | '/docs'
@@ -284,6 +294,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/access'
+    | '/authorize'
     | '/datasets'
     | '/debug'
     | '/docs'
@@ -311,6 +322,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/access'
+    | '/authorize'
     | '/datasets'
     | '/debug'
     | '/docs'
@@ -340,6 +352,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccessRoute: typeof AccessRoute
+  AuthorizeRoute: typeof AuthorizeRoute
   DatasetsRoute: typeof DatasetsRoute
   DebugRoute: typeof DebugRoute
   DocsRoute: typeof DocsRoute
@@ -477,6 +490,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DatasetsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/authorize': {
+      id: '/authorize'
+      path: '/authorize'
+      fullPath: '/authorize'
+      preLoaderRoute: typeof AuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/access': {
       id: '/access'
       path: '/access'
@@ -579,6 +599,7 @@ const PluginsPluginIdRouteWithChildren = PluginsPluginIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccessRoute: AccessRoute,
+  AuthorizeRoute: AuthorizeRoute,
   DatasetsRoute: DatasetsRoute,
   DebugRoute: DebugRoute,
   DocsRoute: DocsRoute,

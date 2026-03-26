@@ -1,9 +1,9 @@
 import { useExternalNav } from '@embeddr/react-ui/hooks'
-import { Spinner } from '@embeddr/react-ui/components/ui'
+import { Spinner } from '@embeddr/react-ui/ui'
 import { IconBrandGithub } from '@tabler/icons-react'
 import { AlarmClockIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 
 const ComingSoonPage = () => {
   const { openExternal } = useExternalNav()

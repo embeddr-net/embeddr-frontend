@@ -1,24 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { Textarea } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Switch } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { Textarea } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Switch } from '@embeddr/react-ui/ui'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import { Bot, Eye, EyeOff, Loader2, Save, Settings2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Label } from '@embeddr/react-ui/components/ui'
+import { Label } from '@embeddr/react-ui/ui'
 import { useUpdateWorkflow, useWorkflow } from '@/hooks/useWorkflows'
 // import { getObjectInfo } from '@/lib/api/endpoints/comfy'
 

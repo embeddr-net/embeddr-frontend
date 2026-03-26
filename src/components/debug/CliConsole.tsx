@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { embeddrApi } from '@/lib/api/client'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import { Loader2, Terminal } from 'lucide-react'
-import { Card } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/ui'
 
 export const CliConsole = () => {
   const [input, setInput] = useState('')

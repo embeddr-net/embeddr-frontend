@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Button } from '@embeddr/react-ui'
-import { Spinner } from '@embeddr/react-ui/components/ui'
+import { Spinner } from '@embeddr/react-ui/ui'
 import { EmbeddrProvider } from '@embeddr/zen-shell'
 import { toast } from 'sonner'
 import {
@@ -36,6 +36,8 @@ import {
   registerWindowComponent,
 } from '@/components/ui/windowRegistry'
 import { PanelManager } from '@/components/ui/PanelManager'
+import { TilingCanvas } from '@/components/ui/TilingCanvas'
+import { useSettingsStore } from '@/store/settingsStore'
 import { PluginWindowBootstrap } from '@/plugins/PluginWindowBootstrap'
 import { ZenEffectsLayer } from '@/components/create/zen/ZenEffectsLayer'
 import { useLotus } from '@/providers/LotusProvider'
@@ -97,10 +99,13 @@ export function ZenInterface(_props: ZenInterfaceProps) {
     return () => window.removeEventListener('mousedown', handleGlobalClick)
   }, [setActivePanel, activePanelId])
 
+  const tilingEnabled = useSettingsStore((s) => s.tilingEnabled)
+
   const minimizeWindow = useWindowStore((s) => s.minimizeWindow)
   const restoreWindow = useWindowStore((s) => s.restoreWindow)
   const openWindow = useWindowStore((s) => s.openWindow)
   const closeWindow = useWindowStore((s) => s.closeWindow)
+  const spawnWindow = useWindowStore((s) => s.spawnWindow)
   const updateWindow = useWindowStore((s) => s.updateWindow)
   const showZenToolbar = useWindowStore((s) => s.showZenToolbar)
 
@@ -517,17 +522,23 @@ export function ZenInterface(_props: ZenInterfaceProps) {
     return (
       <div className="flex items-center gap-1">
         <Button
-          variant={panels.toolbox ? 'secondary' : 'ghost'}
+          variant="ghost"
           size="icon-sm"
           className="h-6 w-6"
-          onClick={() => togglePanel('toolbox')}
-          title="Toolbox"
+          onClick={() => {
+            spawnWindow('embeddr-core-control-panel', 'Control Panel', {
+              pluginId: 'embeddr-core',
+              componentName: 'ControlPanel',
+              panelMode: 'single',
+            })
+          }}
+          title="Control Panel"
         >
           <Box className="w-4 h-4" />
         </Button>
       </div>
     )
-  }, [showZenToolbar, panels, togglePanel])
+  }, [showZenToolbar, spawnWindow])
 
   useEffect(() => {
     setPageControls(pageControls)
@@ -565,7 +576,20 @@ export function ZenInterface(_props: ZenInterfaceProps) {
 
       <ZenEffectsLayer />
 
-      <div className="relative z-[50]">
+      {/* Tiling canvas renders behind floating panels when enabled.
+          pointer-events-none on the wrapper so the command bar / other UI
+          underneath stays clickable; TilingCanvas re-enables pointer events
+          on its actual tile chrome.
+          Use --layout-screen-safe-* (not --layout-safe-*) because this is
+          a fixed-position element that doesn't participate in the flex flow
+          and must always respect the command bar's physical space. */}
+      {tilingEnabled && (
+        <div className="pointer-events-none fixed inset-x-0 z-40" style={{ top: 'var(--layout-screen-safe-top, 0px)', bottom: 'var(--layout-screen-safe-bottom, 0px)' }}>
+          <TilingCanvas />
+        </div>
+      )}
+
+      <div className="relative z-50">
         <PanelManager />
       </div>
     </EmbeddrProvider>

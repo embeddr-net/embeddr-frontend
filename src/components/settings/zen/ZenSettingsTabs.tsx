@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { Label } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { Label } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
-import { Slider } from '@embeddr/react-ui/components/ui'
-import { Switch } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Slider } from '@embeddr/react-ui/ui'
+import { Switch } from '@embeddr/react-ui/ui'
 import {
   Eye,
   EyeOff,
@@ -24,6 +24,12 @@ import {
   Sun,
   Moon,
   Monitor,
+  Building2,
+  Clock,
+  Trash2,
+  Plus,
+  RefreshCw,
+  Activity,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AppearanceSettings } from '@/components/settings/AppearanceSettings'
@@ -45,8 +51,13 @@ import {
   fetchSecurityOverview,
   fetchSecurityRoles,
   fetchSecurityKeys,
+  fetchSecurityProfile,
+  fetchSecurityOperatorProfile,
   updateSecurityProfile,
+  logoutCurrentKey,
+  logoutAllKeys,
   createSecurityKeySelf,
+  revokeSecurityKey,
   listLotusCapabilities,
 } from '@/lib/api'
 import {
@@ -55,13 +66,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { toast } from 'sonner'
 import { useGeneration } from '@/context/GenerationContext'
 import { useLotus } from '@/providers/LotusProvider'
@@ -513,6 +524,8 @@ export function ZenPersonalizationTab() {
     setCommandBarHoverParams,
     showPluginLogos,
     setShowPluginLogos,
+    tilingEnabled,
+    setTilingEnabled,
   } = useSettingsStore(
     useShallow((s) => ({
       backgroundImage: s.backgroundImage,
@@ -535,6 +548,8 @@ export function ZenPersonalizationTab() {
       setCommandBarHoverParams: s.setCommandBarHoverParams,
       showPluginLogos: s.showPluginLogos,
       setShowPluginLogos: s.setShowPluginLogos,
+      tilingEnabled: s.tilingEnabled,
+      setTilingEnabled: s.setTilingEnabled,
     })),
   )
 
@@ -837,6 +852,27 @@ export function ZenPersonalizationTab() {
           </div>
         </div>
 
+        {/* --- Layout Mode --- */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+            Layout
+          </h3>
+          <div className="grid gap-6 p-4 border bg-card">
+            <div className="flex items-center justify-between p-2 border rounded-md">
+              <div className="space-y-0.5">
+                <span className="text-sm">Enable tiling layout</span>
+                <p className="text-xs text-muted-foreground">
+                  Show a resizable tiling canvas behind floating panels. Drag windows into tiles or hold Shift to enter split mode.
+                </p>
+              </div>
+              <Switch
+                checked={tilingEnabled}
+                onCheckedChange={(checked) => setTilingEnabled(checked)}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* --- Background Section (Keep existing) --- */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
@@ -982,6 +1018,8 @@ export function ZenLogsTab() {
   )
 }
 
+export { TransportAccessSettings as ZenTransportTab } from '@/components/settings/TransportAccessSettings'
+
 export function ZenLotusConfigTab({
   activeTab: _activeTab,
   children,
@@ -997,417 +1035,227 @@ export function ZenLotusConfigTab({
 }
 
 export function ZenProfileTab() {
-  const {
-    displayName,
-    setDisplayName,
-    avatarUrl,
-    setAvatarUrl,
-    apiKey,
-    setApiKey,
-  } = useUserStore()
-
-  // Local state for basic form handling
-  const [name, setName] = useState(displayName)
-  const [avatar, setAvatar] = useState(avatarUrl)
+  const { apiKey, setApiKey } = useUserStore()
   const [key, setKey] = useState(apiKey || '')
-  const [newKeyName, setNewKeyName] = useState('')
-  const [selectedScopes, setSelectedScopes] = useState<string[]>([])
-  const [newKeyPermissions, setNewKeyPermissions] = useState('')
-  const [createdKey, setCreatedKey] = useState<string | null>(null)
-  const [scopeSearch, setScopeSearch] = useState('')
+  const [name, setName] = useState('')
+  const [avatar, setAvatar] = useState('')
+
+  const profileQuery = useQuery({
+    queryKey: ['security', 'profile'],
+    queryFn: fetchSecurityProfile,
+  })
+  const operatorQuery = useQuery({
+    queryKey: ['security', 'operator'],
+    queryFn: fetchSecurityOperatorProfile,
+  })
+
+  const profile = profileQuery.data
+  const operator = operatorQuery.data
 
   useEffect(() => {
-    setName(displayName)
-    setAvatar(avatarUrl)
+    if (profile) {
+      setName(profile.display_name || profile.username || '')
+      setAvatar(profile.avatar_url || '')
+    }
+  }, [profile])
+
+  useEffect(() => {
     setKey(apiKey || '')
-  }, [displayName, avatarUrl, apiKey])
+  }, [apiKey])
 
-  const handleSaveProfile = async () => {
-    try {
-      const result = await updateSecurityProfile({
-        display_name: name,
-        avatar_url: avatar || null,
-      })
-      setDisplayName(result.display_name || result.username)
-      setAvatarUrl(result.avatar_url || '')
-      setName(result.display_name || result.username)
-      setAvatar(result.avatar_url || '')
+  const saveProfileMutation = useMutation({
+    mutationFn: () =>
+      updateSecurityProfile({ display_name: name, avatar_url: avatar || null }),
+    onSuccess: () => {
+      profileQuery.refetch()
       toast.success('Profile updated')
-    } catch (error) {
-      console.error('Failed to update profile', error)
-      toast.error('Failed to update server profile')
-    }
-  }
-
-  const lotusCapsQuery = useQuery({
-    queryKey: ['lotus', 'capabilities', 'profile'],
-    queryFn: () => listLotusCapabilities({ limit: 500 }),
-    staleTime: 60_000,
+    },
+    onError: () => toast.error('Failed to update profile'),
   })
-
-  const scopeSearchValue = scopeSearch.trim().toLowerCase()
-  const capabilityScopes = (lotusCapsQuery.data?.items ?? []).map(
-    (cap) => `lotus:capability:${cap.id}`,
-  )
-
-  const scopeGroups = [
-    {
-      label: 'Core data access',
-      description: 'Read and write artifacts and collections.',
-      scopes: [
-        'artifacts:read',
-        'artifacts:write',
-        'collections:read',
-        'collections:write',
-      ],
-    },
-    {
-      label: 'System access',
-      description: 'Diagnostics and system settings.',
-      scopes: ['system:read', 'system:write'],
-    },
-    {
-      label: 'Plugins',
-      description: 'Discover plugin metadata.',
-      scopes: ['plugins:read'],
-    },
-    {
-      label: 'Key management',
-      description: 'Allow creating personal keys.',
-      scopes: ['keys:create:self'],
-    },
-    {
-      label: 'Lotus global',
-      description: 'Search and dispatch Lotus capabilities.',
-      scopes: ['lotus:list', 'lotus:dispatch', 'lotus:*'],
-    },
-  ]
-
-  const presets = [
-    {
-      id: 'comfyui',
-      label: 'ComfyUI',
-      scopes: [
-        'artifacts:read',
-        'artifacts:write',
-        'collections:read',
-        'system:read',
-      ],
-    },
-    {
-      id: 'readonly',
-      label: 'Read-only',
-      scopes: ['artifacts:read', 'collections:read', 'lotus:list'],
-    },
-  ]
-
-  const toggleScope = (scope: string) => {
-    setSelectedScopes((prev) =>
-      prev.includes(scope)
-        ? prev.filter((item) => item !== scope)
-        : [...prev, scope],
-    )
-  }
-
-  const applyPreset = (scopes: string[]) => {
-    setSelectedScopes((prev) => Array.from(new Set([...prev, ...scopes])))
-  }
-
-  const createKeyMutation = useMutation({
-    mutationFn: createSecurityKeySelf,
-    onSuccess: (data) => {
-      setCreatedKey(data.key)
-      setNewKeyName('')
-      setSelectedScopes([])
-      setNewKeyPermissions('')
-      toast.success('Client key created')
-    },
-    onError: () => toast.error('Failed to create client key'),
-  })
-
-  const handleCreateKey = () => {
-    if (!newKeyName.trim()) {
-      toast.error('Key name is required')
-      return
-    }
-    const permissions = newKeyPermissions
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-    createKeyMutation.mutate({
-      name: newKeyName.trim(),
-      scopes: selectedScopes,
-      permissions,
-    })
-  }
 
   const handleSaveAuth = async () => {
-    // If empty string, treat as removing key
     const val = key.trim() === '' ? null : key.trim()
     setApiKey(val)
     try {
       await embeddrApi.auth.setSession({ apiKey: val, clear: !val })
-      toast.success('Authentication settings updated')
-    } catch (error) {
-      console.error('Failed to update auth session', error)
-      toast.error('Failed to update server auth session')
+      toast.success('Authentication updated')
+    } catch {
+      toast.error('Failed to update auth session')
     }
   }
+
+  const logoutMutation = useMutation({
+    mutationFn: logoutCurrentKey,
+    onSuccess: () => {
+      setApiKey(null)
+      setKey('')
+      embeddrApi.auth.setSession({ apiKey: null, clear: true }).catch(() => {})
+      toast.success('Logged out')
+    },
+    onError: () => toast.error('Logout failed'),
+  })
+
+  const logoutAllMutation = useMutation({
+    mutationFn: logoutAllKeys,
+    onSuccess: () => {
+      setApiKey(null)
+      setKey('')
+      embeddrApi.auth.setSession({ apiKey: null, clear: true }).catch(() => {})
+      toast.success('All sessions revoked')
+    },
+    onError: () => toast.error('Logout all failed'),
+  })
 
   return (
     <TabScrollArea>
       <div className="space-y-6">
+        {/* Operator workspace */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              <CardTitle>Operator Workspace</CardTitle>
+            </div>
+            <CardDescription>
+              The workspace this instance belongs to.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {operatorQuery.isLoading ? (
+              <div className="text-sm text-muted-foreground">Loading…</div>
+            ) : operatorQuery.isError ? (
+              <div className="text-sm text-destructive">
+                Could not load operator info.
+              </div>
+            ) : operator ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-14 w-14">
+                    <AvatarImage src={operator.avatar_url || undefined} />
+                    <AvatarFallback>
+                      {(operator.display_name || operator.name)
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-semibold text-base">
+                      {operator.display_name || operator.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-mono">
+                      {operator.id}
+                    </div>
+                    <div className="flex gap-2 mt-1">
+                      {operator.is_root && (
+                        <Badge variant="secondary">Root</Badge>
+                      )}
+                      <Badge variant={operator.is_active ? 'default' : 'destructive'}>
+                        {operator.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="rounded-md border bg-muted/30 p-3 text-center">
+                    <div className="text-2xl font-bold">
+                      {operator.active_user_count}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Active Clients
+                    </div>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 p-3 text-center">
+                    <div className="text-2xl font-bold">
+                      {operator.user_count}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Total Clients
+                    </div>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 p-3 text-center">
+                    <div className="text-2xl font-bold">
+                      {operator.api_key_count}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      API Keys
+                    </div>
+                  </div>
+                </div>
+                {operator.last_activity_at && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />
+                    Last activity:{' '}
+                    {new Date(operator.last_activity_at).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        {/* Client identity */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
               <User className="h-5 w-5 text-primary" />
-              <CardTitle>Connected Client Profile</CardTitle>
+              <CardTitle>Your Client Identity</CardTitle>
             </div>
             <CardDescription>
-              Identity for the connected client provider, not the operator.
+              Display name and avatar for this connected client.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-start gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={avatar} />
-                <AvatarFallback>
-                  {name.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 space-y-4">
-                <div className="grid w-full items-center gap-1.5">
-                  <Label htmlFor="display-name">Display Name</Label>
-                  <Input
-                    id="display-name"
-                    placeholder="Guest Client"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                <div className="grid w-full items-center gap-1.5">
-                  <Label htmlFor="avatar-url">Avatar URL</Label>
-                  <Input
-                    id="avatar-url"
-                    placeholder="https://github.com/shadcn.png"
-                    value={avatar}
-                    onChange={(e) => setAvatar(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Link to an image file for your profile picture.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={handleSaveProfile}>Save Profile</Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <KeyRound className="h-5 w-5 text-primary" />
-              <CardTitle>Personal Client Keys</CardTitle>
-            </div>
-            <CardDescription>
-              Create keys scoped to your permissions. Keys are shown once.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="self-key-name">Key name</Label>
-                <Input
-                  id="self-key-name"
-                  placeholder="comfyui"
-                  value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="self-key-permissions">
-                  Advanced permissions (comma-separated)
-                </Label>
-                <Input
-                  id="self-key-permissions"
-                  placeholder="artifacts:read, artifacts:write"
-                  value={newKeyPermissions}
-                  onChange={(e) => setNewKeyPermissions(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Permissions are optional for advanced, fine-grained control.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {presets.map((preset) => (
-                    <Button
-                      key={preset.id}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => applyPreset(preset.scopes)}
-                    >
-                      {preset.label}
-                    </Button>
-                  ))}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Selected scopes</Label>
-                  {selectedScopes.length === 0 ? (
-                    <div className="text-xs text-muted-foreground">
-                      No scopes selected yet.
+            {profileQuery.isLoading ? (
+              <div className="text-sm text-muted-foreground">Loading…</div>
+            ) : (
+              <>
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={avatar || undefined} />
+                    <AvatarFallback>
+                      {(name || 'CL').slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-3">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="display-name">Display Name</Label>
+                      <Input
+                        id="display-name"
+                        placeholder="Guest Client"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                      />
                     </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedScopes.map((scope) => (
-                        <Badge
-                          key={scope}
-                          variant="secondary"
-                          className="flex items-center gap-1"
-                        >
-                          <span>{scope}</span>
-                          <button
-                            type="button"
-                            className="text-muted-foreground hover:text-foreground"
-                            onClick={() => toggleScope(scope)}
-                            aria-label={`Remove ${scope}`}
-                          >
-                            <XIcon className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="avatar-url">Avatar URL</Label>
+                      <Input
+                        id="avatar-url"
+                        placeholder="https://example.com/avatar.png"
+                        value={avatar}
+                        onChange={(e) => setAvatar(e.target.value)}
+                      />
                     </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Search available scopes</Label>
-                  <Input
-                    value={scopeSearch}
-                    onChange={(e) => setScopeSearch(e.target.value)}
-                    placeholder="Search scopes"
-                  />
-                  <ScrollArea className="h-72 rounded border">
-                    <div className="grid gap-3 p-3">
-                      {scopeGroups.map((group) => {
-                        const scopes = group.scopes.filter((scope) =>
-                          scopeSearchValue
-                            ? scope.toLowerCase().includes(scopeSearchValue)
-                            : true,
-                        )
-                        if (scopeSearchValue && scopes.length === 0) return null
-                        return (
-                          <div key={group.label} className="space-y-2">
-                            <div>
-                              <div className="text-sm font-medium">
-                                {group.label}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {group.description}
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {scopes.map((scope) => (
-                                <button
-                                  key={scope}
-                                  type="button"
-                                  className={cn(
-                                    'rounded border px-2 py-1 text-xs transition-colors',
-                                    selectedScopes.includes(scope)
-                                      ? 'border-primary bg-primary/10 text-primary'
-                                      : 'hover:bg-muted',
-                                  )}
-                                  onClick={() => toggleScope(scope)}
-                                >
-                                  {scope}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )
-                      })}
-                      <div className="space-y-2">
-                        <div>
-                          <div className="text-sm font-medium">
-                            Lotus capabilities
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Scope specific Lotus actions by capability id.
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {lotusCapsQuery.isLoading ? (
-                            <div className="text-muted-foreground">
-                              Loading Lotus capabilities…
-                            </div>
-                          ) : capabilityScopes.length === 0 ? (
-                            <div className="text-muted-foreground">
-                              No Lotus capabilities found.
-                            </div>
-                          ) : (
-                            capabilityScopes
-                              .filter((scope) =>
-                                scopeSearchValue
-                                  ? scope
-                                      .toLowerCase()
-                                      .includes(scopeSearchValue)
-                                  : true,
-                              )
-                              .slice(0, 120)
-                              .map((scope) => (
-                                <button
-                                  key={scope}
-                                  type="button"
-                                  className={cn(
-                                    'rounded border px-2 py-1 text-xs transition-colors',
-                                    selectedScopes.includes(scope)
-                                      ? 'border-primary bg-primary/10 text-primary'
-                                      : 'hover:bg-muted',
-                                  )}
-                                  onClick={() => toggleScope(scope)}
-                                >
-                                  {scope}
-                                </button>
-                              ))
-                          )}
-                        </div>
+                    {profile && (
+                      <div className="text-xs text-muted-foreground font-mono">
+                        Client ID: {profile.id}
                       </div>
-                    </div>
-                  </ScrollArea>
-                  <div className="text-xs text-muted-foreground">
-                    Click a scope to toggle it. Use presets to start quickly.
+                    )}
                   </div>
                 </div>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-muted-foreground">
-                Store the key immediately. It is shown only once.
-              </div>
-              <Button
-                onClick={handleCreateKey}
-                disabled={createKeyMutation.isPending}
-              >
-                {createKeyMutation.isPending
-                  ? 'Creating…'
-                  : 'Create client key'}
-              </Button>
-            </div>
-            {createdKey && (
-              <div className="rounded border border-primary/30 bg-primary/5 p-2 text-sm">
-                <div className="text-xs uppercase text-muted-foreground">
-                  New Client Key
+                <div className="flex justify-end">
+                  <Button
+                    onClick={() => saveProfileMutation.mutate()}
+                    disabled={saveProfileMutation.isPending}
+                  >
+                    {saveProfileMutation.isPending ? 'Saving…' : 'Save Profile'}
+                  </Button>
                 </div>
-                <div className="font-mono break-all">{createdKey}</div>
-              </div>
+              </>
             )}
           </CardContent>
         </Card>
 
+        {/* Authentication */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -1415,22 +1263,22 @@ export function ZenProfileTab() {
               <CardTitle>Authentication</CardTitle>
             </div>
             <CardDescription>
-              Credentials for accessing secured Embeddr services.
+              Active API key used to authenticate with this Embeddr instance.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid w-full items-center gap-1.5">
+            <div className="grid gap-1.5">
               <Label htmlFor="api-key">Client Key</Label>
               <Input
                 id="api-key"
                 type="password"
-                placeholder="em_..."
+                placeholder="em_…"
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Required if the server is running in secured mode
-                (EMBEDDR_API_KEY is set).
+                Required when the server runs in secured mode. To create or
+                manage keys go to the Security tab.
               </p>
             </div>
             <div className="flex justify-end">
@@ -1438,10 +1286,237 @@ export function ZenProfileTab() {
                 Update Credentials
               </Button>
             </div>
+            {key && (
+              <div className="flex items-center justify-between pt-3 border-t">
+                <div>
+                  <div className="text-sm font-medium">Sign out</div>
+                  <div className="text-xs text-muted-foreground">
+                    Revoke the active key or all keys for this account.
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => logoutMutation.mutate()}
+                    disabled={logoutMutation.isPending || logoutAllMutation.isPending}
+                  >
+                    {logoutMutation.isPending ? 'Signing out…' : 'Sign out'}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => logoutAllMutation.mutate()}
+                    disabled={logoutMutation.isPending || logoutAllMutation.isPending}
+                  >
+                    {logoutAllMutation.isPending ? 'Revoking…' : 'Revoke all'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     </TabScrollArea>
+  )
+}
+
+// ─── Scope picker used by Security tab ──────────────────────────────────────
+
+const SCOPE_GROUPS = [
+  {
+    label: 'Core data',
+    description: 'Read and write artifacts and collections.',
+    scopes: [
+      'artifacts:read',
+      'artifacts:write',
+      'collections:read',
+      'collections:write',
+    ],
+  },
+  {
+    label: 'System',
+    description: 'Diagnostics and system settings.',
+    scopes: ['system:read', 'system:write'],
+  },
+  {
+    label: 'Plugins',
+    description: 'Discover plugin metadata.',
+    scopes: ['plugins:read'],
+  },
+  {
+    label: 'Key management',
+    description: 'Allow creating personal keys.',
+    scopes: ['keys:create:self'],
+  },
+  {
+    label: 'Lotus',
+    description: 'Search and dispatch Lotus capabilities.',
+    scopes: ['lotus:list', 'lotus:dispatch', 'lotus:*'],
+  },
+]
+
+const KEY_PRESETS = [
+  {
+    id: 'comfyui',
+    label: 'ComfyUI',
+    scopes: ['artifacts:read', 'artifacts:write', 'collections:read', 'system:read'],
+  },
+  { id: 'readonly', label: 'Read-only', scopes: ['artifacts:read', 'collections:read', 'lotus:list'] },
+  {
+    id: 'full',
+    label: 'Full access',
+    scopes: ['artifacts:read', 'artifacts:write', 'collections:read', 'collections:write', 'lotus:*', 'system:read'],
+  },
+]
+
+function ScopePicker({
+  selected,
+  onChange,
+}: {
+  selected: string[]
+  onChange: (s: string[]) => void
+}) {
+  const [search, setSearch] = useState('')
+  const lotusCapsQuery = useQuery({
+    queryKey: ['lotus', 'capabilities', 'scopepicker'],
+    queryFn: () => listLotusCapabilities({ limit: 500 }),
+    staleTime: 60_000,
+  })
+  const q = search.trim().toLowerCase()
+  const capabilityScopes = (lotusCapsQuery.data?.items ?? []).map(
+    (cap) => `lotus:capability:${cap.id}`,
+  )
+  const toggle = (scope: string) =>
+    onChange(
+      selected.includes(scope)
+        ? selected.filter((s) => s !== scope)
+        : [...selected, scope],
+    )
+  const applyPreset = (scopes: string[]) =>
+    onChange(Array.from(new Set([...selected, ...scopes])))
+
+  return (
+    <div className="space-y-3">
+      {/* Presets */}
+      <div className="flex flex-wrap gap-2">
+        {KEY_PRESETS.map((p) => (
+          <Button
+            key={p.id}
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => applyPreset(p.scopes)}
+          >
+            {p.label}
+          </Button>
+        ))}
+      </div>
+
+      {/* Selected badges */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selected.map((scope) => (
+            <Badge
+              key={scope}
+              variant="secondary"
+              className="flex items-center gap-1"
+            >
+              {scope}
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => toggle(scope)}
+              >
+                <XIcon className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+      {selected.length === 0 && (
+        <div className="text-xs text-muted-foreground">
+          No scopes selected — key will inherit operator defaults.
+        </div>
+      )}
+
+      {/* Scope browser */}
+      <div className="space-y-1.5">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search scopes…"
+        />
+        <ScrollArea className="h-56 rounded border">
+          <div className="grid gap-3 p-3">
+            {SCOPE_GROUPS.map((group) => {
+              const scopes = group.scopes.filter((s) =>
+                q ? s.toLowerCase().includes(q) : true,
+              )
+              if (q && scopes.length === 0) return null
+              return (
+                <div key={group.label} className="space-y-1.5">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {group.label}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {scopes.map((scope) => (
+                      <button
+                        key={scope}
+                        type="button"
+                        className={cn(
+                          'rounded border px-2 py-0.5 text-xs transition-colors',
+                          selected.includes(scope)
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'hover:bg-muted',
+                        )}
+                        onClick={() => toggle(scope)}
+                      >
+                        {scope}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+            {/* Lotus capability scopes */}
+            {(!q || 'lotus:capability'.includes(q)) && (
+              <div className="space-y-1.5">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Lotus capabilities
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {lotusCapsQuery.isLoading ? (
+                    <span className="text-xs text-muted-foreground">
+                      Loading…
+                    </span>
+                  ) : (
+                    capabilityScopes
+                      .filter((s) => (q ? s.toLowerCase().includes(q) : true))
+                      .slice(0, 120)
+                      .map((scope) => (
+                        <button
+                          key={scope}
+                          type="button"
+                          className={cn(
+                            'rounded border px-2 py-0.5 text-xs transition-colors',
+                            selected.includes(scope)
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'hover:bg-muted',
+                          )}
+                          onClick={() => toggle(scope)}
+                        >
+                          {scope}
+                        </button>
+                      ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+    </div>
   )
 }
 
@@ -1459,13 +1534,55 @@ export function ZenSecurityTab() {
     queryFn: fetchSecurityKeys,
   })
 
+  const [newKeyName, setNewKeyName] = useState('')
+  const [selectedScopes, setSelectedScopes] = useState<string[]>([])
+  const [createdKey, setCreatedKey] = useState<string | null>(null)
+  const [revokingId, setRevokingId] = useState<string | null>(null)
+
   const overview = overviewQuery.data
   const roles = rolesQuery.data?.items ?? []
   const keys = keysQuery.data?.items ?? []
 
+  const createKeyMutation = useMutation({
+    mutationFn: createSecurityKeySelf,
+    onSuccess: (data) => {
+      setCreatedKey(data.key)
+      setNewKeyName('')
+      setSelectedScopes([])
+      keysQuery.refetch()
+      toast.success('Client key created — copy it now, it will not be shown again')
+    },
+    onError: () => toast.error('Failed to create client key'),
+  })
+
+  const revokeKeyMutation = useMutation({
+    mutationFn: (keyId: string) => revokeSecurityKey(keyId),
+    onSuccess: () => {
+      setRevokingId(null)
+      keysQuery.refetch()
+      toast.success('Key revoked')
+    },
+    onError: () => {
+      setRevokingId(null)
+      toast.error('Failed to revoke key')
+    },
+  })
+
+  const handleCreateKey = () => {
+    if (!newKeyName.trim()) {
+      toast.error('Key name is required')
+      return
+    }
+    createKeyMutation.mutate({
+      name: newKeyName.trim(),
+      scopes: selectedScopes,
+    })
+  }
+
   return (
     <TabScrollArea>
       <div className="space-y-6">
+        {/* Overview */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -1473,146 +1590,221 @@ export function ZenSecurityTab() {
               <CardTitle>Security Overview</CardTitle>
             </div>
             <CardDescription>
-              RBAC and client key access status for this instance.
+              Auth mode and key stats for this instance.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent>
             {overviewQuery.isLoading ? (
-              <div className="text-sm text-muted-foreground">Loading...</div>
+              <div className="text-sm text-muted-foreground">Loading…</div>
             ) : overviewQuery.isError ? (
               <div className="text-sm text-destructive">
                 Failed to load security overview.
               </div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <div className="text-xs text-muted-foreground">Auth Mode</div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-md border bg-muted/30 p-3">
+                  <div className="text-xs text-muted-foreground mb-1">Auth Mode</div>
                   <div className="flex items-center gap-2">
-                    <Badge
-                      variant={overview?.auth_enabled ? 'default' : 'secondary'}
-                    >
-                      {overview?.auth_enabled ? 'Enabled' : 'Open'}
+                    <Badge variant={overview?.auth_enabled ? 'default' : 'secondary'}>
+                      {overview?.auth_enabled ? 'Secured' : 'Open'}
                     </Badge>
-                    <span className="text-sm font-medium uppercase">
-                      {overview?.auth_mode ?? 'unknown'}
+                    <span className="text-sm font-medium capitalize">
+                      {overview?.auth_mode ?? '—'}
                     </span>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <div className="text-xs text-muted-foreground">
-                    Current Client
-                  </div>
-                  <div className="text-sm font-medium">
-                    {overview?.current_user?.display_name || 'Anonymous'}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs text-muted-foreground">Clients</div>
-                  <div className="text-sm font-medium">
-                    {overview?.users ?? 0}
+                <div className="rounded-md border bg-muted/30 p-3">
+                  <div className="text-xs text-muted-foreground mb-1">Current Client</div>
+                  <div className="text-sm font-medium truncate">
+                    {overview?.current_user?.display_name ||
+                      overview?.current_user?.username ||
+                      'Anonymous'}
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <div className="text-xs text-muted-foreground">
-                    Client Keys
-                  </div>
-                  <div className="text-sm font-medium">
-                    {overview?.api_keys ?? 0}
-                  </div>
+                <div className="rounded-md border bg-muted/30 p-3">
+                  <div className="text-xs text-muted-foreground mb-1">Clients</div>
+                  <div className="text-2xl font-bold">{overview?.users ?? 0}</div>
+                </div>
+                <div className="rounded-md border bg-muted/30 p-3">
+                  <div className="text-xs text-muted-foreground mb-1">API Keys</div>
+                  <div className="text-2xl font-bold">{overview?.api_keys ?? 0}</div>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
 
+        {/* Client Keys list */}
         <Card>
           <CardHeader>
-            <CardTitle>Roles</CardTitle>
-            <CardDescription>
-              Current role definitions and permissions.
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Client Keys</CardTitle>
+                <CardDescription className="mt-1">
+                  All issued API keys. Revoke keys that are no longer needed.
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => keysQuery.refetch()}
+                disabled={keysQuery.isFetching}
+              >
+                <RefreshCw className={cn('h-4 w-4', keysQuery.isFetching && 'animate-spin')} />
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {rolesQuery.isLoading ? (
-              <div className="text-sm text-muted-foreground">
-                Loading roles...
-              </div>
-            ) : rolesQuery.isError ? (
-              <div className="text-sm text-destructive">
-                Unable to load roles.
-              </div>
-            ) : roles.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                No roles configured.
-              </div>
+          <CardContent className="space-y-2">
+            {keysQuery.isLoading ? (
+              <div className="text-sm text-muted-foreground">Loading keys…</div>
+            ) : keysQuery.isError ? (
+              <div className="text-sm text-destructive">Unable to load keys.</div>
+            ) : keys.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No client keys.</div>
             ) : (
-              roles.map((role) => (
-                <div key={role.id} className="rounded border p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium">{role.name}</div>
-                    {role.is_system && (
-                      <Badge variant="secondary">System</Badge>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {role.description || 'No description'}
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {role.permissions.length === 0 ? (
-                      <span className="text-xs text-muted-foreground">
-                        No permissions
+              keys.map((k) => (
+                <div
+                  key={k.id}
+                  className="flex items-start gap-3 rounded-md border p-3"
+                >
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium">{k.name}</span>
+                      <Badge variant={k.is_active ? 'default' : 'secondary'} className="text-xs">
+                        {k.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {k.key_prefix}…
                       </span>
-                    ) : (
-                      role.permissions.map((perm) => (
-                        <Badge key={perm} variant="outline">
-                          {perm}
-                        </Badge>
-                      ))
+                    </div>
+                    {k.last_used_at && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Activity className="h-3 w-3" />
+                        Last used: {new Date(k.last_used_at).toLocaleString()}
+                      </div>
                     )}
+                    {k.expires_at && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        Expires: {new Date(k.expires_at).toLocaleString()}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-1">
+                      {(k.scopes.length ? k.scopes : k.permissions).map(
+                        (s) => (
+                          <Badge key={s} variant="outline" className="text-xs">
+                            {s}
+                          </Badge>
+                        ),
+                      )}
+                    </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive shrink-0"
+                    disabled={
+                      revokingId === k.id || revokeKeyMutation.isPending
+                    }
+                    onClick={() => {
+                      setRevokingId(k.id)
+                      revokeKeyMutation.mutate(k.id)
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               ))
             )}
           </CardContent>
         </Card>
 
+        {/* Create new key */}
         <Card>
           <CardHeader>
-            <CardTitle>Client Keys</CardTitle>
-            <CardDescription>Issued keys and scopes.</CardDescription>
+            <div className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" />
+              <CardTitle>Create Client Key</CardTitle>
+            </div>
+            <CardDescription>
+              Keys are shown once on creation. Store them immediately.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {keysQuery.isLoading ? (
-              <div className="text-sm text-muted-foreground">
-                Loading keys...
+          <CardContent className="space-y-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="new-key-name">Key name</Label>
+              <Input
+                id="new-key-name"
+                placeholder="e.g. comfyui, sprout, mobile"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Scopes</Label>
+              <ScopePicker selected={selectedScopes} onChange={setSelectedScopes} />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                {selectedScopes.length} scope{selectedScopes.length !== 1 ? 's' : ''} selected
+              </span>
+              <Button
+                onClick={handleCreateKey}
+                disabled={createKeyMutation.isPending}
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                {createKeyMutation.isPending ? 'Creating…' : 'Create Key'}
+              </Button>
+            </div>
+            {createdKey && (
+              <div className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-1">
+                <div className="text-xs font-semibold text-primary uppercase tracking-wide">
+                  New Key — copy now
+                </div>
+                <div className="font-mono text-sm break-all select-all">
+                  {createdKey}
+                </div>
               </div>
-            ) : keysQuery.isError ? (
-              <div className="text-sm text-destructive">
-                Unable to load keys.
-              </div>
-            ) : keys.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                No client keys found.
-              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Roles */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Roles</CardTitle>
+            <CardDescription>
+              Role definitions and their permission sets.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {rolesQuery.isLoading ? (
+              <div className="text-sm text-muted-foreground">Loading roles…</div>
+            ) : rolesQuery.isError ? (
+              <div className="text-sm text-destructive">Unable to load roles.</div>
+            ) : roles.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No roles configured.</div>
             ) : (
-              keys.map((key) => (
-                <div key={key.id} className="rounded border p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium">{key.name}</div>
-                    <Badge variant={key.is_active ? 'default' : 'secondary'}>
-                      {key.is_active ? 'Active' : 'Disabled'}
-                    </Badge>
+              roles.map((role) => (
+                <div key={role.id} className="rounded-md border p-3 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{role.name}</span>
+                    {role.is_system && (
+                      <Badge variant="secondary" className="text-xs">System</Badge>
+                    )}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Prefix: {key.key_prefix}
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {(key.scopes.length ? key.scopes : key.permissions).map(
-                      (scope) => (
-                        <Badge key={scope} variant="outline">
-                          {scope}
+                  {role.description && (
+                    <div className="text-xs text-muted-foreground">{role.description}</div>
+                  )}
+                  <div className="flex flex-wrap gap-1">
+                    {role.permissions.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">No permissions</span>
+                    ) : (
+                      role.permissions.map((p) => (
+                        <Badge key={p} variant="outline" className="text-xs">
+                          {p}
                         </Badge>
-                      ),
+                      ))
                     )}
                   </div>
                 </div>

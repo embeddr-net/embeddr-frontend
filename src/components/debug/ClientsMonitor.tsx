@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from '@embeddr/react-ui'
 import { Activity, Monitor, Send, User } from 'lucide-react'
-import { Input } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/ui'
 import { toast } from 'sonner'
 import { BACKEND_URL } from '@/lib/api/config'
 import { useUserStore } from '@/store/userStore'

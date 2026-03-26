@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Label } from '@embeddr/react-ui/components/ui'
-import { Textarea } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Label } from '@embeddr/react-ui/ui'
+import { Textarea } from '@embeddr/react-ui/ui'
 import {
   Edit,
   ExternalLink,
@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Link } from '@tanstack/react-router'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import type { PromptImage } from '@/lib/api/types'
 import type { Dataset, DatasetItem } from '@/hooks/useDatasets'
 import { BACKEND_URL } from '@/lib/api/config'

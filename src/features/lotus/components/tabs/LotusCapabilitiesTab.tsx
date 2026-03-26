@@ -4,9 +4,9 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import type { LotusCapability } from '@/lib/api/types'
 
 export function LotusCapabilitiesTab({

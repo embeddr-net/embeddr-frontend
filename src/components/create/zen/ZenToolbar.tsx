@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import {
   Box,
   Database,
@@ -11,13 +11,13 @@ import {
   Settings2,
   Sliders,
 } from 'lucide-react'
-import { Separator } from '@embeddr/react-ui/components/ui'
+import { Separator } from '@embeddr/react-ui/ui'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { cn } from '@/lib/utils'
 
 import { useLocalStorage } from '@/hooks/useLocalStorage'
@@ -124,12 +124,18 @@ export function ZenToolbar({
             <Button
               variant={panels.toolbox ? 'secondary' : 'ghost'}
               size="icon"
-              onClick={() => togglePanel('toolbox')}
+              onClick={() => {
+                spawnWindow('embeddr-core-control-panel', 'Control Panel', {
+                  pluginId: 'embeddr-core',
+                  componentName: 'ControlPanel',
+                  panelMode: 'single',
+                })
+              }}
             >
               <Box className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Toolbox</TooltipContent>
+          <TooltipContent side="right">Control Panel</TooltipContent>
         </Tooltip>
 
         {pinnedPanelDefs.length > 0 && <Separator className="my-1" />}

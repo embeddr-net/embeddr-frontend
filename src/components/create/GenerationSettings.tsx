@@ -1,18 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
-import { Card } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { Label } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { Label } from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
-import { Textarea } from '@embeddr/react-ui/components/ui'
-import { Slider } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Textarea } from '@embeddr/react-ui/ui'
+import { Slider } from '@embeddr/react-ui/ui'
 import {
   ArrowDownToLine,
   Edit,
@@ -31,8 +31,8 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { Switch } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Switch } from '@embeddr/react-ui/ui'
 import { ImageIdInput } from './inputs/ImageIdInput'
 import { BACKEND_URL } from '@/lib/api/config'
 // import { getObjectInfo } from '@/lib/api/endpoints/comfy'
@@ -57,10 +57,12 @@ export function GenerationSettings() {
   const [loras, setLoras] = useState<string[]>([])
 
   useEffect(() => {
-    api.models.listSamplers().then(setSamplers)
-    api.models
-      .list({ category: 'loras', page: 1, limit: 100000 })
-      .then((res) => setLoras(res.items || []))
+    // @ts-expect-error Legacy API — models namespace removed in 0.2.0
+    api.models?.listSamplers?.().then(setSamplers).catch(() => {})
+    // @ts-expect-error Legacy API — models namespace removed in 0.2.0
+    api.models?.list?.({ category: 'loras', page: 1, limit: 100000 })
+      .then((res: any) => setLoras(res.items || []))
+      .catch(() => {})
   }, [api])
 
   const { data: libraries } = useQuery({

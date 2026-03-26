@@ -1,6 +1,7 @@
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import type { ElementType } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Badge } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import { SystemResourceBar } from '@embeddr/react-ui'
 import {
   BookOpenIcon,
@@ -9,7 +10,6 @@ import {
   DraftingCompassIcon,
   HelpCircleIcon,
   HomeIcon,
-  Icon,
   Plus,
   Settings,
   Database,
@@ -20,7 +20,6 @@ import {
 } from 'lucide-react'
 import { IconRobot } from '@tabler/icons-react'
 import { ModeToggle } from './ThemeToggle'
-import type { IconNode, LucideProps } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSystemStatus } from '@/hooks/useSystemStatus'
 import { useWebSocket } from '@/providers/WebSocketProvider'
@@ -33,7 +32,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,7 +40,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { useLotus } from '@/providers/LotusProvider'
 
 const mode = import.meta.env.MODE
@@ -49,9 +48,7 @@ const mode = import.meta.env.MODE
 interface NavLink {
   to: string
   label: string
-  icon: React.ForwardRefExoticComponent<
-    Omit<LucideProps, 'ref'> & React.RefAttributes<SVGSVGElement>
-  >
+  icon: ElementType<{ className?: string }>
   target?: string
 }
 

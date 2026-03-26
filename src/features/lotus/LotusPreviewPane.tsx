@@ -1,17 +1,35 @@
 // src/features/lotus/LotusPreviewPane.tsx
 import React from 'react'
-import { Badge } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Badge } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import type { LotusResultItem } from './types'
 import { cn } from '@/lib/utils'
+import { usePluginLogos } from '@/hooks/usePluginLogos'
 import {
   CornerDownLeft,
   Command,
   Option,
   ArrowUpDown,
   FileText,
+  PlugZap,
+  Cpu,
+  Zap,
+  Compass,
+  Globe,
+  Image as ImageIcon,
 } from 'lucide-react'
+
+const kindConfig: Record<
+  string,
+  { icon: React.ElementType; color: string; label: string }
+> = {
+  panel: { icon: Cpu, color: 'text-blue-500', label: 'Panel' },
+  action: { icon: Zap, color: 'text-amber-500', label: 'Action' },
+  nav: { icon: Compass, color: 'text-green-500', label: 'Navigation' },
+  artifact: { icon: ImageIcon, color: 'text-purple-500', label: 'Artifact' },
+  resource: { icon: Globe, color: 'text-cyan-500', label: 'Resource' },
+}
 
 interface LotusPreviewPaneProps {
   item: LotusResultItem | null
@@ -24,58 +42,89 @@ export function LotusPreviewPane({
   onRun,
   className,
 }: LotusPreviewPaneProps) {
+  const { logos } = usePluginLogos()
+
   if (!item) {
     return (
       <div
         className={cn(
-          'h-full p-4 flex items-center justify-center text-muted-foreground',
+          'h-full p-4 flex flex-col items-center justify-center text-muted-foreground gap-3',
           className,
         )}
       >
-        <span className="text-sm">Pick something.</span>
+        <div className="text-3xl opacity-20">{'\u2726'}</div>
+        <span className="text-sm">Select an item to preview</span>
+        <div className="text-[10px] space-y-1 text-center opacity-60">
+          <div>Use arrow keys to navigate</div>
+          <div>Press Enter to run</div>
+        </div>
       </div>
     )
   }
 
+  // Extract plugin info
+  const pluginId =
+    item.data?.pluginId ||
+    item.data?.plugin ||
+    item.data?.plugin_name ||
+    item.subtitle ||
+    ''
+  const pluginLogo = pluginId ? logos?.[pluginId] : null
+
+  // Extract kind styling
+  const kind = kindConfig[item.kind] || {
+    icon: PlugZap,
+    color: 'text-muted-foreground',
+    label: item.kind,
+  }
+  const KindIcon = kind.icon
+
+  // Resource/media preview
   const resource = item.data?.resource || {}
   const resourceType = resource?.type || item.kind
   let previewUrl = item.data?.preview_url || resource?.preview_url
   if (!previewUrl && resource?.content_url) previewUrl = resource.content_url
-
   if (resourceType === 'document') previewUrl = undefined
-
   if (resourceType === 'video' && previewUrl) {
     if (previewUrl.includes('/scene/') && /\/stream(\?|$)/.test(previewUrl)) {
       previewUrl = previewUrl.replace(/\/stream(\?.*)?$/, '/screenshot$1')
     }
   }
-
   if (resourceType === 'image' && previewUrl) {
     if (previewUrl.includes('/image/') && /\/image(\?|$)/.test(previewUrl)) {
       previewUrl = previewUrl.replace(/\/image(\?.*)?$/, '/thumbnail$1')
     }
   }
-  const previewTitle = item.title || 'Preview'
+
+  // Score display — only show for server results (local items get +1000 boost)
+  const rawScore = item.score ?? 0
+  const score = item.source === 'server' && rawScore > 0 && rawScore <= 1
+    ? Math.round(rawScore * 100)
+    : null
 
   return (
     <div className={cn('h-full flex flex-col', className)}>
+      {/* Header with plugin branding */}
       <div className="p-4 border-b border-border/60">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
+              <KindIcon className={cn('h-4 w-4 shrink-0', kind.color)} />
               <h3 className="font-semibold text-base truncate">{item.title}</h3>
-              <Badge variant="outline" className="capitalize">
-                {item.kind}
-              </Badge>
             </div>
-            {item.subtitle && (
-              <div className="text-xs text-muted-foreground mt-1 truncate">
-                {item.subtitle}
-              </div>
-            )}
+            <div className="flex items-center gap-2 mt-1.5">
+              <Badge variant="outline" className="capitalize text-[10px]">
+                {kind.label}
+              </Badge>
+              {score != null && score > 0 && (
+                <Badge variant="secondary" className="text-[10px]">
+                  {score}%
+                </Badge>
+              )}
+            </div>
           </div>
-          <Button onClick={onRun} className="" variant="secondary">
-            <CornerDownLeft className="h-4 w-4 mr-2" />
+          <Button onClick={onRun} variant="secondary" size="sm">
+            <CornerDownLeft className="h-3.5 w-3.5 mr-1.5" />
             Run
           </Button>
         </div>
@@ -86,56 +135,132 @@ export function LotusPreviewPane({
         type="always"
         variant="left-border"
       >
-        <div className="p-4">
+        <div className="p-4 space-y-4">
+          {/* Plugin branding card */}
+          {pluginId && (
+            <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2.5">
+              {pluginLogo ? (
+                <img
+                  src={pluginLogo}
+                  alt=""
+                  className="h-8 w-8 rounded-md object-contain border bg-background p-0.5"
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                  <PlugZap className="h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="text-sm font-medium truncate">{pluginId}</div>
+                <div className="text-[10px] text-muted-foreground">Plugin</div>
+              </div>
+            </div>
+          )}
+
+          {/* Media preview */}
           {previewUrl ? (
-            <div className="mb-4 border border-border/60 bg-muted/30 overflow-hidden">
+            <div className="border border-border/60 rounded-lg bg-muted/30 overflow-hidden">
               <img
                 src={previewUrl}
-                alt={previewTitle}
+                alt={item.title || 'Preview'}
                 className="w-full max-h-65 object-contain bg-background"
                 loading="lazy"
               />
             </div>
           ) : resourceType === 'document' ? (
-            <div className="mb-4 border border-border/60 bg-muted/30 flex items-center gap-2 p-4 text-muted-foreground">
+            <div className="border border-border/60 rounded-lg bg-muted/30 flex items-center gap-2 p-4 text-muted-foreground">
               <FileText className="h-4 w-4" />
               <span className="text-xs">Document preview unavailable.</span>
             </div>
           ) : null}
+
+          {/* Description */}
           {item.description ? (
-            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-              {item.description}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              No description.
-            </p>
+            <div>
+              <div className="text-[10px] text-muted-foreground/70 uppercase tracking-wide mb-1">
+                Description
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                {item.description}
+              </p>
+            </div>
+          ) : null}
+
+          {/* Action/capability metadata */}
+          {(item.kind === 'action' || item.kind === 'panel') && item.data && (
+            <div className="space-y-2">
+              {item.data.action && (
+                <MetaRow label="Action" value={item.data.action} />
+              )}
+              {item.data.action_name && !item.data.action && (
+                <MetaRow label="Action" value={item.data.action_name} />
+              )}
+              {item.data.job_type && (
+                <MetaRow label="Job Type" value={item.data.job_type} />
+              )}
+              {item.data.slot && (
+                <MetaRow label="Slot" value={item.data.slot} />
+              )}
+              {item.data.componentName && (
+                <MetaRow label="Component" value={item.data.componentName} />
+              )}
+            </div>
           )}
 
-          <div className="mt-6 space-y-2">
-            <div className="text-[11px] text-muted-foreground/70 uppercase tracking-wide">
+          {/* Tags */}
+          {item.data?.tags && Array.isArray(item.data.tags) && item.data.tags.length > 0 && (
+            <div>
+              <div className="text-[10px] text-muted-foreground/70 uppercase tracking-wide mb-1">
+                Tags
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {item.data.tags.map((tag: string, i: number) => (
+                  <Badge key={i} variant="secondary" className="text-[10px]">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Shortcuts */}
+          <div className="pt-2 space-y-1.5">
+            <div className="text-[10px] text-muted-foreground/70 uppercase tracking-wide">
               Shortcuts
             </div>
-
-            <div className="text-xs text-muted-foreground flex items-center gap-2">
-              <ArrowUpDown className="h-4 w-4" /> Up/Down to select
-            </div>
-            <div className="text-xs text-muted-foreground flex items-center gap-2">
-              <CornerDownLeft className="h-4 w-4" /> Enter to run
-            </div>
-            <div className="text-xs text-muted-foreground flex items-center gap-2">
-              <Command className="h-4 w-4" /> Cmd/Ctrl + K to open
-            </div>
-            <div className="text-xs text-muted-foreground flex items-center gap-2">
-              <Option className="h-4 w-4" /> Esc to close
+            <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <ArrowUpDown className="h-3 w-3" /> Navigate
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CornerDownLeft className="h-3 w-3" /> Run
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Command className="h-3 w-3" /> Cmd+K
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Option className="h-3 w-3" /> Esc close
+              </div>
             </div>
           </div>
         </div>
       </ScrollArea>
 
-      <div className="p-3 border-t border-border/60 text-[10px] text-muted-foreground/70">
-        <span className="truncate block">id: {item.id}</span>
+      {/* Footer */}
+      <div className="px-3 py-2 border-t border-border/60 text-[10px] text-muted-foreground/50 truncate">
+        {item.id}
       </div>
+    </div>
+  )
+}
+
+function MetaRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span className="text-muted-foreground/70 shrink-0">{label}:</span>
+      <code className="text-[11px] bg-muted rounded px-1.5 py-0.5 truncate">
+        {value}
+      </code>
     </div>
   )
 }

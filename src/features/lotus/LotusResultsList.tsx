@@ -1,9 +1,10 @@
 // src/features/lotus/LotusResultsList.tsx
 import React from 'react'
 import { cn } from '@/lib/utils'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import type { LotusResultItem } from './types'
+import { usePluginLogos } from '@/hooks/usePluginLogos'
 import {
   Sparkles,
   Cpu,
@@ -84,6 +85,8 @@ export function LotusResultsList({
   keyboard = false,
   onRequestFocusInput,
 }: LotusResultsListProps) {
+  const { logos } = usePluginLogos()
+
   const selectedIndex = React.useMemo(() => {
     if (!items.length) return -1
     if (!selectedId) return 0
@@ -153,79 +156,72 @@ export function LotusResultsList({
             const isSelected = item.id === selectedId
             const Icon = kindIcon(item.kind)
             const previewUrl = resolvePreviewUrl(item)
+            const pluginId =
+              item.data?.pluginId ||
+              item.data?.plugin ||
+              item.data?.plugin_name ||
+              ''
+            const pluginLogo = pluginId ? logos?.[pluginId] : null
 
             return (
               <div
                 key={item.id}
                 role="option"
                 aria-selected={isSelected}
-                tabIndex={-1} // ✅ never focusable
-                onMouseDown={(e) => {
-                  // ✅ prevents input blur before click
-                  e.preventDefault()
-                }}
+                tabIndex={-1}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onSelect(item)}
                 onDoubleClick={() => onConfirm(item)}
                 className={cn(
-                  'group select-none cursor-pointer border-b px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent last:border-0 outline-none',
+                  'group select-none cursor-pointer border-b px-3 py-2 text-left text-sm transition-colors hover:bg-accent last:border-0 outline-none',
                   isSelected
                     ? 'bg-accent text-accent-foreground border-primary/50'
                     : 'bg-background border-transparent',
                 )}
               >
-                <div className="flex w-full items-start justify-between gap-2">
-                  <div className="min-w-0 flex items-start gap-3 ">
-                    {previewUrl ? (
-                      <div className="h-9 w-9 shrink-0  overflow-hidden bg-muted">
-                        <img
-                          src={previewUrl}
-                          alt=""
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/80" />
-                    )}
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold truncate break-all whitespace-pre-wrap">
-                          {item.title}
-                        </span>
-                        {item.subtitle && (
-                          <span className="text-[11px] text-muted-foreground truncate">
-                            {item.subtitle}
-                          </span>
-                        )}
-                      </div>
-                      {item.description && (
-                        <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                          {item.description}
-                        </div>
-                      )}
+                <div className="flex w-full items-center gap-2.5">
+                  {/* Icon: plugin logo > preview image > kind icon */}
+                  {previewUrl ? (
+                    <div className="h-8 w-8 shrink-0 rounded overflow-hidden bg-muted">
+                      <img
+                        src={previewUrl}
+                        alt=""
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] capitalize "
-                    >
-                      {item.kind}
-                    </Badge>
-                    <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-60 transition-opacity" />
-                  </div>
-                </div>
-
-                <div className="flex w-full items-center justify-between pt-2">
-                  <code className="text-[10px] text-muted-foreground/70 truncate max-w-[70%]">
-                    {item.id}
-                  </code>
-                  {item.score !== undefined && (
-                    <span className="text-[10px] text-muted-foreground">
-                      {(item.score * 100).toFixed(0)}%
-                    </span>
+                  ) : pluginLogo ? (
+                    <img
+                      src={pluginLogo}
+                      alt=""
+                      className="h-6 w-6 shrink-0 rounded object-contain"
+                    />
+                  ) : (
+                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground/80" />
                   )}
+
+                  {/* Text content */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">
+                        {item.title}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] capitalize shrink-0"
+                      >
+                        {item.kind}
+                      </Badge>
+                    </div>
+                    {(item.subtitle || item.description) && (
+                      <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+                        {item.subtitle || item.description}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right side */}
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-0 group-hover:opacity-50 transition-opacity" />
                 </div>
               </div>
             )

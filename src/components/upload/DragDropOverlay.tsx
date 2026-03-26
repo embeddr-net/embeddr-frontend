@@ -34,9 +34,7 @@ export function DragDropOverlay() {
     setIsDragging(false)
 
     if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-      const files = Array.from(e.dataTransfer.files).filter((f) =>
-        f.type.startsWith('image/'),
-      )
+      const files = Array.from(e.dataTransfer.files)
       if (files.length > 0) {
         setDroppedFiles(files)
         setShowDialog(true)
@@ -61,7 +59,7 @@ export function DragDropOverlay() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm border-2 border-dashed border-primary m-4 rounded-lg pointer-events-none">
           <div className="flex flex-col items-center gap-4 text-primary animate-bounce">
             <UploadCloud className="h-20 w-20" />
-            <h2 className="text-2xl font-bold">Drop image to upload</h2>
+            <h2 className="text-2xl font-bold">Drop files to upload</h2>
           </div>
         </div>
       )}

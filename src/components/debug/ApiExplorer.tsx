@@ -5,20 +5,20 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   RefreshCcw,
   Search,
@@ -29,12 +29,12 @@ import {
   ChevronRight,
   ChevronLeft,
 } from 'lucide-react'
-import { Input } from '@embeddr/react-ui/components/ui'
+import { Input } from '@embeddr/react-ui/ui'
 import { useQuery } from '@tanstack/react-query'
 import { embeddrApi } from '@/lib/api/client'
 import type { Artifact, PaginatedResponse } from '@/lib/api/types'
 import { useArtifact } from '@/hooks/useArtifact'
-import { Separator } from '@embeddr/react-ui/components/ui'
+import { Separator } from '@embeddr/react-ui/ui'
 import { useDebounce } from '@/hooks/use-debounce'
 
 export const ApiExplorer = () => {
@@ -457,15 +457,26 @@ export const ApiExplorer = () => {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="flex gap-2 flex-wrap text-xs">
-                      {details?.type_name === 'image' && (
+                      {(details?.type_name === 'image' ||
+                        details?.type_name?.startsWith('image')) && (
                         <Badge>Viewable</Badge>
                       )}
-                      {details?.type_name === 'text' && <Badge>Readable</Badge>}
-                      {details?.type_name === 'document' && (
-                        <Badge>Viewable</Badge>
-                      )}
-                      {details?.type_name === 'document' && (
+                      {(details?.type_name === 'text' ||
+                        details?.type_name?.startsWith('text')) && (
                         <Badge>Readable</Badge>
+                      )}
+                      {(details?.type_name === 'document' ||
+                        details?.type_name?.startsWith('document')) && (
+                        <Badge>Viewable</Badge>
+                      )}
+                      {(details?.type_name === 'document' ||
+                        details?.type_name?.startsWith('document')) && (
+                        <Badge>Readable</Badge>
+                      )}
+                      {(details?.type_name === 'audio' ||
+                        details?.base_type_name === 'audio' ||
+                        details?.type_name?.startsWith('audio')) && (
+                        <Badge>Playable</Badge>
                       )}
                       {(details as any)?.override_capabilities?.map(
                         (c: string) => (
@@ -476,7 +487,9 @@ export const ApiExplorer = () => {
                       )}
                       <span className="text-muted-foreground ml-2 italic">
                         {details?.type_name === 'image' ||
-                        details?.type_name === 'document'
+                        details?.type_name === 'document' ||
+                        details?.type_name === 'audio' ||
+                        details?.base_type_name === 'audio'
                           ? 'Can be previewed/streamed via API'
                           : ''}
                       </span>
@@ -634,7 +647,23 @@ export const ApiExplorer = () => {
                     ></iframe>
                   </div>
                 )}
-              {!capabilities.includes('viewable') && (
+              {(details?.type_name === 'audio' ||
+                details?.base_type_name === 'audio' ||
+                details?.type_name?.startsWith('audio')) &&
+                contentUrl && (
+                  <div className="w-full max-w-3xl bg-background border p-3 rounded shadow-sm">
+                    <audio
+                      src={contentUrl}
+                      controls
+                      preload="metadata"
+                      className="w-full"
+                    />
+                  </div>
+                )}
+              {!capabilities.includes('viewable') &&
+                details?.type_name !== 'audio' &&
+                details?.base_type_name !== 'audio' &&
+                !details?.type_name?.startsWith('audio') && (
                 <div className="text-muted-foreground mt-10">
                   Artifact of type <strong>{details?.type_name}</strong> is not
                   marked as viewable.

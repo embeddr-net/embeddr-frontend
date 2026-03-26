@@ -1,13 +1,13 @@
 import React from 'react'
-import { Card } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { Textarea } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Textarea } from '@embeddr/react-ui/ui'
 import { useSettingsStore } from '@/store/settingsStore'
 import { MdxRenderer } from '@embeddr/react-ui'
 import type { EmbeddrAPI } from '@embeddr/react-ui/types'

@@ -4,8 +4,8 @@ import {
   formatForDisplay,
   type Hotkey,
 } from '@tanstack/react-hotkeys'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import { toast } from 'sonner'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import {

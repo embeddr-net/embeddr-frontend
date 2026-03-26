@@ -1,18 +1,19 @@
 import React, { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import { useOperatorConsoleData } from '@/hooks/useOperatorConsoleData'
 import { OperatorOverviewSection } from '@/components/operator/OperatorOverviewSection'
 import { OperatorArtifactsSection } from '@/components/operator/OperatorArtifactsSection'
 import { OperatorClientsSection } from '@/components/operator/OperatorClientsSection'
 import { OperatorRolesSection } from '@/components/operator/OperatorRolesSection'
 import { OperatorKeysSection } from '@/components/operator/OperatorKeysSection'
+import { OperatorServiceClientsSection } from '@/components/operator/OperatorServiceClientsSection'
 import { OperatorOperatorsSection } from '@/components/operator/OperatorOperatorsSection'
 
 const OperatorConsolePage = () => {
   const [activeSection, setActiveSection] = useState<
-    'overview' | 'users' | 'roles' | 'keys' | 'operators' | 'artifacts'
+    'overview' | 'users' | 'roles' | 'keys' | 'service-clients' | 'operators' | 'artifacts'
   >('overview')
 
   const data = useOperatorConsoleData()
@@ -37,6 +38,7 @@ const OperatorConsolePage = () => {
                 { id: 'users', label: 'Clients' },
                 { id: 'roles', label: 'Roles' },
                 { id: 'keys', label: 'Client Keys' },
+                { id: 'service-clients', label: 'Service Clients' },
                 { id: 'artifacts', label: 'Artifacts' },
                 { id: 'operators', label: 'Operators' },
               ].map((section) => (
@@ -51,6 +53,7 @@ const OperatorConsolePage = () => {
                         | 'users'
                         | 'roles'
                         | 'keys'
+                        | 'service-clients'
                         | 'artifacts'
                         | 'operators',
                     )
@@ -95,6 +98,9 @@ const OperatorConsolePage = () => {
                 capabilityScopes={data.capabilityScopes}
                 isForbidden={data.isForbidden}
               />
+            )}
+            {activeSection === 'service-clients' && (
+              <OperatorServiceClientsSection />
             )}
             {activeSection === 'operators' && (
               <OperatorOperatorsSection

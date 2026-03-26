@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Info, Loader2, Minus, Plus, RotateCcw } from 'lucide-react'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import { useLineageStore } from '@/store/lineageStore'
 import { ImageNode } from '@/components/lineage/ImageNode'
 

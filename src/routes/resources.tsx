@@ -6,15 +6,15 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/components/ui'
-import { Input } from '@embeddr/react-ui/components/ui'
-import { Badge } from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
+import { Input } from '@embeddr/react-ui/ui'
+import { Badge } from '@embeddr/react-ui/ui'
 import { Search, Database, FileBox, Cpu, Activity } from 'lucide-react'
 import { SystemResourceBar } from '@embeddr/react-ui'
 
@@ -54,19 +54,18 @@ function ResourcesPage() {
   }, [api])
 
   const loadLoras = (page: number) => {
-    api.models.list({ category: 'loras', page, limit }).then(setLoras)
+    // @ts-expect-error Legacy API — models namespace removed in 0.2.0
+    api.models?.list?.({ category: 'loras', page, limit }).then(setLoras).catch(() => {})
   }
 
   const loadCheckpoints = (page: number) => {
-    api.models
-      .list({ category: 'checkpoints', page, limit })
-      .then(setCheckpoints)
+    // @ts-expect-error Legacy API — models namespace removed in 0.2.0
+    api.models?.list?.({ category: 'checkpoints', page, limit }).then(setCheckpoints).catch(() => {})
   }
 
   const loadEmbeddings = (page: number) => {
-    api.models
-      .list({ category: 'embeddings', page, limit })
-      .then(setEmbeddings)
+    // @ts-expect-error Legacy API — models namespace removed in 0.2.0
+    api.models?.list?.({ category: 'embeddings', page, limit }).then(setEmbeddings).catch(() => {})
   }
 
   const filterItems = (items: string[]) =>

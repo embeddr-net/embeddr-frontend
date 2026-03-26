@@ -1,12 +1,12 @@
 import React from 'react'
 import { useWindowStore } from '@/store/windowStore'
-import { Button } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
 import { Box, PanelBottomClose, PanelBottomOpen, PlugZap } from 'lucide-react'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@embeddr/react-ui/components/ui'
+} from '@embeddr/react-ui/ui'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { usePluginStore } from '@/plugins/store'
 import { usePluginLogos } from '@/hooks/usePluginLogos'
@@ -16,10 +16,6 @@ export function ZenToggleWidget() {
   const showZenToolbar = useWindowStore((s) => s.showZenToolbar)
   const toggleZenToolbar = useWindowStore((s) => s.toggleZenToolbar)
   const spawnWindow = useWindowStore((s) => s.spawnWindow)
-  const openWindow = useWindowStore((s) => s.openWindow)
-  const restoreWindow = useWindowStore((s) => s.restoreWindow)
-  const bringToFront = useWindowStore((s) => s.bringToFront)
-  const windows = useWindowStore((s) => s.windows)
   const getComponents = usePluginStore((s) => s.getComponents)
   const { logos } = usePluginLogos()
   const [pinnedPanels] = useLocalStorage<string[]>('zen-pinned-panels', [])
@@ -74,25 +70,16 @@ export function ZenToggleWidget() {
           size="sm"
           className="justify-start gap-2"
           onClick={() => {
-            const windowId = 'zen-toolbox'
-            const win = windows[windowId]
-            if (!win) {
-              openWindow({
-                id: windowId,
-                title: 'Toolbox',
-                componentId: 'core-toolbox',
-              })
-              return
-            }
-            if (win.isMinimized) {
-              restoreWindow(windowId)
-            } else {
-              bringToFront(windowId)
-            }
+            const componentId = 'embeddr-core-control-panel'
+            spawnWindow(componentId, 'Control Panel', {
+              pluginId: 'embeddr-core',
+              componentName: 'ControlPanel',
+              panelMode: 'single',
+            })
           }}
         >
           <Box className="h-3.5 w-3.5" />
-          <span className="text-xs truncate">Toolbox</span>
+          <span className="text-xs truncate">Control Panel</span>
         </Button>
         <div className="my-1 h-px bg-border/60" />
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-1 pb-1">
@@ -100,7 +87,7 @@ export function ZenToggleWidget() {
         </div>
         {pinnedPanelDefs.length === 0 ? (
           <div className="text-xs text-muted-foreground px-1 py-2">
-            Pin panels in the Toolbox.
+            Pin panels in the Control Panel.
           </div>
         ) : (
           <div className="flex flex-col gap-1">

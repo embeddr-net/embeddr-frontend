@@ -1,12 +1,13 @@
 import React from 'react'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { Card } from '@embeddr/react-ui/components/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { Card } from '@embeddr/react-ui/ui'
 import { Dice5, Info, Terminal } from 'lucide-react'
 import type { EmbeddrAPI, PluginDefinition } from '@embeddr/react-ui/types'
 
 // --- Plugin 1: Workflow Metadata Viewer (UI) ---
 const WorkflowInfoComponent: React.FC<{ api: EmbeddrAPI }> = ({ api }) => {
-  const { selectedPipeline } = api.stores.execution
+  // @ts-expect-error Legacy API — execution store removed in 0.2.0
+  const { selectedPipeline } = api.stores?.execution || {}
 
   if (!selectedPipeline) {
     return (

@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { DraggablePanel } from '@/components/ui/DraggablePanel'
 import { ImageBrowser } from '@/components/search/ImageBrowser'
-import { Switch } from '@embeddr/react-ui/components/ui'
-import { Label } from '@embeddr/react-ui/components/ui'
+import { Switch } from '@embeddr/react-ui/ui'
+import { Label } from '@embeddr/react-ui/ui'
 import { useWindowStore } from '@/store/windowStore'
 
 interface ZenImageBrowserProps {

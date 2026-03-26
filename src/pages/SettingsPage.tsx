@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Card } from '@embeddr/react-ui/components/ui'
-import { Button } from '@embeddr/react-ui/components/ui'
-import { ScrollArea } from '@embeddr/react-ui/components/ui'
+import { Card } from '@embeddr/react-ui/ui'
+import { Button } from '@embeddr/react-ui/ui'
+import { ScrollArea } from '@embeddr/react-ui/ui'
 import { cn } from '@/lib/utils'
 import { Route } from '@/routes/settings'
 import {
