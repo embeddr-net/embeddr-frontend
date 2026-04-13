@@ -13,10 +13,12 @@
     "check": "prettier --write . && eslint --fix"
   },
   "dependencies": {
-    "@embeddr/client-typescript": "workspace:*",
-    "@embeddr/react-ui": "workspace:*",
-    "@embeddr/zen-shell": "workspace:*",
+    "@embeddr/client-typescript": "link:../embeddr-network/packages/client-typescript",
+    "@embeddr/react-ui": "link:../embeddr-react-ui",
+    "@embeddr/zen-shell": "link:../embeddr-zen-shell",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@tabler/icons-react": "^3.36.1",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/eslint-config": "^0.3.4",
