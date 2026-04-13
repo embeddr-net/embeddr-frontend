@@ -11,6 +11,12 @@ import { useLotus } from '@/providers/LotusProvider'
 import { useSettingsStore } from '@/store/settingsStore'
 import type { LotusResultItem, FinderMode, FinderKind, LotusMessage } from './types'
 import type { Artifact, PaginatedResponse } from '@/lib/api/types'
+import { useArtifactTypeCounts } from '@/hooks/useArtifactTypeCounts'
+import {
+  parseFinderQuery as zenParseFinderQuery,
+  norm as zenNorm,
+  mergeDedup as zenMergeDedup,
+} from '@embeddr/zen-shell'
 import { LotusSearchBar } from './LotusSearchBar'
 import { LotusPreviewPane } from './LotusPreviewPane'
 import { LotusResultsList } from './LotusResultsList'
@@ -28,88 +34,17 @@ type FinderDefaults = {
   shebangs?: Record<string, string | { provider: string; kind?: string }>
 }
 
-type ParsedFinderQuery = {
-  raw: string
-  text: string
-  shebang: string | null
-  shebangArgs: string
-  tags: Array<{ key: string; value?: string }>
-}
+// Use shared utilities from zen-shell
+const norm = zenNorm
 
-function norm(s: string) {
-  return (s || '').toLowerCase().trim()
-}
+// localScore imported from zen-shell via the import above
+import { localScore } from '@embeddr/zen-shell'
 
-function localScore(q: string, title: string, subtitle?: string) {
-  const qq = norm(q)
-  if (!qq) return 0
-  const t = norm(title)
-  const st = norm(subtitle || '')
-  if (t === qq) return 100
-  if (t.startsWith(qq)) return 80
-  if (t.includes(qq)) return 55
-  if (st.includes(qq)) return 35
-  return 0
-}
+// Use shared mergeDedup from zen-shell (works with LotusResultItem which is compatible with ZenFinderItem)
+const mergeDedup = zenMergeDedup as (a: LotusResultItem[], b: LotusResultItem[]) => LotusResultItem[]
 
-function mergeDedup(a: LotusResultItem[], b: LotusResultItem[]) {
-  const map = new Map<string, LotusResultItem>()
-  for (const it of [...a, ...b]) {
-    const prev = map.get(it.id)
-    if (!prev) map.set(it.id, it)
-    else if ((it.score ?? 0) > (prev.score ?? 0)) map.set(it.id, it)
-  }
-  return Array.from(map.values())
-}
-
-function parseFinderQuery(raw: string): ParsedFinderQuery {
-  const trimmed = raw.trim()
-  let shebang: string | null = null
-  let shebangArgs = ''
-  let rest = trimmed
-
-  if (trimmed.startsWith('!')) {
-    const match = /^!([^\s]+)\s*(.*)$/.exec(trimmed)
-    if (match) {
-      shebang = match[1].toLowerCase()
-      shebangArgs = match[2] || ''
-      rest = shebangArgs
-    }
-  }
-
-  const tags: Array<{ key: string; value?: string }> = []
-  const tokens = rest.split(/\s+/).filter(Boolean)
-  const remaining: string[] = []
-
-  for (const token of tokens) {
-    if (token.startsWith('@') && token.length > 1) {
-      const tag = token.slice(1)
-      const parts = tag.split(/[:=]/, 2)
-      const key = (parts[0] || '').trim().toLowerCase()
-      const value = (parts[1] || '').trim()
-      if (key) tags.push({ key, value: value || undefined })
-    } else if (token.startsWith('$') && token.length > 1) {
-      const tag = token.slice(1)
-      const parts = tag.split(/[:=]/, 2)
-      const rawKey = (parts[0] || '').trim().toLowerCase()
-      const rawValue = (parts[1] || '').trim()
-      if (rawKey) {
-        if (rawValue) tags.push({ key: rawKey, value: rawValue })
-        else tags.push({ key: 'sort', value: rawKey })
-      }
-    } else {
-      remaining.push(token)
-    }
-  }
-
-  return {
-    raw,
-    text: remaining.join(' ').trim(),
-    shebang,
-    shebangArgs,
-    tags,
-  }
-}
+// Use shared parseFinderQuery from zen-shell
+const parseFinderQuery = zenParseFinderQuery
 
 interface LotusFinderProps {
   open: boolean
@@ -139,7 +74,11 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
   })
   const [finderDefaults, setFinderDefaults] = React.useState<FinderDefaults>({
     enable_search: true,
-    shebangs: {},
+    shebangs: {
+      stash: { provider: 'nynxz-stash.search' },
+      s: { provider: 'nynxz-stash.search' },
+      llm: { provider: 'embeddr-llm.search_artifacts' },
+    },
   })
   const [resolvedResource, setResolvedResource] = React.useState<Record<
     string,
@@ -158,6 +97,10 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
   const [lotusAvailable, setLotusAvailable] = React.useState(false)
   const [messages, setMessages] = React.useState<LotusMessage[]>([])
   const [lotusLoading, setLotusLoading] = React.useState(false)
+
+  // --- Type filter ---
+  const [finderTypeName, setFinderTypeName] = React.useState<string | null>(null)
+  const { typeTree } = useArtifactTypeCounts()
 
   // --- Kind filter ---
   const [hiddenKinds, setHiddenKinds] = React.useState<Set<FinderKind>>(() => {
@@ -441,9 +384,10 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
         scope_id: null,
         include_capability: false,
       })
-      setDefaults(out?.value || {})
+      const val = out?.value
+      if (val && Object.keys(val).length > 0) setDefaults(val)
     } catch {
-      setDefaults({})
+      // Keep initial defaults — don't overwrite with empty object
     }
     try {
       const finderOut = await apiRef.current.lotus.invoke(
@@ -456,9 +400,12 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
           include_capability: false,
         },
       )
-      setFinderDefaults(finderOut?.value || {})
+      const val = finderOut?.value
+      if (val && Object.keys(val).length > 0) {
+        setFinderDefaults((prev) => ({ ...prev, ...val }))
+      }
     } catch {
-      setFinderDefaults({ enable_search: true, shebangs: {} })
+      // Keep initial defaults (with seeded shebangs)
     }
   }, [])
 
@@ -565,7 +512,7 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
         const tagValue = (keys: string[]) =>
           tags.find((t) => keys.includes(t.key))?.value
 
-        const typeFilter = tagValue(['type', 'type_name'])
+        const typeFilter = tagValue(['type', 'type_name']) || finderTypeName || undefined
         const typePrefix = tagValue(['type_prefix', 'prefix'])
         const idFilter = tagValue(['id', 'artifact'])
 
@@ -704,15 +651,13 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
               items.map((it: any) => [String(it.id), it.score ?? 0]),
             )
             const ids = items.map((it: any) => String(it.id))
-            const outList = await apiRef.current.artifacts.list({
-              ids,
-              limit: ids.length,
-            })
-            let artifacts = Array.isArray(outList?.items) ? outList.items : []
-            const byId = new Map(
-              artifacts.map((art: any) => [String(art.id), art]),
+            // Fetch each artifact individually — the list endpoint doesn't support ids filter
+            const fetched = await Promise.all(
+              ids.map((id: string) =>
+                embeddrApi.artifacts.get(id).catch(() => null),
+              ),
             )
-            artifacts = ids.map((id: string) => byId.get(id)).filter(Boolean)
+            let artifacts = fetched.filter(Boolean)
 
             if (typeFilter) {
               artifacts = artifacts.filter(
@@ -771,8 +716,18 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
               item.regular_url
             const previewUrl =
               item.preview_url || item.thumbnail || item.thumb || item.cover
+            const kindTypeMap: Record<string, string> = {
+              scenes: 'video',
+              images: 'image',
+              performers: 'entity',
+              galleries: 'collection',
+              studios: 'entity',
+            }
             const inferredType =
-              item.type || item.media_type || (resolverUrl ? 'document' : 'web')
+              item.type ||
+              item.media_type ||
+              kindTypeMap[item.kind] ||
+              (resolverUrl ? 'document' : 'web')
 
             const allowedKinds = new Set([
               'resource',
@@ -876,6 +831,7 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
     mode,
     filteredLocal,
     defaults.text_provider,
+    finderTypeName,
     buildArtifactItems,
     buildResourceItem,
   ])
@@ -1017,12 +973,13 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
       const title = resolved?.title || resource?.title || item.title
       const type = resolved?.type || resource?.type || 'web'
       if (!url) return toast.info('No resource URL available.')
+      const frameId = `media-frame-${Date.now()}`
       apiRef.current.windows.open(
-        'core-media-frame',
-        'Media Frame',
-        'embeddr-core-media-frame-panel',
+        frameId,
+        title || 'Media Frame',
+        'embeddr-core-media-frame',
         {
-          panelId: 'core-media-frame',
+          panelId: frameId,
           initialItems: [
             {
               id: resource?.id || item.id,
@@ -1138,6 +1095,10 @@ export function LotusFinder({ open, onOpenChange }: LotusFinderProps) {
             lotusAvailable={lotusAvailable}
             hiddenKinds={hiddenKinds}
             onToggleKind={toggleKind}
+            typeTree={typeTree}
+            selectedFinderType={finderTypeName}
+            onSelectFinderType={setFinderTypeName}
+            searchProvider={defaults.text_provider || 'search.text'}
           />
         </div>
 

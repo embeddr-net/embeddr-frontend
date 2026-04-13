@@ -80,6 +80,7 @@ import { usePluginStore, useEmbeddrAPI } from '@/plugins/store'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { CommandBarCustomizer } from '@/components/settings/CommandBarCustomizer'
 import { HotkeysSettings } from '@/components/settings/HotkeysSettings'
+import { ServicesPanel } from '@/components/settings/ServicesPanel'
 
 function TabScrollArea({ children }: { children: React.ReactNode }) {
   return <div className="min-h-full w-full p-3 flex flex-col">{children}</div>
@@ -211,6 +212,14 @@ export function ZenWorkflowsTab() {
           </div>
         </div>
       </div>
+    </TabScrollArea>
+  )
+}
+
+export function ZenServicesTab() {
+  return (
+    <TabScrollArea>
+      <ServicesPanel />
     </TabScrollArea>
   )
 }

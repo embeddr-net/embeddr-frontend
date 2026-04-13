@@ -60,7 +60,7 @@ export function PluginWindowBootstrap() {
 
       registered.current.add(componentId)
 
-      registerWindowComponent(componentId, (props: any) => (
+      const renderer = (props: any) => (
         <PluginErrorBoundary pluginId={pluginId} componentName={componentName}>
           <DynamicPluginComponent
             pluginId={pluginId}
@@ -75,7 +75,19 @@ export function PluginWindowBootstrap() {
             {...props}
           />
         </PluginErrorBoundary>
-      ))
+      )
+
+      registerWindowComponent(componentId, renderer)
+
+      // Register alias under the component class name so old stored IDs
+      // (e.g. "embeddr-core-ExplorerPage") resolve to the same renderer
+      // as new IDs (e.g. "embeddr-core-explorer")
+      if (componentName && componentName !== componentKey) {
+        const aliasId = `${pluginId}-${componentName}`
+        if (!registered.current.has(aliasId)) {
+          registerWindowComponent(aliasId, renderer)
+        }
+      }
     }
   }, [sig])
 

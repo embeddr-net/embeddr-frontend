@@ -38,6 +38,7 @@ import { useEmbeddrAPI, extendApiForPlugin } from "@/plugins/store";
 import { useGlobalStore } from "@/store/globalStore";
 import { DynamicPluginComponent } from "@/plugins/DynamicLoader";
 import { PluginErrorBoundary } from "@/plugins/PluginErrorBoundary";
+import { lucideIconFromName } from "@/lib/lucide";
 import { useShallow } from "zustand/react/shallow";
 
 type ResolvedPluginWindow = {
@@ -118,9 +119,19 @@ function resolveFromComponentId(
   if (!bestPid) return null;
 
   const defId = componentId.slice(bestPid.length + 1);
-  const def = plugins?.[bestPid]?.components?.find(
-    (c: any) => c.id === defId || c.name === defId,
-  );
+  const components = plugins?.[bestPid]?.components || [];
+  const norm = (s: string) => (s || '').replace(/[-_]/g, '').toLowerCase();
+  const defNorm = norm(defId);
+  // Try exact match first, then normalized (strips hyphens, lowercases)
+  const def =
+    components.find((c: any) => c.id === defId || c.name === defId) ||
+    components.find(
+      (c: any) =>
+        norm(c.id) === defNorm ||
+        norm(c.name) === defNorm ||
+        norm(c.exportName) === defNorm ||
+        norm(c.component) === defNorm,
+    );
   const componentName = def?.exportName || def?.component;
   if (!componentName) return null;
 
@@ -575,12 +586,21 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
     "Untitled Panel";
 
   const logoUrl = showPluginLogos ? logos?.[pluginId] : null;
+  const iconValue = def?.icon;
+  const TitleGlyph =
+    typeof iconValue === "string"
+      ? lucideIconFromName(iconValue)
+      : typeof iconValue === "function"
+        ? iconValue
+        : null;
   const titleIcon = logoUrl ? (
     <img
       src={logoUrl}
       alt={`${pluginId} logo`}
       className="h-4 w-4 rounded-sm object-contain"
     />
+  ) : TitleGlyph ? (
+    <TitleGlyph className="h-4 w-4" />
   ) : undefined;
 
   const handlePositionChange = (pos: { x: number; y: number }) =>

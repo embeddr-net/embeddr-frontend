@@ -93,7 +93,7 @@ export function CoreUIEventBridge() {
       // If targetWindowId provided, emit to that window instead of spawning new.
       // (Optional: you can implement "target existing window" later.)
       const windowId = p.targetWindowId ?? panelId ?? "core-media-frame";
-      const componentId = "embeddr-core-media-frame-panel";
+      const componentId = "embeddr-core-media-frame";
       const props = {
         // ✅ critical: pass windowId down so storage keys are unique per instance
         // your DynamicPluginComponent already passes windowId prop
@@ -106,8 +106,12 @@ export function CoreUIEventBridge() {
         resetUiOnOpen: true,
       };
 
-      // Open-or-reuse with stable ID so local panel state survives refreshes.
-      api.windows.open(windowId, title, componentId, props);
+      // Spawn new window if requested, otherwise open-or-reuse
+      if (p.windowStrategy === "spawn" || p.spawn === true) {
+        api.windows.spawn(componentId, title, props);
+      } else {
+        api.windows.open(windowId, title, componentId, props);
+      }
 
       if (focus) {
         // bringToFront is on window store, but API doesn’t expose it directly;

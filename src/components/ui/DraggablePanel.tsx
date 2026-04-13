@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import { DraggablePanel as LibDraggablePanel } from "@embeddr/react-ui";
-import { useScreenSafeArea } from "@embeddr/zen-shell";
+import { useLocalStorage, useScreenSafeArea } from "@embeddr/zen-shell";
 import { useWindowStore } from "@/store/windowStore";
 import { cn } from "@/lib/utils";
 
@@ -118,7 +118,10 @@ export function DraggablePanel({
 
   const [localPosition, setLocalPosition] = useState(initialPosition);
   const [localSize, setLocalSize] = useState(initialSize);
-  const [internalShowTitle, setInternalShowTitle] = useState(true);
+  const [internalShowTitle, setInternalShowTitle] = useLocalStorage(
+    id ? `panel-${id}-show-title` : "temp-panel-show-title",
+    true,
+  );
   const screenSafeArea = useScreenSafeArea({
     enabled: true,
     edgePadding: 0,
@@ -142,6 +145,15 @@ export function DraggablePanel({
   useEffect(() => {
     sizeRef.current = localSize;
   }, [localSize]);
+
+  useEffect(() => {
+    if (
+      controlledShowTitle !== undefined &&
+      internalShowTitle !== controlledShowTitle
+    ) {
+      setInternalShowTitle(controlledShowTitle);
+    }
+  }, [controlledShowTitle, internalShowTitle, setInternalShowTitle]);
 
   useEffect(() => {
     if (!windowState) {
@@ -329,6 +341,7 @@ export function DraggablePanel({
 
       if (positionChanged) {
         setLocalPosition(constrained);
+        onPositionChange?.(constrained);
       }
 
       const targetId = findMergeTarget();
@@ -337,12 +350,14 @@ export function DraggablePanel({
         setMergeHoverTarget(targetId);
       }
     },
-    [clampPositionToSafeArea, controlledSize, findMergeTarget, setMergeHoverTarget],
+    [clampPositionToSafeArea, controlledSize, findMergeTarget, onPositionChange, setMergeHoverTarget],
   );
 
   const handleSizeChange = useCallback(
     (nextSize: PanelSize) => {
-      const positionForClamp = controlledPosition ?? positionRef.current;
+      const positionForClamp = isInteractingRef.current
+        ? (lastPositionRef.current ?? positionRef.current)
+        : (controlledPosition ?? positionRef.current);
       const constrainedSize = clampSizeToSafeArea(nextSize, positionForClamp);
       lastSizeRef.current = constrainedSize;
       isInteractingRef.current = true;
@@ -396,10 +411,10 @@ export function DraggablePanel({
   ]);
 
   const handleResizeEnd = useCallback(() => {
-    const positionForClamp = controlledPosition ?? positionRef.current;
+    const currentPos = lastPositionRef.current ?? controlledPosition ?? positionRef.current;
     const nextSize = clampSizeToSafeArea(
       lastSizeRef.current ?? controlledSize ?? sizeRef.current,
-      positionForClamp,
+      currentPos,
     );
 
     const sizeChanged = !sizesEqual(sizeRef.current, nextSize);
@@ -410,12 +425,14 @@ export function DraggablePanel({
       onSizeChange?.(nextSize);
     }
 
-    updateWindow(id, { size: nextSize });
+    // Persist BOTH size and position — position changes during NW/N/W resize
+    updateWindow(id, { size: nextSize, position: currentPos });
 
     isInteractingRef.current = false;
     onResizeEnd?.();
   }, [
     clampSizeToSafeArea,
+    controlledPosition,
     controlledSize,
     id,
     onResizeEnd,

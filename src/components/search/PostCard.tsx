@@ -13,6 +13,8 @@ import {
   MoreHorizontal,
   Video,
   Folder,
+  Cloud,
+  HardDrive,
 } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -200,6 +202,19 @@ const PostCard = memo(
               {post.media_type === 'video' && (
                 <div className="absolute top-2 right-2 bg-black/50 p-1 rounded-md backdrop-blur-sm">
                   <Video className="w-3 h-3 text-white" />
+                </div>
+              )}
+              {(post as any).storage_backend &&
+                (post as any).storage_backend !== 'local' && (
+                  <div className="absolute top-2 left-2 opacity-0 group-hover/post:opacity-100 transition-opacity bg-black/50 p-1 rounded-md backdrop-blur-sm">
+                    <Cloud className="w-3 h-3 text-white" />
+                  </div>
+                )}
+              {(post as any).type_name && (
+                <div className="absolute bottom-1 left-1 opacity-0 group-hover/post:opacity-100 transition-opacity">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/50 text-white/80 backdrop-blur-sm font-mono">
+                    {(post as any).type_name}
+                  </span>
                 </div>
               )}
               <div

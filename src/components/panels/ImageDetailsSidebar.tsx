@@ -45,14 +45,26 @@ interface ImageDetailsSidebarProps {
   onSelectImage?: (image: PromptImage) => void
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
 interface ArtifactDetail {
   id: string
   type_name: string
+  base_type_name?: string
   uri: string
   metadata_json: Record<string, any>
   collections: Array<{ id: string; name: string }>
   tags: Array<{ id: string; name: string }>
   created_at: string
+  storage_backend?: string
+  content_type?: string
+  blob_size?: number
 }
 
 const DEFAULT_SECTIONS = [
@@ -261,6 +273,22 @@ export function ImageDetailsSidebar({
                     ? artifact.metadata_json.filename.split('.').pop()
                     : 'UNK')}
               </span>
+            </div>
+            {artifact?.blob_size ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-muted-foreground">Size</span>
+                <span className="font-mono">{formatFileSize(artifact.blob_size)}</span>
+              </div>
+            ) : null}
+            {artifact?.storage_backend ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-muted-foreground">Storage</span>
+                <span className="font-mono">{artifact.storage_backend}</span>
+              </div>
+            ) : null}
+            <div className="flex flex-col gap-1">
+              <span className="text-muted-foreground">Type</span>
+              <span className="font-mono">{artifact?.type_name || 'unknown'}</span>
             </div>
             <div className="flex flex-col gap-1 col-span-2">
               <span className="text-muted-foreground flex items-center gap-1">

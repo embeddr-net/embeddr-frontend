@@ -198,7 +198,7 @@ export interface FileRoutesByFullPath {
   '/pipelines/$pipelineId': typeof PipelinesPipelineIdRoute
   '/plugins/$pluginId': typeof PluginsPluginIdRouteWithChildren
   '/plugins/actions': typeof PluginsActionsRoute
-  '/actions': typeof ActionsIndexRoute
+  '/actions/': typeof ActionsIndexRoute
   '/pipelines/': typeof PipelinesIndexRoute
   '/plugins/$pluginId/$pageId': typeof PluginsPluginIdPageIdRoute
 }
@@ -287,7 +287,7 @@ export interface FileRouteTypes {
     | '/pipelines/$pipelineId'
     | '/plugins/$pluginId'
     | '/plugins/actions'
-    | '/actions'
+    | '/actions/'
     | '/pipelines/'
     | '/plugins/$pluginId/$pageId'
   fileRoutesByTo: FileRoutesByTo
@@ -521,7 +521,7 @@ declare module '@tanstack/react-router' {
     '/actions/': {
       id: '/actions/'
       path: '/actions'
-      fullPath: '/actions'
+      fullPath: '/actions/'
       preLoaderRoute: typeof ActionsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }

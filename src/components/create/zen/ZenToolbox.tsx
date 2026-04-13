@@ -95,10 +95,6 @@ export function ZenToolbox(props: ZenToolboxProps) {
   )
 
   const spawnWindow = useWindowStore((s) => s.spawnWindow)
-  const layouts = useWindowStore((s) => s.layouts)
-  const saveLayout = useWindowStore((s) => s.saveLayout)
-  const loadLayout = useWindowStore((s) => s.loadLayout)
-  const deleteLayout = useWindowStore((s) => s.deleteLayout)
   const closeWindow = useWindowStore((s) => s.closeWindow)
   const minimizeWindow = useWindowStore((s) => s.minimizeWindow)
   const windows = useWindowStore((s) => s.windows)

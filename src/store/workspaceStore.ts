@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { useWindowStore, type WindowState } from '@/store/windowStore'
+import { useWindowStore, setWorkspaceLockFlag, type WindowState } from '@/store/windowStore'
+import { useTilingStore } from '@/store/tilingStore'
+import { useSettingsStore } from '@/store/settingsStore'
+import type { TileNode } from '@embeddr/zen-shell'
 
 type WorkspaceId = string
 
@@ -9,6 +12,8 @@ export type WorkspaceLayout = {
   panelOrder: string[]
   backdropWindowId: string | null
   showZenToolbar: boolean
+  tileTree: TileNode | null
+  tilingEnabled: boolean
 }
 
 export type Workspace = {
@@ -23,6 +28,7 @@ export type Workspace = {
 export type WorkspaceStoreState = {
   workspaces: Record<string, Workspace>
   activeWorkspaceId: WorkspaceId | null
+  isLocked: boolean
 
   ensureDefaultWorkspace: () => void
   listWorkspaces: () => Workspace[]
@@ -39,6 +45,8 @@ export type WorkspaceStoreState = {
   cloneWorkspace: (id: WorkspaceId, name?: string) => WorkspaceId | null
   deleteWorkspace: (id: WorkspaceId) => void
   setTemplate: (id: WorkspaceId, isTemplate: boolean) => void
+  setLocked: (locked: boolean) => void
+  toggleLocked: () => void
 }
 
 const STORAGE_KEY = 'embeddr-workspace-store'
@@ -49,12 +57,16 @@ const deepClone = <T>(value: T): T => {
 }
 
 const captureLayout = (): WorkspaceLayout => {
-  const state = useWindowStore.getState()
+  const windowState = useWindowStore.getState()
+  const tilingState = useTilingStore.getState()
+  const settingsState = useSettingsStore.getState()
   return deepClone({
-    windows: state.windows,
-    panelOrder: state.panelOrder,
-    backdropWindowId: state.backdropWindowId,
-    showZenToolbar: state.showZenToolbar,
+    windows: windowState.windows,
+    panelOrder: windowState.panelOrder,
+    backdropWindowId: windowState.backdropWindowId,
+    showZenToolbar: windowState.showZenToolbar,
+    tileTree: tilingState.tileTree,
+    tilingEnabled: settingsState.tilingEnabled,
   })
 }
 
@@ -66,6 +78,10 @@ const applyLayout = (layout: WorkspaceLayout) => {
     backdropWindowId: cloned.backdropWindowId ?? null,
     showZenToolbar: cloned.showZenToolbar ?? true,
   })
+  useTilingStore.setState({
+    tileTree: cloned.tileTree ?? null,
+  })
+  useSettingsStore.getState().setTilingEnabled(cloned.tilingEnabled ?? false)
 }
 
 const createWorkspaceFromLayout = (
@@ -89,6 +105,17 @@ export const useWorkspaceStore = create<WorkspaceStoreState>()(
     (set, get) => ({
       workspaces: {},
       activeWorkspaceId: null,
+      isLocked: false,
+
+      setLocked: (locked) => {
+        setWorkspaceLockFlag(locked)
+        set({ isLocked: locked })
+      },
+      toggleLocked: () => {
+        const next = !get().isLocked
+        setWorkspaceLockFlag(next)
+        set({ isLocked: next })
+      },
 
       ensureDefaultWorkspace: () => {
         set((state) => {
@@ -120,6 +147,8 @@ export const useWorkspaceStore = create<WorkspaceStoreState>()(
               panelOrder: [],
               backdropWindowId: null,
               showZenToolbar: true,
+              tileTree: null,
+              tilingEnabled: false,
             }
         const ws = createWorkspaceFromLayout(name, layout, isTemplate)
         set((state) => ({
@@ -213,11 +242,26 @@ export const useWorkspaceStore = create<WorkspaceStoreState>()(
     }),
     {
       name: STORAGE_KEY,
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         workspaces: state.workspaces,
         activeWorkspaceId: state.activeWorkspaceId,
       }),
+      migrate: (persisted: any, version: number) => {
+        if (version < 2) {
+          // v1 → v2: add tileTree and tilingEnabled to existing workspace layouts
+          const state = persisted as any
+          if (state?.workspaces) {
+            for (const ws of Object.values(state.workspaces) as any[]) {
+              if (ws?.layout) {
+                ws.layout.tileTree ??= null
+                ws.layout.tilingEnabled ??= false
+              }
+            }
+          }
+        }
+        return persisted as any
+      },
     },
   ),
 )

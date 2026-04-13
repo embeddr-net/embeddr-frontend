@@ -15,34 +15,9 @@ import {
   createNodeId,
   findNodeById,
   pruneTreeEntries,
+  sendEntryToTileTree,
   updateNodeById,
 } from '@embeddr/zen-shell'
-
-// ---------------------------------------------------------------------------
-// Tree helpers
-// ---------------------------------------------------------------------------
-
-/** Find the first leaf node without an entryKey. */
-function findFirstEmptyLeaf(node: TileNode): TileNode | null {
-  if (!node.children || !node.split) {
-    return node.entryKey ? null : node
-  }
-  return (
-    findFirstEmptyLeaf(node.children[0]) ||
-    findFirstEmptyLeaf(node.children[1])
-  )
-}
-
-/** Find the last occupied leaf (rightmost/bottommost with content). */
-function findLastOccupiedLeaf(node: TileNode): TileNode | null {
-  if (!node.children || !node.split) {
-    return node.entryKey ? node : null
-  }
-  return (
-    findLastOccupiedLeaf(node.children[1]) ||
-    findLastOccupiedLeaf(node.children[0])
-  )
-}
 
 export interface TilingState {
   /** The root of the tiling tree, or null for an empty canvas. */
@@ -200,45 +175,7 @@ export const useTilingStore = create<TilingState>()(
 
       sendToTile: (componentId, windowId) => {
         const { tileTree } = get()
-        if (!tileTree) {
-          set({ tileTree: createLeaf(componentId, undefined, windowId) })
-          return
-        }
-        // Fill an empty leaf first
-        const emptyLeaf = findFirstEmptyLeaf(tileTree)
-        if (emptyLeaf) {
-          const nextTree = updateNodeById(
-            tileTree,
-            emptyLeaf.id,
-            (node) => ({
-              ...node,
-              entryKey: componentId,
-              instanceId: windowId,
-            }),
-          )
-          set({ tileTree: nextTree })
-          return
-        }
-        // No empty slot — split the last occupied leaf
-        const lastLeaf = findLastOccupiedLeaf(tileTree)
-        if (lastLeaf) {
-          const nextTree = updateNodeById(
-            tileTree,
-            lastLeaf.id,
-            (existing) => ({
-              id: createNodeId(),
-              split: 'horizontal' as const,
-              children: [
-                existing,
-                createLeaf(componentId, undefined, windowId),
-              ] as [TileNode, TileNode],
-            }),
-          )
-          set({ tileTree: nextTree })
-          return
-        }
-        // Fallback
-        set({ tileTree: createLeaf(componentId, undefined, windowId) })
+        set({ tileTree: sendEntryToTileTree(tileTree, componentId, windowId) })
       },    }),
     {
       name: 'embeddr-tiling-store',

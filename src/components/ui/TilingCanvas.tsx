@@ -45,8 +45,8 @@ import { DynamicPluginComponent } from "@/plugins/DynamicLoader";
 import { PluginErrorBoundary } from "@/plugins/PluginErrorBoundary";
 import { cn } from "@/lib/utils";
 import { X, Maximize2, GripHorizontal } from "lucide-react";
-import { PanelContext } from "@embeddr/react-ui/ui";
-import type { PanelState } from "@embeddr/react-ui/ui";
+import { PanelContext } from "@embeddr/react-ui/components/embeddr";
+import type { PanelState } from "@embeddr/react-ui/components/embeddr";
 
 // ---------------------------------------------------------------------------
 // Component resolution — same logic as PanelManager
@@ -66,9 +66,19 @@ function resolveFromComponentId(
   }
   if (!bestPid) return null;
   const defId = componentId.slice(bestPid.length + 1);
-  const def = plugins?.[bestPid]?.components?.find(
-    (c: any) => c.id === defId || c.name === defId,
-  );
+  const components = plugins?.[bestPid]?.components || [];
+  const norm = (s: string) => (s || '').replace(/[-_]/g, '').toLowerCase();
+  const defNorm = norm(defId);
+  // Try exact match first, then normalized (strips hyphens, lowercases)
+  const def =
+    components.find((c: any) => c.id === defId || c.name === defId) ||
+    components.find(
+      (c: any) =>
+        norm(c.id) === defNorm ||
+        norm(c.name) === defNorm ||
+        norm(c.exportName) === defNorm ||
+        norm(c.component) === defNorm,
+    );
   const componentName = def?.exportName || def?.component;
   if (!componentName) return null;
   return { pluginId: bestPid, componentName, def };
@@ -369,6 +379,7 @@ const PortaledTileContent = React.memo<{
     const { slotsRef, version } = React.useContext(SlotRegistryContext);
     const baseApi = useEmbeddrAPI();
     const plugins = usePluginStore((s) => s.plugins);
+    const windowProps = useWindowStore((s) => s.windows[instanceId]?.props);
 
     // Re-check the slot when version changes (slot registered/unregistered)
     void version;
@@ -397,17 +408,36 @@ const PortaledTileContent = React.memo<{
       }),
       [instanceId, showHeader],
     );
+    const panelProps = React.useMemo(
+      () => ({
+        id: instanceId,
+        isActive: true,
+        showTitle: showHeader,
+        isHeaderHidden: !showHeader,
+        headerHeight: showHeader ? 42 : 16,
+        hideHeader: false,
+      }),
+      [instanceId, showHeader],
+    );
 
-    if (componentId.startsWith("core-")) {
-      const Component = windowRegistry.get(componentId);
-      content = Component ? (
+    // Try windowRegistry first with fuzzy matching (covers both core and plugin panels,
+    // handles old stored IDs like "embeddr-debug-DebugPanel" matching "embeddr-debug-debug-panel")
+    const registryMatch = windowRegistry.resolve(componentId);
+    if (registryMatch) {
+      const [, RegistryComponent] = registryMatch;
+      content = (
         <PanelContext.Provider value={panelCtxValue}>
-          <Component showTitle={showHeader} />
+          <RegistryComponent
+            id={instanceId}
+            windowId={instanceId}
+            panel={panelProps}
+            {...(windowProps || {})}
+            showTitle={showHeader}
+            isHeaderHidden={!showHeader}
+            headerHeight={showHeader ? 42 : 16}
+            hideHeader={false}
+          />
         </PanelContext.Provider>
-      ) : (
-        <div className="flex h-full items-center justify-center p-4 text-xs text-muted-foreground">
-          Unknown core panel: {componentId}
-        </div>
       );
     } else {
       const resolved = resolveFromComponentId(componentId, plugins);
@@ -431,9 +461,13 @@ const PortaledTileContent = React.memo<{
                 api={api}
                 windowId={instanceId}
                 id={instanceId}
-                panel={{ id: instanceId, isActive: true }}
+                panel={panelProps}
                 {...(resolved.def?.props || {})}
+                {...(windowProps || {})}
                 showTitle={showHeader}
+                isHeaderHidden={!showHeader}
+                headerHeight={showHeader ? 42 : 16}
+                hideHeader={false}
               />
             </PluginErrorBoundary>
           </PanelContext.Provider>
@@ -893,6 +927,36 @@ export const TilingCanvas: React.FC = () => {
     () => ({ preview, setPreview }),
     [preview],
   );
+
+  const plugins = usePluginStore((s) => s.plugins);
+  const pruneTiles = useTilingStore((s) => s.pruneTiles);
+
+  // Prune stale tile entries that can't be resolved on mount
+  const hasPruned = React.useRef(false);
+  React.useEffect(() => {
+    if (!tileTree || hasPruned.current) return;
+    // Wait a tick for plugins to register their window components
+    const t = setTimeout(() => {
+      hasPruned.current = true;
+      const tree = useTilingStore.getState().tileTree;
+      if (!tree) return;
+      const leaves = collectLeaves(tree);
+      const validKeys = new Set<string>();
+      for (const leaf of leaves) {
+        if (!leaf.entryKey) continue;
+        if (windowRegistry.resolve(leaf.entryKey)) {
+          validKeys.add(leaf.entryKey);
+        } else {
+          const resolved = resolveFromComponentId(leaf.entryKey, plugins);
+          if (resolved) validKeys.add(leaf.entryKey);
+        }
+      }
+      if (validKeys.size < leaves.length) {
+        pruneTiles(validKeys);
+      }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [plugins, pruneTiles]);
 
   // Clear preview when split mode and drag both deactivate
   React.useEffect(() => {

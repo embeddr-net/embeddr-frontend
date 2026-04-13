@@ -21,6 +21,7 @@ import {
 import { cn } from '@/lib/utils'
 import type { FinderMode, FinderKind } from './types'
 import { FINDER_KIND_OPTIONS } from './types'
+import type { TypeTreeEntry } from '@/hooks/useArtifactTypeCounts'
 
 const kindIcons: Record<string, React.ElementType> = {
   panel: Cpu,
@@ -46,6 +47,10 @@ interface LotusSearchBarProps {
   lotusAvailable?: boolean
   hiddenKinds?: Set<FinderKind>
   onToggleKind?: (kind: FinderKind) => void
+  typeTree?: TypeTreeEntry[]
+  selectedFinderType?: string | null
+  onSelectFinderType?: (type: string | null) => void
+  searchProvider?: string | null
 }
 
 export function LotusSearchBar({
@@ -63,13 +68,22 @@ export function LotusSearchBar({
   lotusAvailable = false,
   hiddenKinds,
   onToggleKind,
+  typeTree,
+  selectedFinderType,
+  onSelectFinderType,
+  searchProvider,
 }: LotusSearchBarProps) {
   const isLotus = mode === 'lotus'
   const hasFilters = hiddenKinds && hiddenKinds.size > 0
 
+  const providerLabel = searchProvider
+    ? searchProvider.replace(/^search\./, '').replace(/^embeddr-/, '').replace(/^nynxz-/, '')
+    : null
   const defaultPlaceholder = isLotus
     ? 'Ask Lotus anything...'
-    : 'Search actions, panels, artifacts...'
+    : providerLabel
+      ? `Search via ${providerLabel}... (!stash, !llm for others)`
+      : 'Search actions, panels, artifacts...'
 
   const toggleMode = () => {
     if (!lotusAvailable) return
@@ -206,6 +220,40 @@ export function LotusSearchBar({
                 </button>
               )
             })}
+            {typeTree && typeTree.length > 0 && onSelectFinderType && (
+              <>
+                <div className="border-t border-border mt-2 pt-2">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 pb-1.5 font-medium">
+                    Artifact type
+                  </div>
+                  <button
+                    className={cn(
+                      'w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-muted',
+                      !selectedFinderType && 'bg-primary/10 text-primary',
+                    )}
+                    onClick={() => onSelectFinderType(null)}
+                  >
+                    <span className="flex-1 text-left">All types</span>
+                  </button>
+                  {typeTree.map(({ baseType, count }) => (
+                    <button
+                      key={baseType}
+                      className={cn(
+                        'w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-muted',
+                        selectedFinderType === baseType &&
+                          'bg-primary/10 text-primary',
+                      )}
+                      onClick={() => onSelectFinderType(baseType)}
+                    >
+                      <span className="flex-1 text-left">{baseType}</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </PopoverContent>
         </Popover>
       )}

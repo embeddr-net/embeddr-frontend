@@ -136,6 +136,9 @@ export interface Artifact {
   override_capabilities?: string[]
   owner_user_id?: string
   owner_operator_id?: string
+  storage_backend?: string
+  content_type?: string
+  blob_size?: number
   visibility?: 'public' | 'private'
   owner_user?: {
     id: string

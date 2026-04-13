@@ -85,7 +85,7 @@ const mapArtifactToImage = (
       url: contentUrl,
       image_url: contentUrl,
       thumb_url: previewUrl,
-      file_size: 0,
+      file_size: a.blob_size || 0,
       prompt:
         a.metadata_json?.prompt ||
         a.metadata_json?.label ||
@@ -105,6 +105,9 @@ const mapArtifactToImage = (
       import_source: getArtifactImportSource(a),
       origin: getArtifactOrigin(a),
       import_instance: a.metadata_json?.external?.instance || null,
+      type_name: a.type_name,
+      storage_backend: a.storage_backend,
+      blob_size: a.blob_size,
     } as PromptImage
   }
 import { useSettings } from '@/hooks/useSettings'
@@ -138,7 +141,8 @@ const ExplorePage = () => {
   const [selectedSourceType, setSelectedSourceType] = useState<string | null>(
     null,
   )
-  const [mediaType, setMediaType] = useState<'image' | 'video' | 'all'>('image')
+  const [mediaType, setMediaType] = useState<'image' | 'video' | 'all'>('all')
+  const [selectedTypeName, setSelectedTypeName] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState<boolean | null>(false)
   const [selectedTags, setSelectedTags] = useState<Array<string>>([])
   const [gridCols, setGridCols] = useLocalStorage('explore-grid-cols', 5)
@@ -311,6 +315,7 @@ const ExplorePage = () => {
         mediaType,
         showArchived,
         selectedSourceType,
+        selectedTypeName,
       ],
       queryFn: async ({ pageParam }) => {
         const providerFilter = selectedSourceType
@@ -334,6 +339,12 @@ const ExplorePage = () => {
           }
         }
 
+        const typeParams = selectedTypeName
+          ? { type_name: selectedTypeName }
+          : mediaType !== 'all'
+            ? { media_type: mediaType }
+            : {}
+
         if (selectedCollectionId) {
           // Collection items
           const res = await embeddrApi.artifacts.list({
@@ -342,6 +353,7 @@ const ExplorePage = () => {
             offset: pageParam,
             sort: activeTab === 'random' ? 'random' : 'new',
             ...providerParams,
+            ...typeParams,
           })
           return res.items.map((item) => mapArtifactToImage(item, providerSet))
         }
@@ -354,6 +366,7 @@ const ExplorePage = () => {
             offset: pageParam,
             sort: activeTab === 'random' ? 'random' : 'new',
             ...providerParams,
+            ...typeParams,
           })
           return res.items.map((item) => mapArtifactToImage(item, providerSet))
         }
@@ -367,10 +380,10 @@ const ExplorePage = () => {
           offset: pageParam,
           library_id: selectedLibraryId?.toString(),
           tags: selectedTags.length > 0 ? selectedTags : undefined,
-          media_type: mediaType === 'all' ? undefined : mediaType,
           sort: sort,
           is_archived: showArchived || false,
           ...providerParams,
+          ...typeParams,
         })
         return res.items.map((item) => mapArtifactToImage(item, providerSet))
       },
@@ -408,6 +421,7 @@ const ExplorePage = () => {
       selectedModel,
       mediaType,
       showArchived,
+      selectedTypeName,
     ],
     queryFn: async ({ pageParam }) => {
       const offset = typeof pageParam === 'number' ? pageParam : 0
@@ -434,9 +448,16 @@ const ExplorePage = () => {
         }
 
         const ids = res.items.map((item) => item.id)
-        const artifacts = await Promise.all(
+        let artifacts = await Promise.all(
           ids.map((id) => embeddrApi.artifacts.get(String(id))),
         )
+        if (selectedTypeName) {
+          artifacts = artifacts.filter(
+            (a) =>
+              a.type_name === selectedTypeName ||
+              a.base_type_name === selectedTypeName,
+          )
+        }
         return {
           items: artifacts.map((item) => mapArtifactToImage(item, providerSet)),
           count: res.count ?? artifacts.length,
@@ -457,9 +478,17 @@ const ExplorePage = () => {
       }
 
       const ids = res.items.map((item) => item.id)
-      const artifacts = await Promise.all(
+      let artifacts = await Promise.all(
         ids.map((id) => embeddrApi.artifacts.get(String(id))),
       )
+      // Post-filter by type if a type filter is active
+      if (selectedTypeName) {
+        artifacts = artifacts.filter(
+          (a) =>
+            a.type_name === selectedTypeName ||
+            a.base_type_name === selectedTypeName,
+        )
+      }
       return {
         items: artifacts.map((item) => mapArtifactToImage(item, providerSet)),
         count: res.count ?? artifacts.length,
@@ -672,6 +701,8 @@ const ExplorePage = () => {
         setMediaType={setMediaType}
         showArchived={showArchived}
         setShowArchived={setShowArchived}
+        selectedTypeName={selectedTypeName}
+        setSelectedTypeName={setSelectedTypeName}
         selectedSourceType={selectedSourceType}
         setSelectedSourceType={setSelectedSourceType}
         importSourceOptions={importSourceOptions}

@@ -1,6 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+/**
+ * Shared lock flag — set by workspaceStore to avoid circular imports.
+ * WindowStore checks this before allowing open/close/spawn operations.
+ */
+let _workspaceLocked = false;
+export const setWorkspaceLockFlag = (locked: boolean) => {
+  _workspaceLocked = locked;
+};
+const isWorkspaceLocked = () => _workspaceLocked;
+
 export interface WindowState {
   id: string;
   title: string;
@@ -22,7 +32,6 @@ interface WindowStore {
   windows: Record<string, WindowState>;
   panelOrder: string[]; // For Z-index management
   activeGroupId: string | null; // For tab groups if we implement them
-  layouts: Record<string, Record<string, WindowState>>;
   backdropWindowId: string | null; // NEW: Tracks which window is in backdrop mode
   showZenToolbar: boolean; // NEW: Tracks visibility of the Zen Toolbar
   arePanelsHidden: boolean; // New: Global visibility toggle
@@ -53,10 +62,6 @@ interface WindowStore {
   setMergeHoverTarget: (id: string | null) => void;
   setHoverPanelId: (id: string | null) => void;
 
-  // Layouts
-  saveLayout: (name: string) => void;
-  loadLayout: (name: string) => void;
-  deleteLayout: (name: string) => void;
 }
 
 const INITIAL_WINDOWS: Record<string, WindowState> = {
@@ -100,7 +105,6 @@ export const useWindowStore = create<WindowStore>()(
       windows: INITIAL_WINDOWS,
       panelOrder: Object.keys(INITIAL_WINDOWS),
       activeGroupId: null,
-      layouts: {},
       backdropWindowId: null,
       showZenToolbar: true,
       arePanelsHidden: false,
@@ -114,6 +118,7 @@ export const useWindowStore = create<WindowStore>()(
 
       openWindow: ({ id, title, componentId, props }) =>
         set((state) => {
+          if (isWorkspaceLocked()) return {};
           const safeTitle = title?.trim() || "Untitled Panel";
           const defaultPosition = props?.defaultPosition as
             | { x: number; y: number }
@@ -165,6 +170,7 @@ export const useWindowStore = create<WindowStore>()(
         }),
 
       spawnWindow: (componentId, title, props) => {
+        if (isWorkspaceLocked()) return;
         const panelMode = props?.panelMode || props?.instanceMode;
         if (panelMode === "single") {
           const existing = Object.values(get().windows).find(
@@ -209,6 +215,7 @@ export const useWindowStore = create<WindowStore>()(
 
       closeWindow: (id) =>
         set((state) => {
+          if (isWorkspaceLocked()) return {};
           const current = state.windows[id];
           const tabsToClose = current?.tabs ? current.tabs : [id];
           const { [id]: _, ...remainingWindows } = state.windows;
@@ -326,7 +333,10 @@ export const useWindowStore = create<WindowStore>()(
           };
         }),
 
-      closeAll: () => set({ windows: {}, panelOrder: [] }),
+      closeAll: () => {
+        if (isWorkspaceLocked()) return;
+        set({ windows: {}, panelOrder: [] });
+      },
 
       toggleHidePanels: () =>
         set((state) => ({ arePanelsHidden: !state.arePanelsHidden })),
@@ -508,29 +518,6 @@ export const useWindowStore = create<WindowStore>()(
           };
         }),
 
-      saveLayout: (name) =>
-        set((state) => ({
-          layouts: {
-            ...state.layouts,
-            [name]: { ...state.windows },
-          },
-        })),
-
-      loadLayout: (name) =>
-        set((state) => {
-          const layout = state.layouts[name];
-          if (!layout) return {};
-          return {
-            windows: { ...layout },
-            panelOrder: Object.keys(layout),
-          };
-        }),
-
-      deleteLayout: (name) =>
-        set((state) => {
-          const { [name]: _, ...remainingLayouts } = state.layouts;
-          return { layouts: remainingLayouts };
-        }),
     }),
     {
       name: "embeddr-window-store", // localstorage key

@@ -541,6 +541,8 @@ class EmbeddrApi {
       this.request<RelationOntologyResponse>(`/system/relation-ontology`),
     getArtifactTypeCounts: () =>
       this.request<ArtifactTypeCountsResponse>(`/system/artifact-type-counts`),
+    getTypeSummary: () =>
+      this.request<{ types: Array<{ name: string; parent_name?: string | null; artifact_count: number; default_capabilities?: string[]; description?: string; metadata?: Record<string, any> }>; total_artifacts: number }>(`/types/summary`),
     setBlobDefaults: (input: {
       default_provider?: string | null
       default_resolver?: string | null
@@ -702,14 +704,17 @@ class EmbeddrApi {
         '/plugins/logos',
       )
       const logos = (data?.logos || {}) as Record<string, string | null>
+      // Plugin assets are served at /plugins/*, not under /api/
+      const origin = BASE_URL.replace(/\/api\/?$/, '')
       const normalize = (value: string | null) => {
         if (!value) return null
         if (value.startsWith('http://') || value.startsWith('https://')) {
           return value
         }
         if (value.startsWith('//')) return `${window.location.protocol}${value}`
-        if (value.startsWith('/')) return `${BASE_URL}${value}`
-        return `${BASE_URL}/${value}`
+        if (value.startsWith('/plugins/')) return `${origin}${value}`
+        if (value.startsWith('/')) return `${origin}${value}`
+        return `${origin}/${value}`
       }
       return {
         logos: Object.fromEntries(

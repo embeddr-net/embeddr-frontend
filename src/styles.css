@@ -350,3 +350,25 @@
     aspect-ratio: 3 / 4;
   }
 }
+
+/* ── Workspace Lock Mode ──
+   Disables panel drag, resize, close, and minimize while keeping
+   panel body content fully interactive. */
+.embeddr-layout-locked .embeddr-panel-shell {
+  pointer-events: none !important;
+}
+.embeddr-layout-locked .embeddr-panel-body {
+  pointer-events: auto !important;
+}
+.embeddr-layout-locked .embeddr-panel-header {
+  cursor: default !important;
+}
+.embeddr-layout-locked .embeddr-panel-controls {
+  opacity: 0.3;
+}
+.embeddr-layout-locked .embeddr-panel-resize-handle {
+  opacity: 0 !important;
+}
+.embeddr-layout-locked .embeddr-panel-hidden-title-handle {
+  cursor: default !important;
+}

@@ -20,6 +20,7 @@ import {
   ZenLotusTab,
   ZenPersonalizationTab,
   ZenPluginsTab,
+  ZenServicesTab,
   ZenSystemTab,
   ZenUploadTab,
   ZenProfileTab,
@@ -38,6 +39,7 @@ export type SettingsTabId =
   | 'docks'
   | 'automation'
   | 'lotus'
+  | 'services'
   | 'library'
   | 'upload'
   | 'plugins'
@@ -105,6 +107,12 @@ export const settingsConfig: SettingsSection[] = [
   {
     label: 'Automation',
     items: [
+      {
+        id: 'services',
+        label: 'Services',
+        icon: <Cpu className="h-4 w-4" />,
+        component: <ZenServicesTab />,
+      },
       {
         id: 'automation',
         label: 'Ingestion',

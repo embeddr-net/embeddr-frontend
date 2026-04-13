@@ -21,10 +21,12 @@ import { fetchSecurityOverviewStatus } from '@/lib/api/endpoints/security'
 import { useUserStore } from '@/store/userStore'
 import { usePluginStore } from '@/plugins/store'
 import { DockManager } from '@/components/ui/DockManager'
+import { useWorkspaceStore } from '@/store/workspaceStore'
 
 function Root() {
   const { apiKey } = useUserStore()
   const { isLoadingExternal, hasLoadedExternal } = usePluginStore()
+  const isLocked = useWorkspaceStore((s) => s.isLocked)
   const [showCommandBar, setShowCommandBar] = useState(false)
   const {
     backgroundImage,
@@ -97,7 +99,10 @@ function Root() {
       <CustomStyles />
       <div
         id="embeddr-app-root"
-        className="embeddr h-screen w-full flex flex-col overflow-hidden relative bg-background"
+        className={cn(
+          "embeddr h-screen w-full flex flex-col overflow-hidden relative bg-background",
+          isLocked && "embeddr-layout-locked",
+        )}
       >
         {backgroundImage && (
           <div
@@ -190,6 +195,12 @@ function CommandBarBootstrap() {
   useDefaultWidgets()
   usePluginWidgets()
   usePinnedPanelWidgets()
+
+  // Ensure at least one workspace exists on first load
+  useEffect(() => {
+    useWorkspaceStore.getState().ensureDefaultWorkspace()
+  }, [])
+
   return null
 }
 

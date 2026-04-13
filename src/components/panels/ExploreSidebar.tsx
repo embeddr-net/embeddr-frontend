@@ -21,13 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@embeddr/react-ui/ui'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@embeddr/react-ui/ui'
+// Select removed — Kind dropdown replaced by Type filter buttons
 import {
   Accordion,
   AccordionContent,
@@ -51,6 +45,7 @@ import {
   HardDrive,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useArtifactTypeCounts } from '@/hooks/useArtifactTypeCounts'
 import { getArtifactProviderId } from '@/lib/providers'
 import { FilterConfigPanel } from '@/components/search/FilterConfigPanel'
 import { ImageDetailsSidebar } from '@/components/panels/ImageDetailsSidebar'
@@ -99,6 +94,10 @@ interface SidebarProps {
   showArchived: boolean | null
   setShowArchived: (val: boolean | null) => void
 
+  // Type filter
+  selectedTypeName: string | null
+  setSelectedTypeName: (val: string | null) => void
+
   // New Providers Filter
   selectedSourceType: string | null
   setSelectedSourceType: (val: string | null) => void
@@ -143,6 +142,8 @@ export function ExploreSidebar({
   setMediaType,
   showArchived,
   setShowArchived,
+  selectedTypeName,
+  setSelectedTypeName,
   selectedSourceType,
   setSelectedSourceType,
   importSourceOptions = [],
@@ -158,6 +159,20 @@ export function ExploreSidebar({
     string | null
   >(null)
   const [filterQuery, setFilterQuery] = useState('')
+  const [expandedBaseTypes, setExpandedBaseTypes] = useState<Set<string>>(
+    new Set(),
+  )
+
+  const { typeTree } = useArtifactTypeCounts()
+
+  const toggleBaseTypeExpand = (baseType: string) => {
+    setExpandedBaseTypes((prev) => {
+      const next = new Set(prev)
+      if (next.has(baseType)) next.delete(baseType)
+      else next.add(baseType)
+      return next
+    })
+  }
 
   const { data: blobRegistry } = useQuery({
     queryKey: ['system', 'blob-registry', 'explore-providers'],
@@ -508,27 +523,6 @@ export function ExploreSidebar({
             >
               {/* Top Filters */}
               <div className="p-3 border-b border-border bg-muted/10 shrink-0 space-y-3">
-                <div className="grid grid-cols-1 gap-2">
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Kind
-                    </Label>
-                    <Select
-                      value={mediaType}
-                      onValueChange={(value: any) => setMediaType(value)}
-                    >
-                      <SelectTrigger className="h-7 text-xs bg-background/50">
-                        <SelectValue placeholder="All" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Media</SelectItem>
-                        <SelectItem value="image">Images</SelectItem>
-                        <SelectItem value="video">Videos</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
                 {/* Filter Input */}
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -595,17 +589,132 @@ export function ExploreSidebar({
                           selectedOrigin}
                       </Badge>
                     )}
+                    {selectedTypeName && (
+                      <Badge variant="outline">
+                        Type: {selectedTypeName}
+                      </Badge>
+                    )}
                     {!selectedLibraryId &&
                       !selectedCollectionId &&
                       !selectedSourceId &&
                       !selectedProviderId &&
                       !selectedImportSource &&
-                      !selectedOrigin && (
+                      !selectedOrigin &&
+                      !selectedTypeName && (
                         <span className="text-[11px] text-muted-foreground">
-                          No library/collection/source filters set.
+                          No filters set.
                         </span>
                       )}
                   </div>
+                  {/* Types */}
+                  <div className="mt-3 rounded-md border bg-background/60 p-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-[11px] font-semibold text-foreground">
+                        Types
+                      </div>
+                      {selectedTypeName && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-[11px]"
+                          onClick={() => setSelectedTypeName(null)}
+                        >
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <Button
+                        size="sm"
+                        variant={selectedTypeName ? 'ghost' : 'secondary'}
+                        className="h-7 px-2 text-[11px]"
+                        onClick={() => setSelectedTypeName(null)}
+                      >
+                        <Layers className="mr-1 h-3 w-3" />
+                        All
+                      </Button>
+                      {typeTree.map(({ baseType, count, subtypes }) => {
+                        const isActive = selectedTypeName === baseType
+                        const hasSubtypes = subtypes.length > 1
+                        const isExpanded = expandedBaseTypes.has(baseType)
+                        const isSubtypeActive = subtypes.some(
+                          (st) => selectedTypeName === st.typeName,
+                        )
+
+                        return (
+                          <div key={baseType} className="flex flex-wrap gap-1.5">
+                            <Button
+                              size="sm"
+                              variant={
+                                isActive || isSubtypeActive
+                                  ? 'secondary'
+                                  : 'ghost'
+                              }
+                              className="h-7 px-2 text-[11px] gap-1"
+                              onClick={() => setSelectedTypeName(baseType)}
+                              onContextMenu={(e) => {
+                                if (hasSubtypes) {
+                                  e.preventDefault()
+                                  toggleBaseTypeExpand(baseType)
+                                }
+                              }}
+                            >
+                              {baseType}
+                              <span className="text-[10px] text-muted-foreground">
+                                {count}
+                              </span>
+                              {hasSubtypes && (
+                                <button
+                                  className="ml-0.5 text-muted-foreground hover:text-foreground"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    toggleBaseTypeExpand(baseType)
+                                  }}
+                                >
+                                  <svg
+                                    className={cn(
+                                      'h-3 w-3 transition-transform',
+                                      isExpanded && 'rotate-90',
+                                    )}
+                                    viewBox="0 0 12 12"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                  >
+                                    <path d="M4 2l4 4-4 4" />
+                                  </svg>
+                                </button>
+                              )}
+                            </Button>
+                            {hasSubtypes &&
+                              isExpanded &&
+                              subtypes.map((st) => (
+                                <Button
+                                  key={st.typeName}
+                                  size="sm"
+                                  variant={
+                                    selectedTypeName === st.typeName
+                                      ? 'secondary'
+                                      : 'ghost'
+                                  }
+                                  className="h-7 px-2 text-[11px] gap-1"
+                                  onClick={() =>
+                                    setSelectedTypeName(st.typeName)
+                                  }
+                                >
+                                  {st.typeName.split(':').pop()}
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {st.count}
+                                  </span>
+                                </Button>
+                              ))}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Providers */}
                   <div className="mt-3 rounded-md border bg-background/60 p-2">
                     <div className="flex items-center justify-between">
                       <div className="text-[11px] font-semibold text-foreground">

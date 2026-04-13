@@ -8,6 +8,7 @@ import { NavWidget } from '@/components/widgets/NavWidget'
 import { SettingsWidget } from '@/components/widgets/SettingsWidget'
 import { ConnectionWidget } from '@/components/widgets/ConnectionWidget'
 import { NotificationsWidget } from '@/components/notifications/NotificationsWidget'
+import { WorkspaceWidget } from '@/components/widgets/WorkspaceWidget'
 
 export type CommandBarWidgetScope = 'zen' | 'global'
 
@@ -52,6 +53,14 @@ export const DEFAULT_WIDGETS: CommandBarWidgetDefinition[] = [
     defaultOrder: 6,
     scope: 'zen',
     component: <HidePanelsWidget />,
+  },
+  {
+    id: 'workspace',
+    label: 'Workspace',
+    defaultSection: 'right',
+    defaultOrder: 8,
+    scope: 'zen',
+    component: <WorkspaceWidget />,
   },
   {
     id: 'taskbar',
