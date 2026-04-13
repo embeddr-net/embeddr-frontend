@@ -406,6 +406,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       q?: string
       access_scope?: 'personal' | 'instance'
       type_name?: string
+      media_type?: string
       visibility?: 'all' | 'public' | 'private'
       sort?: 'new' | 'random'
       ids?: string[]
@@ -416,6 +417,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
       if (input.q) q.append('q', input.q)
       if (input.access_scope) q.append('access_scope', input.access_scope)
       if (input.type_name) q.append('type_name', input.type_name)
+      if (input.media_type) q.append('media_type', input.media_type)
       if (input.visibility && input.visibility !== 'all') {
         q.append('visibility', input.visibility)
       }
@@ -1094,6 +1096,16 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
           if (!res.ok) {
             const txt = await res.text()
             throw new Error(txt || 'Lotus list failed')
+          }
+          return res.json()
+        },
+      },
+      types: {
+        summary: async () => {
+          const res = await fetchWithAuth(`${BACKEND_URL}/types/summary`)
+          if (!res.ok) {
+            const txt = await res.text()
+            throw new Error(txt || 'Failed to fetch type summary')
           }
           return res.json()
         },
