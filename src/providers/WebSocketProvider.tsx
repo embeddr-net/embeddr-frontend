@@ -14,6 +14,8 @@ export type ClientSessionInfo = {
   origin?: string | null
   forwarded_for?: string | null
   path?: string | null
+  connected_at?: string | null
+  is_admin?: boolean | null
 }
 
 // ---------------------------------------------------------------------------

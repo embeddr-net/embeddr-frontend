@@ -72,7 +72,6 @@ export function CoreUIEventBridge() {
       const p = payload?.payload ?? payload ?? {};
       const title = p.title ?? "Media Frame";
       const mode: "replace" | "append" = p.mode ?? "replace";
-      const focus = p.focus ?? true;
       const panelId = p.panelId;
 
       // Normalize -> items
@@ -90,32 +89,42 @@ export function CoreUIEventBridge() {
         return;
       }
 
-      // If targetWindowId provided, emit to that window instead of spawning new.
-      // (Optional: you can implement "target existing window" later.)
-      const windowId = p.targetWindowId ?? panelId ?? "core-media-frame";
       const componentId = "embeddr-core-media-frame";
-      const props = {
-        // ✅ critical: pass windowId down so storage keys are unique per instance
-        // your DynamicPluginComponent already passes windowId prop
+
+      // Decision: spawn a new panel or reuse an existing one?
+      //   - Caller explicitly set spawn:true → new panel
+      //   - Caller passed a panelId AND explicit spawn:false → reuse that panel
+      //   - Everything else (including no panelId) → new panel
+      // Default-to-spawn matches user mental model: "show me this" shouldn't
+      // clobber the previous display.
+      const explicitReuse = p.spawn === false && typeof panelId === "string"
+        && panelId.length > 0;
+      const shouldSpawn = !explicitReuse;
+
+      // CRITICAL: only propagate panelId when the caller explicitly set
+      // one (i.e. reuse flow). On spawn, MediaFrame falls back to
+      // `rest.panel?.id` (the unique window id) or a per-instance nonce,
+      // which keeps each panel's local state isolated.
+      //
+      // Previous behavior stuffed `componentId` as a panelId fallback —
+      // every spawn shared the same storage key, so multiple panels ended
+      // up reading/writing the same `items` slot and showed identical
+      // content despite having unique titles.
+      const props: Record<string, any> = {
         initialItems: items,
         initialMode: mode,
         initialSelectIndex: p.selectIndex ?? 0,
-        // you can add "replace" semantics inside the panel with these
         intent: { mode },
-        panelId: panelId ?? windowId,
         resetUiOnOpen: true,
       };
-
-      // Spawn new window if requested, otherwise open-or-reuse
-      if (p.windowStrategy === "spawn" || p.spawn === true) {
-        api.windows.spawn(componentId, title, props);
-      } else {
-        api.windows.open(windowId, title, componentId, props);
+      if (typeof panelId === "string" && panelId.length > 0) {
+        props.panelId = panelId;
       }
 
-      if (focus) {
-        // bringToFront is on window store, but API doesn’t expose it directly;
-        // if you want, add api.windows.focus(id) later.
+      if (shouldSpawn) {
+        api.windows.spawn(componentId, title, props);
+      } else {
+        api.windows.open(panelId as string, title, componentId, props);
       }
     };
 
@@ -147,7 +156,11 @@ export function CoreUIEventBridge() {
       const windowId = shouldSpawn
         ? undefined
         : (p.targetWindowId ?? panelId ?? "core-lightbox");
-      const componentId = "embeddr-media-tools-lightbox-panel";
+      // embeddr-core exposes the canonical lightbox panel. The old
+      // `embeddr-media-tools-lightbox-panel` id pointed at a plugin that
+      // isn't part of the standard install — new users would hit a
+      // "component not registered" toast and the window would never render.
+      const componentId = "embeddr-core-lightbox";
       const props = {
         initialItems: items,
         initialMode: mode,
@@ -171,26 +184,47 @@ export function CoreUIEventBridge() {
     const openCompare = (payload: any) => {
       const p = payload?.payload ?? payload ?? {};
       const title = p.title ?? "Compare";
-      const focus = p.focus ?? true;
       const panelId = p.panelId;
 
       const items = Array.isArray(p.items)
         ? p.items.slice(0, 2)
         : Array.isArray(p.artifact_ids)
           ? p.artifact_ids.slice(0, 2).map((id: string) => ({ artifactId: id }))
-          : [p.primary, p.secondary].filter(Boolean);
-      const windowId = p.targetWindowId ?? panelId ?? "core-compare";
-      const componentId = "embeddr-media-tools-compare-panel";
-      const props = {
+          : Array.isArray(p.artifactIds)
+            ? p.artifactIds.slice(0, 2).map((id: string) => ({ artifactId: id }))
+            : [p.primary, p.secondary].filter(Boolean);
+
+      if (!items.length) {
+        toast.info("No media to compare");
+        return;
+      }
+
+      // embeddr-core now owns the canonical compare panel. The legacy
+      // `embeddr-media-tools-compare-panel` id pointed at a plugin that
+      // isn't part of the standard install.
+      const componentId = "embeddr-core-compare";
+
+      // Match openMediaFrame's spawn-by-default mental model: a fresh
+      // "compare these two" call shouldn't clobber an existing comparison
+      // unless the caller explicitly opts into reuse via `spawn:false` +
+      // a panelId.
+      const explicitReuse =
+        p.spawn === false &&
+        typeof panelId === "string" &&
+        panelId.length > 0;
+
+      const props: Record<string, any> = {
         initialItems: items,
-        panelId: panelId ?? windowId,
         resetUiOnOpen: true,
       };
+      if (typeof panelId === "string" && panelId.length > 0) {
+        props.panelId = panelId;
+      }
 
-      api.windows.open(windowId, title, componentId, props);
-
-      if (focus) {
-        // optional: add focus behavior later
+      if (explicitReuse) {
+        api.windows.open(panelId as string, title, componentId, props);
+      } else {
+        api.windows.spawn(componentId, title, props);
       }
     };
 

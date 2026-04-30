@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@embeddr/react-ui/ui'
-import { Database, FileImage, Folder, RefreshCw } from 'lucide-react'
+import { Cpu, Database, FileImage, Folder, RefreshCw } from 'lucide-react'
 import { embeddrApi } from '@/lib/api/client'
 import { useMemo, useState } from 'react'
 
@@ -183,13 +183,13 @@ export function SystemInfo() {
             </div>
           </div>
           <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-            <Database className="h-5 w-5 text-primary" />
+            <Cpu className="h-5 w-5 text-primary" />
             <div className="flex flex-col">
-              <span className="text-sm font-medium">
-                {info?.db?.provider || 'unknown'}
+              <span className="text-2xl font-bold">
+                {(info as any)?.petals_connected ?? 0}
               </span>
               <span className="text-xs text-muted-foreground">
-                {info?.db?.connected ? 'Connected' : 'Disconnected'}
+                Connected Petals
               </span>
             </div>
           </div>

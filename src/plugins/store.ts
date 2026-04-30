@@ -10,7 +10,7 @@ import { usePanelStore } from '@/store/panelStore'
 import { useWindowStore } from '@/store/windowStore'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { useSettingsStore } from '@/store/settingsStore'
-import { registerWindowComponent } from '@/components/ui/windowRegistry'
+import { registerWindowComponent, windowRegistry } from '@/components/ui/windowRegistry'
 import { uploadItem } from '@/lib/api/endpoints/images'
 import { BACKEND_URL, BASE_URL } from '@/lib/api/config'
 import { globalEventBus } from '@/lib/eventBus'
@@ -46,6 +46,54 @@ interface PluginState {
 
   // Storage for backend metadata to merge later
   backendMetadata: Record<string, any>
+}
+
+/**
+ * Check whether a spawn-time componentId is reachable by the render layer.
+ * There are two independent resolution paths:
+ *   1. windowRegistry — populated by PluginWindowBootstrap from
+ *      plugin.components with location zen-overlay/window/OVERLAY
+ *   2. plugin manifest — PanelManager.resolveFromComponentId matches
+ *      `{pluginId}-{panel|page|component.id}` across plugins[*].panels,
+ *      plugins[*].pages, plugins[*].components
+ * Either hit = valid. Used by windows.spawn to detect typos / missing
+ * plugins without false-positives for pages/panels that register async.
+ */
+function resolveWindowComponent(componentId: string): boolean {
+  if (!componentId) return false
+  if (windowRegistry.resolve(componentId)) return true
+
+  const plugins = usePluginStore.getState().plugins || {}
+  // longest-prefix match: componentId = `${pluginId}-${defId}`
+  let bestPid: string | null = null
+  for (const pid of Object.keys(plugins)) {
+    const prefix = pid + '-'
+    if (componentId.startsWith(prefix)) {
+      if (!bestPid || pid.length > bestPid.length) bestPid = pid
+    }
+  }
+  if (!bestPid) return false
+
+  const defId = componentId.slice(bestPid.length + 1)
+  const plugin: any = plugins[bestPid]
+  const norm = (s: string) => (s || '').replace(/[-_]/g, '').toLowerCase()
+  const defNorm = norm(defId)
+  const candidates: any[] = [
+    ...(plugin?.components || []),
+    ...(plugin?.panels || []),
+    ...(plugin?.pages || []),
+    ...(plugin?.widgets || []),
+    ...(plugin?.docks || []),
+  ]
+  return candidates.some(
+    (c) =>
+      c?.id === defId ||
+      c?.name === defId ||
+      norm(c?.id) === defNorm ||
+      norm(c?.name) === defNorm ||
+      norm(c?.exportName) === defNorm ||
+      norm(c?.component) === defNorm,
+  )
 }
 
 export const usePluginStore = create<PluginState>()(
@@ -320,6 +368,7 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
     () => ({
       success: toast.success,
       error: toast.error,
+      warning: toast.warning,
       info: toast.message,
     }),
     [],
@@ -939,10 +988,48 @@ export const useEmbeddrAPI = (): EmbeddrAPI => {
         },
 
         spawn: (componentId: string, title: string, props?: any) => {
-          const id = crypto.randomUUID()
-          useWindowStore
-            .getState()
-            .openWindow({ id, title, componentId, props })
+          // Delegate to the store's `spawnWindow` rather than `openWindow`:
+          //   - spawnWindow generates a unique id per call (componentId + nonce)
+          //   - applies a cascading position offset so stacked spawns don't
+          //     overlap at identical coords (looked like "same panel")
+          //   - honors panelMode="single" if the caller sets it
+          // Using openWindow with a raw crypto.randomUUID() worked for id
+          // uniqueness but produced overlapping windows that visually looked
+          // like a single panel being reused.
+          useWindowStore.getState().spawnWindow(componentId, title, props)
+          // Grab the fresh state AFTER the spawn so we get the new window's id.
+          const afterWindows = useWindowStore.getState().windows
+          const recent = Object.values(afterWindows)
+            .filter((w) => w.componentId === componentId)
+            .sort((a, b) => (b.openRevision ?? 0) - (a.openRevision ?? 0))
+          const id = recent[0]?.id ?? crypto.randomUUID()
+          // The render layer has two independent resolution paths:
+          //   1. windowRegistry (populated by PluginWindowBootstrap from
+          //      plugin.components with location=zen-overlay/window/OVERLAY)
+          //   2. plugin manifest lookup (PanelManager.resolveFromComponentId,
+          //      matching {pluginId}-{panel|page.id})
+          // A spawn is valid if EITHER resolves. Only warn if both miss
+          // after a grace period (plugin components register async on mount).
+          // We also no longer auto-close the window — if the caller really
+          // did hit a valid page we just don't know about, closing it would
+          // confuse users. The render layer returns null silently for true
+          // dead references, so the toast is the user-visible signal either
+          // way.
+          if (!resolveWindowComponent(componentId)) {
+            setTimeout(() => {
+              if (resolveWindowComponent(componentId)) return
+              const stillExists = Boolean(
+                useWindowStore.getState().windows[id],
+              )
+              if (!stillExists) return
+              console.warn(
+                `[windows.spawn] component not registered: ${componentId}`,
+              )
+              toastApi.warning(
+                `Couldn't open "${title}" — component "${componentId}" is not registered. The plugin may not be loaded.`,
+              )
+            }, 1500)
+          }
           return id
         },
 

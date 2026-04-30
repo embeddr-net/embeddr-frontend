@@ -128,10 +128,16 @@ export const ClientsMonitor = () => {
                             <div>user_id: {session.user_id}</div>
                           )}
                           {session.address && <div>ip: {session.address}</div>}
+                          {session.origin && (
+                            <div className="truncate">origin: {session.origin}</div>
+                          )}
                           {session.user_agent && (
                             <div className="truncate">
                               ua: {session.user_agent}
                             </div>
+                          )}
+                          {session.connected_at && (
+                            <div>connected: {new Date(session.connected_at).toLocaleString()}</div>
                           )}
                         </>
                       )

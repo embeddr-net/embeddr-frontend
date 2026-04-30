@@ -85,16 +85,21 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom'],
   },
-  server: {
-    proxy: {
-      '/api': {
-        target: process.env.VITE_EMBEDDR_BACKEND_URL || 'http://localhost:8003',
-        changeOrigin: true,
+  server: (() => {
+    // Accept both VITE_EMBEDDR_BACKEND_URL and VITE_BACKEND_URL, matching
+    // what the client-typescript package reads at runtime. Without this,
+    // the proxy silently targets 8003 while the app hits a different port.
+    const rawTarget =
+      process.env.VITE_EMBEDDR_BACKEND_URL ||
+      process.env.VITE_BACKEND_URL ||
+      'http://localhost:8003'
+    const target = rawTarget.replace(/\/api(\/v\d+)?\/?$/, '')
+    return {
+      proxy: {
+        '/api': { target, changeOrigin: true, ws: true },
+        '/plugins': { target, changeOrigin: true },
+        '/themes': { target, changeOrigin: true },
       },
-      '/plugins': {
-        target: process.env.VITE_EMBEDDR_BACKEND_URL || 'http://localhost:8003',
-        changeOrigin: true,
-      },
-    },
-  },
+    }
+  })(),
 })

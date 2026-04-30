@@ -568,7 +568,32 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
     return () => observer.disconnect();
   }, [updateTabMetrics, tabs.length]);
 
-  // ✅ safe early return after hooks
+  // Compute panel metadata BEFORE the early return for `!resolved`. If we
+  // returned null before these hooks ran, React would throw "Rendered more
+  // hooks than during the previous render" when `resolved` flipped from null
+  // to truthy (classic rules-of-hooks violation).
+  const defaultPosition =
+    windowState.props?.defaultPosition ||
+    resolved?.def?.props?.defaultPosition ||
+    { x: 20, y: 20 };
+  const panelMeta = React.useMemo(
+    () => ({
+      id: windowState.id,
+      defaultPosition,
+      isActive,
+    }),
+    [defaultPosition, isActive, windowState.id],
+  );
+  const activePanelMeta = React.useMemo(
+    () => ({
+      id: activeTabId,
+      defaultPosition,
+      isActive,
+    }),
+    [activeTabId, defaultPosition, isActive],
+  );
+
+  // ✅ safe early return — all hooks are declared above
   if (!resolved) {
     console.warn("[PanelManager] Could not resolve plugin window", windowState);
     return null;
@@ -613,25 +638,6 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
     windowState.size ||
     windowState.props?.defaultSize ||
     def?.props?.defaultSize;
-
-  const defaultPosition = windowState.props?.defaultPosition ||
-    def?.props?.defaultPosition || { x: 20, y: 20 };
-  const panelMeta = React.useMemo(
-    () => ({
-      id: windowState.id,
-      defaultPosition,
-      isActive,
-    }),
-    [defaultPosition, isActive, windowState.id],
-  );
-  const activePanelMeta = React.useMemo(
-    () => ({
-      id: activeTabId,
-      defaultPosition,
-      isActive,
-    }),
-    [activeTabId, defaultPosition, isActive],
-  );
 
   if (isBackdrop) {
     return (

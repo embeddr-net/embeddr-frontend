@@ -41,6 +41,7 @@ import { PluginSettings } from '@/components/settings/PluginSettings'
 import { IngestionWorkflowEditor } from '@/components/settings/IngestionWorkflowEditor'
 import { IngestionProfiles } from '@/components/settings/IngestionProfiles'
 import { SystemInfo } from '@/components/settings/SystemInfo'
+import { PetalsPanel } from '@/components/settings/PetalsPanel'
 import { LogViewer } from '@/components/settings/LogViewer'
 import { LotusDashboard } from '@/features/lotus/LotusDashboard'
 import { useUserStore } from '@/store/userStore'
@@ -500,6 +501,7 @@ export function ZenSystemTab() {
     <TabScrollArea>
       <div className="space-y-6">
         <SystemInfo />
+        <PetalsPanel />
         <div className="space-y-3">
           <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
             Logs
