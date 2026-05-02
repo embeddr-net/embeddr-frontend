@@ -1,19 +1,8 @@
-import React from 'react'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import type { LotusCapability } from '@/lib/api/types'
+import React from "react";
+import { Badge, Card, CardContent, CardHeader, CardTitle, ScrollArea } from "@embeddr/react-ui/ui";
+import type { LotusCapability } from "@/lib/api/types";
 
-export function LotusCapabilitiesTab({
-  capabilities,
-}: {
-  capabilities: LotusCapability[]
-}) {
+export function LotusCapabilitiesTab({ capabilities }: { capabilities: Array<LotusCapability> }) {
   return (
     <Card className="border-muted/60 flex h-full min-h-0 flex-col bg-transparent">
       <CardHeader>
@@ -23,9 +12,7 @@ export function LotusCapabilitiesTab({
         <ScrollArea className="h-full rounded-md border">
           <div className="flex flex-col gap-2 p-3 text-xs">
             {capabilities.length === 0 ? (
-              <div className="text-muted-foreground">
-                No capabilities found.
-              </div>
+              <div className="text-muted-foreground">No capabilities found.</div>
             ) : (
               capabilities.slice(0, 120).map((cap) => (
                 <div
@@ -34,9 +21,7 @@ export function LotusCapabilitiesTab({
                 >
                   <div className="flex flex-col">
                     <span className="text-[11px] font-medium">{cap.title}</span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {cap.id}
-                    </span>
+                    <span className="text-[10px] text-muted-foreground">{cap.id}</span>
                   </div>
                   <Badge variant="outline" className="text-[10px]">
                     {cap.kind}
@@ -48,5 +33,5 @@ export function LotusCapabilitiesTab({
         </ScrollArea>
       </CardContent>
     </Card>
-  )
+  );
 }

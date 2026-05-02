@@ -1,21 +1,18 @@
-import React from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { TooltipProvider } from '@embeddr/react-ui/ui'
-import {
-  ExternalNavProvider,
-  ImageDialogProvider,
-} from '@embeddr/react-ui/providers'
-import { ThemeProvider } from './ThemeProvider'
-import { ThemeSynchronizer } from '@/components/ThemeSynchronizer'
-import { SettingsProvider } from '@/providers/SettingsProvider'
-import { GenerationProvider } from '@/context/GenerationContext'
-import { PluginProvider } from '@/providers/PluginProvider'
-import { WebSocketProvider } from '@/providers/WebSocketProvider'
-import { CoreUIEventBridge } from './CoreUIEventBridge'
-import { LotusProvider } from '@/providers/LotusProvider'
-import { HotkeysProvider } from '@/providers/HotkeysProvider'
+import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TooltipProvider } from "@embeddr/react-ui/ui";
+import { ExternalNavProvider, ImageDialogProvider } from "@embeddr/react-ui/providers";
+import { ThemeProvider } from "./ThemeProvider";
+import { CoreUIEventBridge } from "./CoreUIEventBridge";
+import { ThemeSynchronizer } from "@/components/ThemeSynchronizer";
+import { SettingsProvider } from "@/providers/SettingsProvider";
+import { GenerationProvider } from "@/context/GenerationContext";
+import { PluginProvider } from "@/providers/PluginProvider";
+import { WebSocketProvider } from "@/providers/WebSocketProvider";
+import { LotusProvider } from "@/providers/LotusProvider";
+import { HotkeysProvider } from "@/providers/HotkeysProvider";
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient();
 
 const AppProviders = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -44,7 +41,7 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
         </ExternalNavProvider>
       </HotkeysProvider>
     </QueryClientProvider>
-  )
-}
+  );
+};
 
-export default AppProviders
+export default AppProviders;

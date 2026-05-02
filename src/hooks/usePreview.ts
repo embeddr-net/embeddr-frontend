@@ -1,6 +1,6 @@
-import { useGenerationStore } from '@/store/generationStore'
+import { useGenerationStore } from "@/store/generationStore";
 
 export const usePreview = () => {
-  const currentPreview = useGenerationStore((state) => state.currentPreview)
-  return currentPreview
-}
+  const currentPreview = useGenerationStore((state) => state.currentPreview);
+  return currentPreview;
+};

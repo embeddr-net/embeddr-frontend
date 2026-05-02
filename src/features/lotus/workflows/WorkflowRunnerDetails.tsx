@@ -1,32 +1,32 @@
-import React from 'react'
-import type { Workflow } from '@/lib/api/endpoints/workflows'
-import { Link } from '@tanstack/react-router'
+import React from "react";
+import { Link } from "@tanstack/react-router";
 import {
+  Badge,
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { ExternalLink, Play } from 'lucide-react'
+  ScrollArea,
+} from "@embeddr/react-ui/ui";
+import { ExternalLink, Play } from "lucide-react";
+import type { Workflow } from "@/lib/api/endpoints/workflows";
 
 export type WorkflowPort = {
-  name?: string
-  type?: string
-  exposure?: number | string
-  description?: string
-  default?: any
-}
+  name?: string;
+  type?: string;
+  exposure?: number | string;
+  description?: string;
+  default?: any;
+};
 
 type WorkflowRunnerDetailsProps = {
-  selectedWorkflow: Workflow | null
-  workflowInputs: Record<string, WorkflowPort>
-  workflowOutputs: Record<string, WorkflowPort>
-  normalizeType: (type?: string) => string
-  onRun: () => void
-}
+  selectedWorkflow: Workflow | null;
+  workflowInputs: Record<string, WorkflowPort>;
+  workflowOutputs: Record<string, WorkflowPort>;
+  normalizeType: (type?: string) => string;
+  onRun: () => void;
+};
 
 export function WorkflowRunnerDetails({
   selectedWorkflow,
@@ -42,7 +42,7 @@ export function WorkflowRunnerDetails({
           <CardTitle className="text-base">
             {selectedWorkflow
               ? selectedWorkflow.metadata_json?.name || selectedWorkflow.name
-              : 'Select a workflow'}
+              : "Select a workflow"}
           </CardTitle>
           {selectedWorkflow?.metadata_json?.description && (
             <p className="text-xs text-muted-foreground">
@@ -76,12 +76,8 @@ export function WorkflowRunnerDetails({
                         className="flex items-center justify-between text-sm p-2 bg-background rounded-md border"
                       >
                         <div className="flex flex-col">
-                          <span className="font-mono text-xs text-muted-foreground">
-                            {key}
-                          </span>
-                          <span className="font-medium">
-                            {port.name || key}
-                          </span>
+                          <span className="font-mono text-xs text-muted-foreground">{key}</span>
+                          <span className="font-medium">{port.name || key}</span>
                           {port.description && (
                             <span className="text-xs text-muted-foreground">
                               {port.description}
@@ -89,20 +85,15 @@ export function WorkflowRunnerDetails({
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline">
-                            {normalizeType(port.type)}
-                          </Badge>
-                          {port.default !== undefined &&
-                            port.default !== '' && (
-                              <Badge variant="secondary">default</Badge>
-                            )}
+                          <Badge variant="outline">{normalizeType(port.type)}</Badge>
+                          {port.default !== undefined && port.default !== "" && (
+                            <Badge variant="secondary">default</Badge>
+                          )}
                         </div>
                       </div>
                     ))}
                     {Object.keys(workflowInputs).length === 0 && (
-                      <div className="text-muted-foreground text-sm italic">
-                        No inputs defined
-                      </div>
+                      <div className="text-muted-foreground text-sm italic">No inputs defined</div>
                     )}
                   </div>
                 </div>
@@ -116,22 +107,14 @@ export function WorkflowRunnerDetails({
                         className="flex items-center justify-between text-sm p-2 bg-background rounded-md border"
                       >
                         <div className="flex flex-col">
-                          <span className="font-mono text-xs text-muted-foreground">
-                            {key}
-                          </span>
-                          <span className="font-medium">
-                            {port.name || key}
-                          </span>
+                          <span className="font-mono text-xs text-muted-foreground">{key}</span>
+                          <span className="font-medium">{port.name || key}</span>
                         </div>
-                        <Badge variant="outline">
-                          {normalizeType(port.type)}
-                        </Badge>
+                        <Badge variant="outline">{normalizeType(port.type)}</Badge>
                       </div>
                     ))}
                     {Object.keys(workflowOutputs).length === 0 && (
-                      <div className="text-muted-foreground text-sm italic">
-                        No outputs defined
-                      </div>
+                      <div className="text-muted-foreground text-sm italic">No outputs defined</div>
                     )}
                   </div>
                 </div>
@@ -145,5 +128,5 @@ export function WorkflowRunnerDetails({
         </ScrollArea>
       </CardContent>
     </Card>
-  )
+  );
 }

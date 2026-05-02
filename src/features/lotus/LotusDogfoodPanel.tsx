@@ -1,55 +1,53 @@
-import React, { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import React, { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
+  Badge,
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import {
+  Input,
+  ScrollArea,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/ui'
-import { RefreshCw, Search } from 'lucide-react'
-import { useEmbeddrAPI } from '@/plugins/store'
-import type { LotusResultItem } from './types'
+} from "@embeddr/react-ui/ui";
+import { RefreshCw, Search } from "lucide-react";
+import type { LotusResultItem } from "./types";
+import { useEmbeddrAPI } from "@/plugins/store";
 
 export function LotusDogfoodPanel() {
-  const api = useEmbeddrAPI()
-  const [query, setQuery] = useState('')
+  const api = useEmbeddrAPI();
+  const [query, setQuery] = useState("");
 
   const capabilitiesQuery = useQuery({
-    queryKey: ['lotus', 'capabilities'],
+    queryKey: ["lotus", "capabilities"],
     queryFn: () => api.lotus.list({ limit: 200 }),
-  })
+  });
 
   const queryResult = useQuery({
-    queryKey: ['lotus', 'query', query],
+    queryKey: ["lotus", "query", query],
     queryFn: () => api.lotus.query(query, 25),
     enabled: false,
-  })
+  });
 
-  const capabilities = capabilitiesQuery.data?.items || []
-  const results = queryResult.data?.results || []
+  const capabilities = capabilitiesQuery.data?.items || [];
+  const results = queryResult.data?.results || [];
 
   const counts = useMemo(() => {
-    const byKind: Record<string, number> = {}
+    const byKind: Record<string, number> = {};
     for (const item of capabilities) {
-      byKind[item.kind] = (byKind[item.kind] || 0) + 1
+      byKind[item.kind] = (byKind[item.kind] || 0) + 1;
     }
-    return byKind
-  }, [capabilities])
+    return byKind;
+  }, [capabilities]);
 
   const runQuery = () => {
-    if (!query.trim()) return
-    queryResult.refetch()
-  }
+    if (!query.trim()) return;
+    queryResult.refetch();
+  };
 
   return (
     <Card className="border-muted/60">
@@ -57,8 +55,7 @@ export function LotusDogfoodPanel() {
         <div>
           <CardTitle className="text-sm">Lotus API Dogfood</CardTitle>
           <div className="text-xs text-muted-foreground">
-            Uses the shared plugin API hook to list capabilities and run
-            queries.
+            Uses the shared plugin API hook to list capabilities and run queries.
           </div>
         </div>
         <Button
@@ -92,9 +89,7 @@ export function LotusDogfoodPanel() {
             <ScrollArea className="h-48 rounded-md border">
               <div className="flex flex-col gap-2 p-3 text-xs">
                 {capabilities.length === 0 ? (
-                  <div className="text-muted-foreground">
-                    No capabilities registered yet.
-                  </div>
+                  <div className="text-muted-foreground">No capabilities registered yet.</div>
                 ) : (
                   capabilities.map((cap) => (
                     <div
@@ -102,12 +97,8 @@ export function LotusDogfoodPanel() {
                       className="flex items-center justify-between gap-2 rounded-md border px-2 py-1"
                     >
                       <div className="flex flex-col">
-                        <span className="text-[11px] font-medium">
-                          {cap.title}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">
-                          {cap.id}
-                        </span>
+                        <span className="text-[11px] font-medium">{cap.title}</span>
+                        <span className="text-[10px] text-muted-foreground">{cap.id}</span>
                       </div>
                       <Badge variant="outline" className="text-[10px]">
                         {cap.kind}
@@ -144,12 +135,8 @@ export function LotusDogfoodPanel() {
                       className="flex items-center justify-between gap-2 rounded-md border px-2 py-1"
                     >
                       <div className="flex flex-col">
-                        <span className="text-[11px] font-medium">
-                          {item.title}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">
-                          {item.id}
-                        </span>
+                        <span className="text-[11px] font-medium">{item.title}</span>
+                        <span className="text-[10px] text-muted-foreground">{item.id}</span>
                       </div>
                       <Badge variant="outline" className="text-[10px]">
                         {item.kind}
@@ -163,5 +150,5 @@ export function LotusDogfoodPanel() {
         </Tabs>
       </CardContent>
     </Card>
-  )
+  );
 }

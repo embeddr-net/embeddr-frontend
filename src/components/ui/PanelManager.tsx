@@ -1,45 +1,42 @@
 import React from "react";
-import { useWindowStore } from "@/store/windowStore";
-import { useSettingsStore } from "@/store/settingsStore";
-import { useTilingStore } from "@/store/tilingStore";
-import { usePluginStore } from "@/plugins/store";
-import { usePluginLogos } from "@/hooks/usePluginLogos";
-
-import { windowRegistry } from "./windowRegistry";
-import { DraggablePanel } from "./DraggablePanel";
-import { Button } from "@embeddr/react-ui/ui";
 import {
-  Minus,
-  X,
-  Maximize2,
-  Layout,
-  LayoutGrid,
-  PanelBottomClose,
-  PanelBottomOpen,
-  Minimize2,
-  MoreVertical,
-  Maximize,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@embeddr/react-ui/ui";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@embeddr/react-ui/ui";
-import { useEmbeddrAPI, extendApiForPlugin } from "@/plugins/store";
+  ChevronLeft,
+  ChevronRight,
+  Layout,
+  LayoutGrid,
+  Maximize,
+  Maximize2,
+  Minimize2,
+  Minus,
+  MoreVertical,
+  PanelBottomClose,
+  PanelBottomOpen,
+  X,
+} from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
+import { windowRegistry } from "./windowRegistry";
+import { DraggablePanel } from "./DraggablePanel";
+import { useWindowStore } from "@/store/windowStore";
+import { useSettingsStore } from "@/store/settingsStore";
+import { useTilingStore } from "@/store/tilingStore";
+import { extendApiForPlugin, useEmbeddrAPI, usePluginStore } from "@/plugins/store";
+import { usePluginLogos } from "@/hooks/usePluginLogos";
+
+import { cn } from "@/lib/utils";
 import { useGlobalStore } from "@/store/globalStore";
 import { DynamicPluginComponent } from "@/plugins/DynamicLoader";
 import { PluginErrorBoundary } from "@/plugins/PluginErrorBoundary";
 import { lucideIconFromName } from "@/lib/lucide";
-import { useShallow } from "zustand/react/shallow";
 
 type ResolvedPluginWindow = {
   pluginId: string;
@@ -120,7 +117,7 @@ function resolveFromComponentId(
 
   const defId = componentId.slice(bestPid.length + 1);
   const components = plugins?.[bestPid]?.components || [];
-  const norm = (s: string) => (s || '').replace(/[-_]/g, '').toLowerCase();
+  const norm = (s: string) => (s || "").replace(/[-_]/g, "").toLowerCase();
   const defNorm = norm(defId);
   // Try exact match first, then normalized (strips hyphens, lowercases)
   const def =
@@ -157,18 +154,12 @@ const WindowRenderer = ({ id }: { id: string }) => {
     const Component = windowRegistry.get(windowState.componentId);
     if (Component) {
       content = (
-        <PanelManagerWrapper
-          key={windowState.id}
-          windowState={windowState}
-          Component={Component}
-        />
+        <PanelManagerWrapper key={windowState.id} windowState={windowState} Component={Component} />
       );
     }
   } else {
     // Plugin windows
-    content = (
-      <PluginWindowWrapper key={windowState.id} windowState={windowState} />
-    );
+    content = <PluginWindowWrapper key={windowState.id} windowState={windowState} />;
   }
 
   if (!content) return null;
@@ -195,9 +186,7 @@ export const PanelManager: React.FC = () => {
       if (typeof window === "undefined") return;
       if (window.localStorage.getItem("embeddr_debug_panels") !== "1") return;
 
-      const detail = (event as CustomEvent).detail as
-        | { id?: string; phase?: string }
-        | undefined;
+      const detail = (event as CustomEvent).detail as { id?: string; phase?: string } | undefined;
       if (!detail) return;
 
       const snapshot = useWindowStore.getState();
@@ -217,15 +206,8 @@ export const PanelManager: React.FC = () => {
       });
     };
 
-    window.addEventListener(
-      "embeddr-panel-debug",
-      handlePanelDebug as EventListener,
-    );
-    return () =>
-      window.removeEventListener(
-        "embeddr-panel-debug",
-        handlePanelDebug as EventListener,
-      );
+    window.addEventListener("embeddr-panel-debug", handlePanelDebug);
+    return () => window.removeEventListener("embeddr-panel-debug", handlePanelDebug);
   }, []);
 
   // Shift+click on a floating panel sends it to a tile
@@ -245,8 +227,7 @@ export const PanelManager: React.FC = () => {
       useWindowStore.getState().closeWindow(windowId);
     };
     document.addEventListener("mousedown", handleMouseDown, true);
-    return () =>
-      document.removeEventListener("mousedown", handleMouseDown, true);
+    return () => document.removeEventListener("mousedown", handleMouseDown, true);
   }, [tilingEnabled]);
 
   // Select only IDs of open windows to avoid re-rendering list on every position update
@@ -355,11 +336,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
 
   const orderIndex = panelOrder.indexOf(windowState.id);
   const baseOrder = orderIndex === -1 ? 0 : orderIndex;
-  const zIndex = isBackdrop
-    ? 0
-    : windowState.isPinned
-      ? 1000 + baseOrder
-      : 20 + baseOrder;
+  const zIndex = isBackdrop ? 0 : windowState.isPinned ? 1000 + baseOrder : 20 + baseOrder;
 
   const tabs = windowState.tabs || [windowState.id];
   const activeTabId = windowState.activeTabId || windowState.id;
@@ -381,10 +358,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
   ]);
 
   const api = React.useMemo(
-    () =>
-      resolved?.pluginId
-        ? extendApiForPlugin(baseApi, resolved.pluginId)
-        : baseApi,
+    () => (resolved?.pluginId ? extendApiForPlugin(baseApi, resolved.pluginId) : baseApi),
     [baseApi, resolved?.pluginId],
   );
   const isActive = panelOrder[panelOrder.length - 1] === windowState.id;
@@ -419,9 +393,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
     x: number;
     y: number;
   } | null>(null);
-  const [tabInsertIndex, setTabInsertIndex] = React.useState<number | null>(
-    null,
-  );
+  const [tabInsertIndex, setTabInsertIndex] = React.useState<number | null>(null);
   const [tabInsertLeft, setTabInsertLeft] = React.useState<number | null>(null);
   const [tabOffset, setTabOffset] = React.useState(0);
   const [tabMaxOffset, setTabMaxOffset] = React.useState(0);
@@ -508,9 +480,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
       if (!stripRect) return;
 
       const rects = tabs
-        .map((id: string) =>
-          tabButtonRefs.current.get(id)?.getBoundingClientRect(),
-        )
+        .map((id: string) => tabButtonRefs.current.get(id)?.getBoundingClientRect())
         .filter((rect: DOMRect | undefined): rect is DOMRect => Boolean(rect));
 
       if (rects.length === 0) return;
@@ -533,11 +503,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
 
     const handleUp = () => {
       const drag = dragRef.current;
-      if (
-        drag?.active &&
-        drag.mode === "reorder" &&
-        tabInsertIndexRef.current !== null
-      ) {
+      if (drag?.active && drag.mode === "reorder" && tabInsertIndexRef.current !== null) {
         moveTab(windowState.id, drag.tabId, tabInsertIndexRef.current);
       }
       dragRef.current = null;
@@ -572,10 +538,8 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
   // returned null before these hooks ran, React would throw "Rendered more
   // hooks than during the previous render" when `resolved` flipped from null
   // to truthy (classic rules-of-hooks violation).
-  const defaultPosition =
-    windowState.props?.defaultPosition ||
-    resolved?.def?.props?.defaultPosition ||
-    { x: 20, y: 20 };
+  const defaultPosition = windowState.props?.defaultPosition ||
+    resolved?.def?.props?.defaultPosition || { x: 20, y: 20 };
   const panelMeta = React.useMemo(
     () => ({
       id: windowState.id,
@@ -619,11 +583,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
         ? iconValue
         : null;
   const titleIcon = logoUrl ? (
-    <img
-      src={logoUrl}
-      alt={`${pluginId} logo`}
-      className="h-4 w-4 rounded-sm object-contain"
-    />
+    <img src={logoUrl} alt={`${pluginId} logo`} className="h-4 w-4 rounded-sm object-contain" />
   ) : TitleGlyph ? (
     <TitleGlyph className="h-4 w-4" />
   ) : undefined;
@@ -634,10 +594,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
   const handleSizeChange = (size: { width: number; height: number }) =>
     updateWindow(windowState.id, { size });
 
-  const defaultSize =
-    windowState.size ||
-    windowState.props?.defaultSize ||
-    def?.props?.defaultSize;
+  const defaultSize = windowState.size || windowState.props?.defaultSize || def?.props?.defaultSize;
 
   if (isBackdrop) {
     return (
@@ -748,12 +705,8 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
         id={`panel-content-${pluginId.replace(/[^a-zA-Z0-9]/g, "-")}-${componentName.replace(/[^a-zA-Z0-9]/g, "-")}`}
         className="embeddr-panel-content h-full w-full min-h-0 overflow-hidden embeddr-plugin-scope @container [container-name:panel] relative"
         style={{
-          paddingTop: isBackdrop
-            ? "var(--layout-screen-safe-top, 0px)"
-            : undefined,
-          paddingBottom: isBackdrop
-            ? "var(--layout-screen-safe-bottom, 0px)"
-            : undefined,
+          paddingTop: isBackdrop ? "var(--layout-screen-safe-top, 0px)" : undefined,
+          paddingBottom: isBackdrop ? "var(--layout-screen-safe-bottom, 0px)" : undefined,
         }}
       >
         {tabs.length > 1 && (
@@ -769,9 +722,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
               onClick={() =>
                 setTabOffset((prev) => {
                   const viewportWidth = tabViewportRef.current?.clientWidth;
-                  const step = viewportWidth
-                    ? Math.max(80, viewportWidth - 60)
-                    : 140;
+                  const step = viewportWidth ? Math.max(80, viewportWidth - 60) : 140;
                   return Math.max(0, prev - step);
                 })
               }
@@ -838,9 +789,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
                           className="embeddr-panel-tab-icon h-3 w-3 rounded-sm object-contain"
                         />
                       )}
-                      <span className="embeddr-panel-tab-title max-w-24 truncate">
-                        {tabTitle}
-                      </span>
+                      <span className="embeddr-panel-tab-title max-w-24 truncate">{tabTitle}</span>
                     </button>
                   );
                 })}
@@ -854,13 +803,9 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
               onClick={() =>
                 setTabOffset((prev) => {
                   const viewportWidth = tabViewportRef.current?.clientWidth;
-                  const step = viewportWidth
-                    ? Math.max(80, viewportWidth - 60)
-                    : 140;
+                  const step = viewportWidth ? Math.max(80, viewportWidth - 60) : 140;
                   const next = prev + step;
-                  return next >= tabMaxOffset - 4
-                    ? tabMaxOffset
-                    : Math.min(tabMaxOffset, next);
+                  return next >= tabMaxOffset - 4 ? tabMaxOffset : Math.min(tabMaxOffset, next);
                 })
               }
               aria-label="Scroll tabs right"
@@ -900,13 +845,7 @@ export const PluginWindowWrapper = ({ windowState }: { windowState: any }) => {
   );
 };
 
-const PanelManagerWrapper = ({
-  windowState,
-  Component,
-}: {
-  windowState: any;
-  Component: any;
-}) => {
+const PanelManagerWrapper = ({ windowState, Component }: { windowState: any; Component: any }) => {
   const {
     closeWindow,
     minimizeWindow,
@@ -938,11 +877,7 @@ const PanelManagerWrapper = ({
   // Calculate global z-index consistent with DraggablePanel wrapper
   const orderIndex = panelOrder.indexOf(windowState.id);
   const baseOrder = orderIndex === -1 ? 0 : orderIndex;
-  const zIndex = isBackdrop
-    ? 0
-    : windowState.isPinned
-      ? 1000 + baseOrder
-      : 20 + baseOrder;
+  const zIndex = isBackdrop ? 0 : windowState.isPinned ? 1000 + baseOrder : 20 + baseOrder;
 
   // Extend API if pluginId is present in window props
   const pluginId = windowState.props?.pluginId;

@@ -1,27 +1,22 @@
-import React from 'react'
-import { ConfigEditor } from './ConfigEditor'
-import type { ConfigUI, JsonSchema } from './schema'
+import React from "react";
+import { ConfigEditor } from "./ConfigEditor";
+import type { ConfigUI, JsonSchema } from "./schema";
 
 type ConfigObjectEditorProps = {
-  value: Record<string, any>
-  schema: JsonSchema
-  ui?: ConfigUI
-  onChange: (value: Record<string, any>) => void
-}
+  value: Record<string, any>;
+  schema: JsonSchema;
+  ui?: ConfigUI;
+  onChange: (value: Record<string, any>) => void;
+};
 
-export function ConfigObjectEditor({
-  value,
-  schema,
-  ui,
-  onChange,
-}: ConfigObjectEditorProps) {
+export function ConfigObjectEditor({ value, schema, ui, onChange }: ConfigObjectEditorProps) {
   const handleValueChange = (key: string, next: any) => {
-    onChange({ ...value, [key]: next })
-  }
+    onChange({ ...value, [key]: next });
+  };
 
   const handleDraftChange = (_key: string, _next: string) => {
     // Draft handling is managed by the parent if needed.
-  }
+  };
 
   return (
     <ConfigEditor
@@ -33,5 +28,5 @@ export function ConfigObjectEditor({
       onValueChange={handleValueChange}
       onDraftChange={handleDraftChange}
     />
-  )
+  );
 }

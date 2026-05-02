@@ -1,31 +1,23 @@
-import React from 'react'
-import { useWindowStore } from '@/store/windowStore'
-import { Button } from '@embeddr/react-ui/ui'
-import { Eye, EyeOff } from 'lucide-react'
-import { useShallow } from 'zustand/react/shallow'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@embeddr/react-ui/ui'
+import React from "react";
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@embeddr/react-ui/ui";
+import { Eye, EyeOff } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
+import { useWindowStore } from "@/store/windowStore";
 
 export function HidePanelsWidget() {
-  const { toggleHidePanels, windows, backdropWindowId, arePanelsHidden } =
-    useWindowStore(
-      useShallow((s) => ({
-        toggleHidePanels: s.toggleHidePanels,
-        windows: s.windows,
-        backdropWindowId: s.backdropWindowId,
-        arePanelsHidden: s.arePanelsHidden,
-      })),
-    )
+  const { toggleHidePanels, windows, backdropWindowId, arePanelsHidden } = useWindowStore(
+    useShallow((s) => ({
+      toggleHidePanels: s.toggleHidePanels,
+      windows: s.windows,
+      backdropWindowId: s.backdropWindowId,
+      arePanelsHidden: s.arePanelsHidden,
+    })),
+  );
 
   // Only show if we actually have windows to manage (excluding backdrop)
-  const hasManageableWindows = Object.values(windows).some(
-    (w) => w.id !== backdropWindowId,
-  )
+  const hasManageableWindows = Object.values(windows).some((w) => w.id !== backdropWindowId);
 
-  if (!hasManageableWindows) return null
+  if (!hasManageableWindows) return null;
 
   return (
     <Tooltip>
@@ -43,9 +35,7 @@ export function HidePanelsWidget() {
           )}
         </Button>
       </TooltipTrigger>
-      <TooltipContent>
-        {arePanelsHidden ? 'Show Panels' : 'Hide Panels'}
-      </TooltipContent>
+      <TooltipContent>{arePanelsHidden ? "Show Panels" : "Hide Panels"}</TooltipContent>
     </Tooltip>
-  )
+  );
 }

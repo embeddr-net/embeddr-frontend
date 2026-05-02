@@ -1,41 +1,31 @@
-import React from 'react'
-import { useWindowStore } from '@/store/windowStore'
-import { Button } from '@embeddr/react-ui/ui'
-import { Box, PanelBottomClose, PanelBottomOpen, PlugZap } from 'lucide-react'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@embeddr/react-ui/ui'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
-import { usePluginStore } from '@/plugins/store'
-import { usePluginLogos } from '@/hooks/usePluginLogos'
-import { lucideIconFromName } from '@/lib/lucide'
+import React from "react";
+import { Button, Popover, PopoverContent, PopoverTrigger } from "@embeddr/react-ui/ui";
+import { Box, PanelBottomClose, PanelBottomOpen, PlugZap } from "lucide-react";
+import { useWindowStore } from "@/store/windowStore";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { usePluginStore } from "@/plugins/store";
+import { usePluginLogos } from "@/hooks/usePluginLogos";
+import { lucideIconFromName } from "@/lib/lucide";
 
 export function ZenToggleWidget() {
-  const showZenToolbar = useWindowStore((s) => s.showZenToolbar)
-  const toggleZenToolbar = useWindowStore((s) => s.toggleZenToolbar)
-  const spawnWindow = useWindowStore((s) => s.spawnWindow)
-  const getComponents = usePluginStore((s) => s.getComponents)
-  const { logos } = usePluginLogos()
-  const [pinnedPanels] = useLocalStorage<string[]>('zen-pinned-panels', [])
+  const showZenToolbar = useWindowStore((s) => s.showZenToolbar);
+  const toggleZenToolbar = useWindowStore((s) => s.toggleZenToolbar);
+  const spawnWindow = useWindowStore((s) => s.spawnWindow);
+  const getComponents = usePluginStore((s) => s.getComponents);
+  const { logos } = usePluginLogos();
+  const [pinnedPanels] = useLocalStorage<Array<string>>("zen-pinned-panels", []);
 
   const pinnedPanelDefs = React.useMemo(() => {
-    if (!pinnedPanels.length) return []
-    const overlays = getComponents('zen-overlay').filter(
-      ({ def }) => !def.options?.spawnOnly,
-    )
+    if (!pinnedPanels.length) return [];
+    const overlays = getComponents("zen-overlay").filter(({ def }) => !def.options?.spawnOnly);
     const map = new Map(
-      overlays.map(({ pluginId, def }) => [
-        `${pluginId}-${def.id}`,
-        { pluginId, def },
-      ]),
-    )
+      overlays.map(({ pluginId, def }) => [`${pluginId}-${def.id}`, { pluginId, def }]),
+    );
     return pinnedPanels.map((id) => map.get(id)).filter(Boolean) as Array<{
-      pluginId: string
-      def: any
-    }>
-  }, [getComponents, pinnedPanels])
+      pluginId: string;
+      def: any;
+    }>;
+  }, [getComponents, pinnedPanels]);
 
   if (!showZenToolbar) {
     return (
@@ -48,7 +38,7 @@ export function ZenToggleWidget() {
       >
         <PanelBottomOpen className="h-3.5 w-3.5" />
       </Button>
-    )
+    );
   }
 
   return (
@@ -70,12 +60,12 @@ export function ZenToggleWidget() {
           size="sm"
           className="justify-start gap-2"
           onClick={() => {
-            const componentId = 'embeddr-core-control-panel'
-            spawnWindow(componentId, 'Control Panel', {
-              pluginId: 'embeddr-core',
-              componentName: 'ControlPanel',
-              panelMode: 'single',
-            })
+            const componentId = "embeddr-core-control-panel";
+            spawnWindow(componentId, "Control Panel", {
+              pluginId: "embeddr-core",
+              componentName: "ControlPanel",
+              panelMode: "single",
+            });
           }}
         >
           <Box className="h-3.5 w-3.5" />
@@ -92,9 +82,9 @@ export function ZenToggleWidget() {
         ) : (
           <div className="flex flex-col gap-1">
             {pinnedPanelDefs.map(({ pluginId, def }) => {
-              const componentId = `${pluginId}-${def.id}`
-              const PanelIcon = lucideIconFromName(def.icon)
-              const logoUrl = logos?.[pluginId]
+              const componentId = `${pluginId}-${def.id}`;
+              const PanelIcon = lucideIconFromName(def.icon);
+              const logoUrl = logos?.[pluginId];
               return (
                 <Button
                   key={componentId}
@@ -102,8 +92,8 @@ export function ZenToggleWidget() {
                   size="icon-sm"
                   className="justify-start gap-2 h-6 w-6"
                   onClick={() => {
-                    const componentName = def.exportName || def.component
-                    if (!componentName) return
+                    const componentName = def.exportName || def.component;
+                    if (!componentName) return;
                     spawnWindow(componentId, def.label, {
                       pluginId,
                       componentName,
@@ -112,15 +102,11 @@ export function ZenToggleWidget() {
                       panelMode: def.options?.instanceMode,
                       hideHeader: def.options?.hideHeader,
                       transparent: def.options?.transparent,
-                    })
+                    });
                   }}
                 >
                   {logoUrl ? (
-                    <img
-                      src={logoUrl}
-                      alt=""
-                      className="h-3.5 w-3.5 rounded-sm object-contain"
-                    />
+                    <img src={logoUrl} alt="" className="h-3.5 w-3.5 rounded-sm object-contain" />
                   ) : PanelIcon ? (
                     <PanelIcon className="h-3.5 w-3.5" />
                   ) : (
@@ -128,11 +114,11 @@ export function ZenToggleWidget() {
                   )}
                   <span className="text-xs truncate">{def.label}</span>
                 </Button>
-              )
+              );
             })}
           </div>
         )}
       </PopoverContent>
     </Popover>
-  )
+  );
 }

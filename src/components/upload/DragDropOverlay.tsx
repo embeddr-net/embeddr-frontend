@@ -1,57 +1,54 @@
-import { useCallback, useEffect, useState } from 'react'
-import { UploadCloud } from 'lucide-react'
-import { UploadDialog } from './UploadDialog'
+import { useCallback, useEffect, useState } from "react";
+import { UploadCloud } from "lucide-react";
+import { UploadDialog } from "./UploadDialog";
 
 export function DragDropOverlay() {
-  const [isDragging, setIsDragging] = useState(false)
-  const [droppedFiles, setDroppedFiles] = useState<Array<File>>([])
-  const [showDialog, setShowDialog] = useState(false)
+  const [isDragging, setIsDragging] = useState(false);
+  const [droppedFiles, setDroppedFiles] = useState<Array<File>>([]);
+  const [showDialog, setShowDialog] = useState(false);
 
   const handleDragOver = useCallback((e: DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const types = e.dataTransfer?.types ? Array.from(e.dataTransfer.types) : []
-    if (
-      types.includes('Files') &&
-      !types.includes('application/embeddr-image-id')
-    ) {
-      setIsDragging(true)
+    e.preventDefault();
+    e.stopPropagation();
+    const types = e.dataTransfer?.types ? Array.from(e.dataTransfer.types) : [];
+    if (types.includes("Files") && !types.includes("application/embeddr-image-id")) {
+      setIsDragging(true);
     }
-  }, [])
+  }, []);
 
   const handleDragLeave = useCallback((e: DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
     // Only set false if leaving the window
     if (e.clientX === 0 && e.clientY === 0) {
-      setIsDragging(false)
+      setIsDragging(false);
     }
-  }, [])
+  }, []);
 
   const handleDrop = useCallback((e: DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
 
     if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-      const files = Array.from(e.dataTransfer.files)
+      const files = Array.from(e.dataTransfer.files);
       if (files.length > 0) {
-        setDroppedFiles(files)
-        setShowDialog(true)
+        setDroppedFiles(files);
+        setShowDialog(true);
       }
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    window.addEventListener('dragover', handleDragOver)
-    window.addEventListener('dragleave', handleDragLeave)
-    window.addEventListener('drop', handleDrop)
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("dragleave", handleDragLeave);
+    window.addEventListener("drop", handleDrop);
     return () => {
-      window.removeEventListener('dragover', handleDragOver)
-      window.removeEventListener('dragleave', handleDragLeave)
-      window.removeEventListener('drop', handleDrop)
-    }
-  }, [handleDragOver, handleDragLeave, handleDrop])
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("dragleave", handleDragLeave);
+      window.removeEventListener("drop", handleDrop);
+    };
+  }, [handleDragOver, handleDragLeave, handleDrop]);
 
   return (
     <>
@@ -63,11 +60,7 @@ export function DragDropOverlay() {
           </div>
         </div>
       )}
-      <UploadDialog
-        open={showDialog}
-        onOpenChange={setShowDialog}
-        files={droppedFiles}
-      />
+      <UploadDialog open={showDialog} onOpenChange={setShowDialog} files={droppedFiles} />
     </>
-  )
+  );
 }

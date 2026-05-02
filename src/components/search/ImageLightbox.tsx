@@ -1,34 +1,28 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { ExternalLink, X } from 'lucide-react'
-import { useNavigate } from '@tanstack/react-router'
-import type { PromptImage } from '@/lib/api/types'
-import { useGlobalStore } from '@/store/globalStore'
-import { embeddrApi } from '@/lib/api/client'
+import { Button, Dialog, DialogContent, DialogHeader, DialogTitle } from "@embeddr/react-ui/ui";
+import { ExternalLink, X } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import type { PromptImage } from "@/lib/api/types";
+import { useGlobalStore } from "@/store/globalStore";
+import { embeddrApi } from "@/lib/api/client";
 
 interface ImageLightboxProps {
-  image: PromptImage | null
-  onClose: () => void
+  image: PromptImage | null;
+  onClose: () => void;
 }
 
 export function ImageLightbox({ image, onClose }: ImageLightboxProps) {
-  const { selectImage } = useGlobalStore()
-  const navigate = useNavigate()
+  const { selectImage } = useGlobalStore();
+  const navigate = useNavigate();
 
-  if (!image) return null
+  if (!image) return null;
 
-  const imageUrl = embeddrApi.artifacts.getContentUrl(image.id)
+  const imageUrl = embeddrApi.artifacts.getContentUrl(image.id);
 
   const handleUseInCreate = () => {
-    selectImage(image)
-    navigate({ to: '/lotus' })
-    onClose()
-  }
+    selectImage(image);
+    navigate({ to: "/lotus" });
+    onClose();
+  };
 
   return (
     <Dialog open={!!image} onOpenChange={(open) => !open && onClose()}>
@@ -54,7 +48,7 @@ export function ImageLightbox({ image, onClose }: ImageLightboxProps) {
         </div>
 
         <div className="flex-1 w-full h-full flex items-center justify-center p-4 overflow-hidden">
-          {image.media_type === 'video' ? (
+          {image.media_type === "video" ? (
             <video
               src={imageUrl}
               controls
@@ -65,7 +59,7 @@ export function ImageLightbox({ image, onClose }: ImageLightboxProps) {
           ) : (
             <img
               src={imageUrl}
-              alt={image.prompt || 'Image'}
+              alt={image.prompt || "Image"}
               className="max-w-full max-h-full object-contain shadow-lg rounded-sm"
             />
           )}
@@ -73,9 +67,7 @@ export function ImageLightbox({ image, onClose }: ImageLightboxProps) {
 
         <div className="p-4 bg-background/80 backdrop-blur-md border-t shrink-0">
           <div className="flex flex-col gap-1">
-            <h3 className="font-medium text-sm truncate pr-12">
-              {image.prompt || 'No prompt'}
-            </h3>
+            <h3 className="font-medium text-sm truncate pr-12">{image.prompt || "No prompt"}</h3>
             <div className="flex gap-4 text-xs text-muted-foreground">
               <span>ID: {image.id}</span>
               <span>
@@ -89,5 +81,5 @@ export function ImageLightbox({ image, onClose }: ImageLightboxProps) {
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

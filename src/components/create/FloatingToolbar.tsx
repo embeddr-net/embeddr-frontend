@@ -1,5 +1,5 @@
-import React from 'react'
-import { Button } from '@embeddr/react-ui/ui'
+import React from "react";
+import { Button, ScrollArea } from "@embeddr/react-ui/ui";
 import {
   Check,
   FileJson,
@@ -10,22 +10,20 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Play,
-} from 'lucide-react'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { QueueItem } from './GenerationQueue'
-import { ZenInterface } from './ZenInterface'
-import { useGeneration } from '@/context/GenerationContext'
-import { ImageSelectorDialog } from '@/components/dialogs/ImageSelectorDialog'
-import { BACKEND_URL } from '@/lib/api/config'
-import { cn } from '@/lib/utils'
-
-import { toast } from 'sonner'
+} from "lucide-react";
+import { toast } from "sonner";
+import { QueueItem } from "./GenerationQueue";
+import { ZenInterface } from "./ZenInterface";
+import { useGeneration } from "@/context/GenerationContext";
+import { ImageSelectorDialog } from "@/components/dialogs/ImageSelectorDialog";
+import { BACKEND_URL } from "@/lib/api/config";
+import { cn } from "@/lib/utils";
 
 interface FloatingToolbarProps {
-  leftSidebarOpen: boolean
-  setLeftSidebarOpen: (open: boolean) => void
-  rightSidebarOpen: boolean
-  setRightSidebarOpen: (open: boolean) => void
+  leftSidebarOpen: boolean;
+  setLeftSidebarOpen: (open: boolean) => void;
+  rightSidebarOpen: boolean;
+  setRightSidebarOpen: (open: boolean) => void;
 }
 
 export function FloatingToolbar({
@@ -44,54 +42,54 @@ export function FloatingToolbar({
     selectedGeneration,
     workflows,
     selectWorkflow,
-  } = useGeneration()
+  } = useGeneration();
 
   const handleRepeat = (generation: any) => {
-    if (!generation.inputs) return
+    if (!generation.inputs) return;
 
     Object.entries(generation.inputs).forEach(([nodeId, inputs]) => {
-      if (typeof inputs === 'object' && inputs !== null) {
+      if (typeof inputs === "object" && inputs !== null) {
         Object.entries(inputs).forEach(([key, value]) => {
-          setWorkflowInput(nodeId, key, value)
-        })
+          setWorkflowInput(nodeId, key, value);
+        });
       }
-    })
+    });
 
-    toast.success('Settings loaded from history')
-  }
+    toast.success("Settings loaded from history");
+  };
 
-  const [imageSelectorOpen, setImageSelectorOpen] = React.useState(false)
-  const [queueOpen, setQueueOpen] = React.useState(false)
-  const [workflowOpen, setWorkflowOpen] = React.useState(false)
+  const [imageSelectorOpen, setImageSelectorOpen] = React.useState(false);
+  const [queueOpen, setQueueOpen] = React.useState(false);
+  const [workflowOpen, setWorkflowOpen] = React.useState(false);
   const [activeImageInput, setActiveImageInput] = React.useState<{
-    nodeId: string
-    field: string
-  } | null>(null)
+    nodeId: string;
+    field: string;
+  } | null>(null);
 
-  const isZenMode = !leftSidebarOpen && !rightSidebarOpen
+  const isZenMode = !leftSidebarOpen && !rightSidebarOpen;
 
   // Handle keyboard shortcuts
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isZenMode) return
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault()
+      if (isZenMode) return;
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
         if (selectedWorkflow) {
-          generate()
+          generate();
         }
       }
-    }
+    };
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [generate, selectedWorkflow])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [generate, selectedWorkflow]);
 
   const toggleZenMode = () => {
     // Assume leftsidebar is zen
-    const isZen = leftSidebarOpen
-    setLeftSidebarOpen(isZen ? false : true)
-    setRightSidebarOpen(isZen ? false : true)
-  }
+    const isZen = leftSidebarOpen;
+    setLeftSidebarOpen(isZen ? false : true);
+    setRightSidebarOpen(isZen ? false : true);
+  };
 
   if (isZenMode) {
     return (
@@ -101,44 +99,40 @@ export function FloatingToolbar({
         rightSidebarOpen={rightSidebarOpen}
         setRightSidebarOpen={setRightSidebarOpen}
       />
-    )
+    );
   }
 
   const pendingGenerations = generations.filter(
-    (g) => g.status === 'pending' || g.status === 'processing',
-  )
+    (g) => g.status === "pending" || g.status === "processing",
+  );
 
   const handleImageSelect = (image: any) => {
     if (activeImageInput) {
-      if (activeImageInput.field === 'image_id') {
-        setWorkflowInput(
-          activeImageInput.nodeId,
-          activeImageInput.field,
-          image.id,
-        )
+      if (activeImageInput.field === "image_id") {
+        setWorkflowInput(activeImageInput.nodeId, activeImageInput.field, image.id);
       } else {
         setWorkflowInput(
           activeImageInput.nodeId,
           activeImageInput.field,
           `${BACKEND_URL}/images/${image.id}/file`,
-        )
+        );
       }
       // Also set preview if needed
       setWorkflowInput(
         activeImageInput.nodeId,
-        '_preview',
+        "_preview",
         `${BACKEND_URL}/images/${image.id}/file`,
-      )
+      );
     }
-    setImageSelectorOpen(false)
-    setActiveImageInput(null)
-  }
+    setImageSelectorOpen(false);
+    setActiveImageInput(null);
+  };
 
   return (
     <>
       <div
         className={cn(
-          'absolute bottom-2 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 transition-all duration-300',
+          "absolute bottom-2 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 transition-all duration-300",
         )}
       >
         {/* Main Toolbar */}
@@ -148,8 +142,8 @@ export function FloatingToolbar({
               variant="ghost"
               size="icon-sm"
               onClick={() => {
-                setWorkflowOpen(!workflowOpen)
-                setQueueOpen(false)
+                setWorkflowOpen(!workflowOpen);
+                setQueueOpen(false);
               }}
             >
               <FileJson className="h-5 w-5" />
@@ -168,13 +162,12 @@ export function FloatingToolbar({
                         variant="ghost"
                         size="sm"
                         className={cn(
-                          'w-full justify-start text-xs font-normal',
-                          selectedWorkflow?.id === w.id &&
-                            'bg-muted font-medium',
+                          "w-full justify-start text-xs font-normal",
+                          selectedWorkflow?.id === w.id && "bg-muted font-medium",
                         )}
                         onClick={() => {
-                          selectWorkflow(w)
-                          setWorkflowOpen(false)
+                          selectWorkflow(w);
+                          setWorkflowOpen(false);
                         }}
                       >
                         <span className="truncate">{w.name}</span>
@@ -189,11 +182,7 @@ export function FloatingToolbar({
             )}
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => toggleZenMode()}
-          >
+          <Button variant="ghost" size="icon-sm" onClick={() => toggleZenMode()}>
             {leftSidebarOpen ? (
               <PanelLeftClose className="h-5 w-5" />
             ) : (
@@ -206,10 +195,8 @@ export function FloatingToolbar({
           <Button
             size="sm"
             className={cn(
-              ' px-6 transition-all duration-300 ',
-              isGenerating
-                ? 'bg-amber-500 hover:bg-amber-600'
-                : 'bg-primary hover:bg-primary/90',
+              " px-6 transition-all duration-300 ",
+              isGenerating ? "bg-amber-500 hover:bg-amber-600" : "bg-primary hover:bg-primary/90",
             )}
             onClick={() => generate()}
             disabled={!selectedWorkflow}
@@ -219,7 +206,7 @@ export function FloatingToolbar({
             ) : (
               <Play className="h-5 w-5 mr-2 fill-current" />
             )}
-            {isGenerating ? 'Queue' : 'Generate'}
+            {isGenerating ? "Queue" : "Generate"}
           </Button>
 
           <div className="relative">
@@ -228,8 +215,8 @@ export function FloatingToolbar({
               size="icon-sm"
               className="relative"
               onClick={() => {
-                setQueueOpen(!queueOpen)
-                setWorkflowOpen(false)
+                setQueueOpen(!queueOpen);
+                setWorkflowOpen(false);
               }}
             >
               <List className="h-5 w-5" />
@@ -244,9 +231,7 @@ export function FloatingToolbar({
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-64 bg-background/80 backdrop-blur-md border shadow-lg  overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200">
                 <div className="p-2 border-b bg-muted/50 text-xs font-medium text-muted-foreground flex justify-between items-center">
                   <span>History</span>
-                  <span className="text-[10px] bg-muted px-1.5 py-0.5 ">
-                    {generations.length}
-                  </span>
+                  <span className="text-[10px] bg-muted px-1.5 py-0.5 ">{generations.length}</span>
                 </div>
                 <ScrollArea className="h-75" variant="left-border">
                   <div className="p-2 space-y-1">
@@ -288,5 +273,5 @@ export function FloatingToolbar({
         onSelect={handleImageSelect}
       />
     </>
-  )
+  );
 }

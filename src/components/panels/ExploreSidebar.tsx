@@ -1,18 +1,13 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState } from "react";
+// Select removed — Kind dropdown replaced by Type filter buttons
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@embeddr/react-ui/ui'
-import { Card } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { Label } from '@embeddr/react-ui/ui'
-import { Separator } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  Badge,
+  Button,
+  Card,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -20,94 +15,95 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@embeddr/react-ui/ui'
-// Select removed — Kind dropdown replaced by Type filter buttons
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@embeddr/react-ui/ui'
+  Input,
+  Label,
+  ScrollArea,
+  Separator,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@embeddr/react-ui/ui";
 import {
   BookCopyIcon,
+  Cloud,
   Database,
-  Layers,
-  Info,
   FilterIcon,
-  Settings,
-  FolderPlus,
   Folder,
+  FolderPlus,
+  HardDrive,
+  Info,
+  Layers,
   Plus,
-  X,
   Search,
   Server,
-  Cloud,
-  HardDrive,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useArtifactTypeCounts } from '@/hooks/useArtifactTypeCounts'
-import { getArtifactProviderId } from '@/lib/providers'
-import { FilterConfigPanel } from '@/components/search/FilterConfigPanel'
-import { ImageDetailsSidebar } from '@/components/panels/ImageDetailsSidebar'
-import type { PromptImage } from '@/lib/api'
-import { toast } from 'sonner'
-import { embeddrApi } from '@/lib/api/client'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { BASE_URL } from '@/lib/api/config'
+  Settings,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { PromptImage } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import { useArtifactTypeCounts } from "@/hooks/useArtifactTypeCounts";
+import { getArtifactProviderId } from "@/lib/providers";
+import { FilterConfigPanel } from "@/components/search/FilterConfigPanel";
+import { ImageDetailsSidebar } from "@/components/panels/ImageDetailsSidebar";
+import { embeddrApi } from "@/lib/api/client";
+import { BASE_URL } from "@/lib/api/config";
 
 interface SidebarProps {
-  showSidebar: boolean
-  sidebarTab: string
-  setSidebarTab: (value: string) => void
-  selectedImage: PromptImage | null
-  setSelectedImage: (image: PromptImage | null) => void
-  activeTab: string
-  setActiveTab: (value: string) => void
-  activeSearchQuery: string
-  searchImageId: number | string | null
+  showSidebar: boolean;
+  sidebarTab: string;
+  setSidebarTab: (value: string) => void;
+  selectedImage: PromptImage | null;
+  setSelectedImage: (image: PromptImage | null) => void;
+  activeTab: string;
+  setActiveTab: (value: string) => void;
+  activeSearchQuery: string;
+  searchImageId: number | string | null;
 
   // Selection State
-  selectedLibraryId: string | null
-  setSelectedLibraryId: (id: string | null) => void
-  selectedCollectionId: string | null
-  setSelectedCollectionId: (id: string | null) => void
-  selectedSourceId: string | null
-  setSelectedSourceId: (id: string | null) => void
+  selectedLibraryId: string | null;
+  setSelectedLibraryId: (id: string | null) => void;
+  selectedCollectionId: string | null;
+  setSelectedCollectionId: (id: string | null) => void;
+  selectedSourceId: string | null;
+  setSelectedSourceId: (id: string | null) => void;
 
   // Data
-  libraryPaths?: any[]
-  collections?: any[]
-  sourceCollections?: any[]
-  refetchCollections: () => void
+  libraryPaths?: Array<any>;
+  collections?: Array<any>;
+  sourceCollections?: Array<any>;
+  refetchCollections: () => void;
 
   // Config
-  gridCols: number
-  setGridCols: (val: number) => void
-  imageFit: 'cover' | 'contain'
-  setImageFit: (val: 'cover' | 'contain') => void
-  autoGrid: boolean
-  setAutoGrid: (val: boolean) => void
-  useOriginalImages: boolean
-  setUseOriginalImages: (val: boolean) => void
-  mediaType: 'image' | 'video' | 'all'
-  setMediaType: (val: 'image' | 'video' | 'all') => void
-  showArchived: boolean | null
-  setShowArchived: (val: boolean | null) => void
+  gridCols: number;
+  setGridCols: (val: number) => void;
+  imageFit: "cover" | "contain";
+  setImageFit: (val: "cover" | "contain") => void;
+  autoGrid: boolean;
+  setAutoGrid: (val: boolean) => void;
+  useOriginalImages: boolean;
+  setUseOriginalImages: (val: boolean) => void;
+  mediaType: "image" | "video" | "all";
+  setMediaType: (val: "image" | "video" | "all") => void;
+  showArchived: boolean | null;
+  setShowArchived: (val: boolean | null) => void;
 
   // Type filter
-  selectedTypeName: string | null
-  setSelectedTypeName: (val: string | null) => void
+  selectedTypeName: string | null;
+  setSelectedTypeName: (val: string | null) => void;
 
   // New Providers Filter
-  selectedSourceType: string | null
-  setSelectedSourceType: (val: string | null) => void
-  importSourceOptions?: string[]
-  importInstanceOptions?: string[]
-  originOptions?: string[]
-  providerCounts?: Map<string, number>
+  selectedSourceType: string | null;
+  setSelectedSourceType: (val: string | null) => void;
+  importSourceOptions?: Array<string>;
+  importInstanceOptions?: Array<string>;
+  originOptions?: Array<string>;
+  providerCounts?: Map<string, number>;
 
   // Navigation
-  navigate: (args: any) => void
+  navigate: (args: any) => void;
 }
 
 export function ExploreSidebar({
@@ -152,231 +148,208 @@ export function ExploreSidebar({
   providerCounts,
   navigate,
 }: SidebarProps) {
-  const [newCollectionName, setNewCollectionName] = useState('')
-  const [isCreateCollectionOpen, setIsCreateCollectionOpen] = useState(false)
-  const [isFilterBrowserOpen, setIsFilterBrowserOpen] = useState(false)
-  const [dragOverCollectionId, setDragOverCollectionId] = useState<
-    string | null
-  >(null)
-  const [filterQuery, setFilterQuery] = useState('')
-  const [expandedBaseTypes, setExpandedBaseTypes] = useState<Set<string>>(
-    new Set(),
-  )
+  const [newCollectionName, setNewCollectionName] = useState("");
+  const [isCreateCollectionOpen, setIsCreateCollectionOpen] = useState(false);
+  const [isFilterBrowserOpen, setIsFilterBrowserOpen] = useState(false);
+  const [dragOverCollectionId, setDragOverCollectionId] = useState<string | null>(null);
+  const [filterQuery, setFilterQuery] = useState("");
+  const [expandedBaseTypes, setExpandedBaseTypes] = useState<Set<string>>(new Set());
 
-  const { typeTree } = useArtifactTypeCounts()
+  const { typeTree } = useArtifactTypeCounts();
 
   const toggleBaseTypeExpand = (baseType: string) => {
     setExpandedBaseTypes((prev) => {
-      const next = new Set(prev)
-      if (next.has(baseType)) next.delete(baseType)
-      else next.add(baseType)
-      return next
-    })
-  }
+      const next = new Set(prev);
+      if (next.has(baseType)) next.delete(baseType);
+      else next.add(baseType);
+      return next;
+    });
+  };
 
   const { data: blobRegistry } = useQuery({
-    queryKey: ['system', 'blob-registry', 'explore-providers'],
+    queryKey: ["system", "blob-registry", "explore-providers"],
     queryFn: () => embeddrApi.system.getBlobRegistry(),
-  })
+  });
 
   const { data: storageCaps } = useQuery({
-    queryKey: ['lotus', 'storage-caps'],
-    queryFn: () => embeddrApi.lotus.list({ kind: 'storage' }),
-  })
+    queryKey: ["lotus", "storage-caps"],
+    queryFn: () => embeddrApi.lotus.list({ kind: "storage" }),
+  });
 
   const { data: providerCaps } = useQuery({
-    queryKey: ['lotus', 'provider-caps'],
-    queryFn: () => embeddrApi.lotus.list({ kind: 'provider' }),
-  })
+    queryKey: ["lotus", "provider-caps"],
+    queryFn: () => embeddrApi.lotus.list({ kind: "provider" }),
+  });
 
   const { data: pluginLogos } = useQuery({
-    queryKey: ['plugins', 'logos'],
+    queryKey: ["plugins", "logos"],
     queryFn: () => embeddrApi.plugins.listLogos(),
-  })
+  });
 
   const providerMeta = useMemo(() => {
     const map = new Map<
       string,
       { label: string; iconUrl?: string | null; providerKind?: string | null }
-    >()
+    >();
     providerCaps?.items?.forEach((cap) => {
-      const data = cap.data || {}
-      const providerId = data.provider as string | undefined
-      if (!providerId) return
+      const data = cap.data || {};
+      const providerId = data.provider as string | undefined;
+      if (!providerId) return;
       const ui = (cap.ui || data.ui || {}) as {
-        iconUrl?: string
-        badge?: string
-      }
+        iconUrl?: string;
+        badge?: string;
+      };
       const fallbackIconUrl =
-        ui.iconUrl ||
-        (cap.plugin ? pluginLogos?.logos?.[cap.plugin] : null) ||
-        null
-      const providerKind = (data.provider_kind as string | undefined) || null
+        ui.iconUrl || (cap.plugin ? pluginLogos?.logos?.[cap.plugin] : null) || null;
+      const providerKind = (data.provider_kind as string | undefined) || null;
       map.set(providerId, {
         label: ui.badge || cap.title || providerId,
         iconUrl: fallbackIconUrl,
         providerKind,
-      })
-    })
-    return map
-  }, [providerCaps, pluginLogos])
+      });
+    });
+    return map;
+  }, [providerCaps, pluginLogos]);
 
   const originMeta = useMemo(() => {
-    const map = new Map<string, { label: string; iconUrl?: string | null }>()
+    const map = new Map<string, { label: string; iconUrl?: string | null }>();
     providerCaps?.items?.forEach((cap) => {
-      const data = cap.data || {}
-      if (data.type !== 'origin') return
-      const originId = data.origin as string | undefined
-      if (!originId) return
+      const data = cap.data || {};
+      if (data.type !== "origin") return;
+      const originId = data.origin as string | undefined;
+      if (!originId) return;
       const ui = (cap.ui || data.ui || {}) as {
-        iconUrl?: string
-        badge?: string
-      }
+        iconUrl?: string;
+        badge?: string;
+      };
       const fallbackIconUrl =
-        ui.iconUrl ||
-        (cap.plugin ? pluginLogos?.logos?.[cap.plugin] : null) ||
-        null
+        ui.iconUrl || (cap.plugin ? pluginLogos?.logos?.[cap.plugin] : null) || null;
       map.set(originId, {
         label: ui.badge || cap.title || originId,
         iconUrl: fallbackIconUrl,
-      })
-    })
-    return map
-  }, [providerCaps, pluginLogos])
+      });
+    });
+    return map;
+  }, [providerCaps, pluginLogos]);
 
   const storageMeta = useMemo(() => {
     const map = new Map<
       string,
       { label: string; iconUrl?: string | null; providerKind?: string | null }
-    >()
-    providerMeta.forEach((value, key) => map.set(key, value))
+    >();
+    providerMeta.forEach((value, key) => map.set(key, value));
     storageCaps?.items?.forEach((cap) => {
-      const data = cap.data || {}
-      const providerId = data.provider as string | undefined
-      if (!providerId) return
+      const data = cap.data || {};
+      const providerId = data.provider as string | undefined;
+      if (!providerId) return;
       const ui = (cap.ui || data.ui || {}) as {
-        iconUrl?: string
-        badge?: string
-      }
+        iconUrl?: string;
+        badge?: string;
+      };
       const fallbackIconUrl =
-        ui.iconUrl ||
-        (cap.plugin ? pluginLogos?.logos?.[cap.plugin] : null) ||
-        null
-      const providerKind = (data.provider_kind as string | undefined) || null
+        ui.iconUrl || (cap.plugin ? pluginLogos?.logos?.[cap.plugin] : null) || null;
+      const providerKind = (data.provider_kind as string | undefined) || null;
       map.set(providerId, {
         label: ui.badge || cap.title || providerId,
         iconUrl: fallbackIconUrl,
         providerKind,
-      })
-    })
-    return map
-  }, [providerMeta, storageCaps, pluginLogos])
+      });
+    });
+    return map;
+  }, [providerMeta, storageCaps, pluginLogos]);
 
   // Filter the lists
   const filteredLibraries =
     libraryPaths?.filter(
       (l) =>
-        (l.label || '').toLowerCase().includes(filterQuery.toLowerCase()) ||
-        (l.uri || '').toLowerCase().includes(filterQuery.toLowerCase()),
-    ) || []
+        (l.label || "").toLowerCase().includes(filterQuery.toLowerCase()) ||
+        (l.uri || "").toLowerCase().includes(filterQuery.toLowerCase()),
+    ) || [];
 
   const filteredCollections =
     collections?.filter((c) =>
-      (c.name || c.label || '')
-        .toLowerCase()
-        .includes(filterQuery.toLowerCase()),
-    ) || []
+      (c.name || c.label || "").toLowerCase().includes(filterQuery.toLowerCase()),
+    ) || [];
 
   // Sources can be messy, filter by multiple fields
   const filteredSources =
     sourceCollections?.filter((s) => {
-      const term = filterQuery.toLowerCase()
+      const term = filterQuery.toLowerCase();
       return (
-        (s.metadata?.post_title || '').toLowerCase().includes(term) ||
-        (s.label || '').toLowerCase().includes(term) ||
-        (s.uri?.split('/').pop() || '').toLowerCase().includes(term) ||
-        (s.id?.toString() || '').includes(term)
-      )
-    }) || []
+        (s.metadata?.post_title || "").toLowerCase().includes(term) ||
+        (s.label || "").toLowerCase().includes(term) ||
+        (s.uri?.split("/").pop() || "").toLowerCase().includes(term) ||
+        (s.id?.toString() || "").includes(term)
+      );
+    }) || [];
 
-  const providerItems = [...(libraryPaths || []), ...(sourceCollections || [])]
-  const providerCountsMap = providerCounts || new Map<string, number>()
+  const providerItems = [...(libraryPaths || []), ...(sourceCollections || [])];
+  const providerCountsMap = providerCounts || new Map<string, number>();
 
   const formatProviderLabel = (providerId: string, baseLabel?: string) => {
-    const [base, ...rest] = providerId.split(':')
-    const label = baseLabel || base
-    if (rest.length === 0) return label
-    return `${label} · ${rest.join(':')}`
-  }
+    const [base, ...rest] = providerId.split(":");
+    const label = baseLabel || base;
+    if (rest.length === 0) return label;
+    return `${label} · ${rest.join(":")}`;
+  };
 
   const resolvePluginAssetUrl = (iconUrl?: string | null) => {
-    if (!iconUrl) return null
-    if (iconUrl.startsWith('http')) return iconUrl
+    if (!iconUrl) return null;
+    if (iconUrl.startsWith("http")) return iconUrl;
     if (/^\/api\/v\d+\/plugins\//.test(iconUrl)) {
-      return `${BASE_URL}${iconUrl.replace(/^\/api\/v\d+\/plugins\//, '/api/plugins/')}`
+      return `${BASE_URL}${iconUrl.replace(/^\/api\/v\d+\/plugins\//, "/api/plugins/")}`;
     }
-    if (iconUrl.startsWith('/api/plugins/')) return `${BASE_URL}${iconUrl}`
-    if (iconUrl.startsWith('/plugins/')) return `${BASE_URL}${iconUrl}`
-    if (iconUrl.startsWith('/')) return `${BASE_URL}/plugins${iconUrl}`
-    return `${BASE_URL}/plugins/${iconUrl}`
-  }
+    if (iconUrl.startsWith("/api/plugins/")) return `${BASE_URL}${iconUrl}`;
+    if (iconUrl.startsWith("/plugins/")) return `${BASE_URL}${iconUrl}`;
+    if (iconUrl.startsWith("/")) return `${BASE_URL}/plugins${iconUrl}`;
+    return `${BASE_URL}/plugins/${iconUrl}`;
+  };
 
-  const renderProviderIcon = (
-    providerKind?: string | null,
-    iconUrl?: string | null,
-  ) => {
-    const resolvedIconUrl = resolvePluginAssetUrl(iconUrl)
-    if (providerKind === 'local') {
-      return <HardDrive className="mr-1 h-3 w-3 text-emerald-500" />
+  const renderProviderIcon = (providerKind?: string | null, iconUrl?: string | null) => {
+    const resolvedIconUrl = resolvePluginAssetUrl(iconUrl);
+    if (providerKind === "local") {
+      return <HardDrive className="mr-1 h-3 w-3 text-emerald-500" />;
     }
-    if (providerKind === 'remote') {
-      return <Cloud className="mr-1 h-3 w-3 text-sky-500" />
+    if (providerKind === "remote") {
+      return <Cloud className="mr-1 h-3 w-3 text-sky-500" />;
     }
-    if (providerKind === 'reference') {
-      return <Server className="mr-1 h-3 w-3 text-orange-500" />
+    if (providerKind === "reference") {
+      return <Server className="mr-1 h-3 w-3 text-orange-500" />;
     }
     if (resolvedIconUrl) {
-      return (
-        <img
-          src={resolvedIconUrl}
-          alt=""
-          className="mr-1 h-3 w-3 object-contain"
-        />
-      )
+      return <img src={resolvedIconUrl} alt="" className="mr-1 h-3 w-3 object-contain" />;
     }
-    return <Server className="mr-1 h-3 w-3 text-muted-foreground" />
-  }
+    return <Server className="mr-1 h-3 w-3 text-muted-foreground" />;
+  };
 
-  const allProviderIds = new Set<string>()
+  const allProviderIds = new Set<string>();
   providerItems.forEach((item) => {
-    const providerId = getArtifactProviderId(item)
-    if (providerId) allProviderIds.add(providerId)
-  })
-  blobRegistry?.providers?.forEach((providerId) =>
-    allProviderIds.add(providerId),
-  )
-  providerCountsMap.forEach((_, providerId) => allProviderIds.add(providerId))
+    const providerId = getArtifactProviderId(item);
+    if (providerId) allProviderIds.add(providerId);
+  });
+  blobRegistry?.providers?.forEach((providerId) => allProviderIds.add(providerId));
+  providerCountsMap.forEach((_, providerId) => allProviderIds.add(providerId));
 
   type ProviderInstance = {
-    id: string
-    label: string
-    count: number
-  }
+    id: string;
+    label: string;
+    count: number;
+  };
 
   type ProviderGroup = {
-    id: string
-    label: string
-    iconUrl?: string | null
-    providerKind?: string | null
-    count: number
-    instances: ProviderInstance[]
-  }
+    id: string;
+    label: string;
+    iconUrl?: string | null;
+    providerKind?: string | null;
+    count: number;
+    instances: Array<ProviderInstance>;
+  };
 
-  const providerGroups = new Map<string, ProviderGroup>()
+  const providerGroups = new Map<string, ProviderGroup>();
 
   allProviderIds.forEach((providerId) => {
-    const [base, ...rest] = providerId.split(':')
-    const meta = storageMeta.get(base)
+    const [base, ...rest] = providerId.split(":");
+    const meta = storageMeta.get(base);
     const group = providerGroups.get(base) || {
       id: base,
       label: meta?.label || base,
@@ -384,102 +357,87 @@ export function ExploreSidebar({
       providerKind: meta?.providerKind || null,
       count: 0,
       instances: [],
-    }
-    const count = providerCountsMap.get(providerId) || 0
+    };
+    const count = providerCountsMap.get(providerId) || 0;
 
     if (rest.length === 0) {
-      group.count += count
+      group.count += count;
     } else {
       group.instances.push({
         id: providerId,
         label: formatProviderLabel(providerId, meta?.label),
         count,
-      })
+      });
     }
 
-    providerGroups.set(base, group)
-  })
+    providerGroups.set(base, group);
+  });
 
   const providerOptions = Array.from(providerGroups.values()).sort((a, b) =>
     a.label.localeCompare(b.label),
-  )
+  );
 
   providerOptions.forEach((group) => {
-    group.instances.sort((a, b) => a.label.localeCompare(b.label))
+    group.instances.sort((a, b) => a.label.localeCompare(b.label));
     if (group.instances.length > 0) {
-      group.count += group.instances.reduce(
-        (sum, instance) => sum + instance.count,
-        0,
-      )
+      group.count += group.instances.reduce((sum, instance) => sum + instance.count, 0);
     }
-  })
+  });
 
-  const providerLabelById = new Map<string, string>()
+  const providerLabelById = new Map<string, string>();
   providerOptions.forEach((group) => {
-    providerLabelById.set(group.id, group.label)
-    group.instances.forEach((instance) =>
-      providerLabelById.set(instance.id, instance.label),
-    )
-  })
+    providerLabelById.set(group.id, group.label);
+    group.instances.forEach((instance) => providerLabelById.set(instance.id, instance.label));
+  });
 
-  const selectedProviderId = selectedSourceType?.startsWith('provider:')
-    ? selectedSourceType.slice('provider:'.length)
-    : null
+  const selectedProviderId = selectedSourceType?.startsWith("provider:")
+    ? selectedSourceType.slice("provider:".length)
+    : null;
   const selectedProviderLabel = selectedProviderId
     ? providerLabelById.get(selectedProviderId) || selectedProviderId
-    : null
+    : null;
 
-  const selectedImportSource = selectedSourceType?.startsWith('import:')
-    ? selectedSourceType.slice('import:'.length)
-    : null
+  const selectedImportSource = selectedSourceType?.startsWith("import:")
+    ? selectedSourceType.slice("import:".length)
+    : null;
 
-  const selectedOrigin = selectedSourceType?.startsWith('origin:')
-    ? selectedSourceType.slice('origin:'.length)
-    : null
+  const selectedOrigin = selectedSourceType?.startsWith("origin:")
+    ? selectedSourceType.slice("origin:".length)
+    : null;
 
-  const selectedLibrary = libraryPaths?.find(
-    (lib) => String(lib.id) === String(selectedLibraryId),
-  )
+  const selectedLibrary = libraryPaths?.find((lib) => String(lib.id) === String(selectedLibraryId));
   const selectedCollection = collections?.find(
     (col) => String(col.id) === String(selectedCollectionId),
-  )
+  );
   const selectedSource = sourceCollections?.find(
     (src) => String(src.id) === String(selectedSourceId),
-  )
+  );
 
   const handleCreateCollection = async () => {
-    if (!newCollectionName.trim()) return
+    if (!newCollectionName.trim()) return;
     try {
-      await embeddrApi.collections.create(newCollectionName)
-      toast.success('Collection created')
-      refetchCollections()
-      setIsCreateCollectionOpen(false)
-      setNewCollectionName('')
+      await embeddrApi.collections.create(newCollectionName);
+      toast.success("Collection created");
+      refetchCollections();
+      setIsCreateCollectionOpen(false);
+      setNewCollectionName("");
     } catch (e) {
-      toast.error('Failed to create collection')
+      toast.error("Failed to create collection");
     }
-  }
+  };
 
-  const addItemToCollection = async (
-    collectionId: number | string,
-    artifactId: number,
-  ) => {
+  const addItemToCollection = async (collectionId: number | string, artifactId: number) => {
     // Legacy API wrapper or equivalent
     // We might use artifacts.addToCollection(artifactId, collectionId)
     // For now assuming existing logic in ExplorePage was calling a helper or API directly
-    await embeddrApi.collections.addArtifact(
-      String(collectionId),
-      String(artifactId),
-    )
-  }
+    await embeddrApi.collections.addArtifact(String(collectionId), String(artifactId));
+  };
 
   return (
     <div
       className={cn(
-        'flex flex-col overflow-hidden h-full border-none ring-0! shadow-none bg-transparent p-0! min-h-0 transition-all duration-300 ease-in-out',
-        showSidebar
-          ? 'w-80 opacity-100 translate-x-0 mr-1'
-          : 'w-0 opacity-0 -translate-x-4 mr-0',
+        "flex flex-col overflow-hidden h-full border-none ring-0! shadow-none bg-transparent p-0! min-h-0 transition-all duration-300 ease-in-out",
+        showSidebar ? "w-80 opacity-100 translate-x-0 mr-1" : "w-0 opacity-0 -translate-x-4 mr-0",
       )}
     >
       <div className="w-80 h-full flex flex-col gap-1">
@@ -537,7 +495,7 @@ export function ExploreSidebar({
                       variant="ghost"
                       size="icon"
                       className="absolute right-1 top-1 h-6 w-6"
-                      onClick={() => setFilterQuery('')}
+                      onClick={() => setFilterQuery("")}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -547,21 +505,17 @@ export function ExploreSidebar({
 
               <div className="flex-1 h-full p-3 space-y-3">
                 <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
-                  <div className="text-[11px] font-semibold text-foreground">
-                    Active filters
-                  </div>
+                  <div className="text-[11px] font-semibold text-foreground">Active filters</div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {selectedLibraryId && (
                       <Badge variant="outline">
-                        Library:{' '}
-                        {selectedLibrary?.label ||
-                          selectedLibrary?.uri ||
-                          selectedLibraryId}
+                        Library:{" "}
+                        {selectedLibrary?.label || selectedLibrary?.uri || selectedLibraryId}
                       </Badge>
                     )}
                     {selectedCollectionId && (
                       <Badge variant="outline">
-                        Collection:{' '}
+                        Collection:{" "}
                         {selectedCollection?.name ||
                           selectedCollection?.label ||
                           selectedCollectionId}
@@ -573,27 +527,17 @@ export function ExploreSidebar({
                       </Badge>
                     )}
                     {selectedProviderId && (
-                      <Badge variant="outline">
-                        Provider: {selectedProviderLabel}
-                      </Badge>
+                      <Badge variant="outline">Provider: {selectedProviderLabel}</Badge>
                     )}
                     {selectedImportSource && (
-                      <Badge variant="outline">
-                        Imported from: {selectedImportSource}
-                      </Badge>
+                      <Badge variant="outline">Imported from: {selectedImportSource}</Badge>
                     )}
                     {selectedOrigin && (
                       <Badge variant="outline">
-                        Origin:{' '}
-                        {originMeta.get(selectedOrigin)?.label ||
-                          selectedOrigin}
+                        Origin: {originMeta.get(selectedOrigin)?.label || selectedOrigin}
                       </Badge>
                     )}
-                    {selectedTypeName && (
-                      <Badge variant="outline">
-                        Type: {selectedTypeName}
-                      </Badge>
-                    )}
+                    {selectedTypeName && <Badge variant="outline">Type: {selectedTypeName}</Badge>}
                     {!selectedLibraryId &&
                       !selectedCollectionId &&
                       !selectedSourceId &&
@@ -601,17 +545,13 @@ export function ExploreSidebar({
                       !selectedImportSource &&
                       !selectedOrigin &&
                       !selectedTypeName && (
-                        <span className="text-[11px] text-muted-foreground">
-                          No filters set.
-                        </span>
+                        <span className="text-[11px] text-muted-foreground">No filters set.</span>
                       )}
                   </div>
                   {/* Types */}
                   <div className="mt-3 rounded-md border bg-background/60 p-2">
                     <div className="flex items-center justify-between">
-                      <div className="text-[11px] font-semibold text-foreground">
-                        Types
-                      </div>
+                      <div className="text-[11px] font-semibold text-foreground">Types</div>
                       {selectedTypeName && (
                         <Button
                           size="sm"
@@ -626,7 +566,7 @@ export function ExploreSidebar({
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <Button
                         size="sm"
-                        variant={selectedTypeName ? 'ghost' : 'secondary'}
+                        variant={selectedTypeName ? "ghost" : "secondary"}
                         className="h-7 px-2 text-[11px]"
                         onClick={() => setSelectedTypeName(null)}
                       >
@@ -634,47 +574,41 @@ export function ExploreSidebar({
                         All
                       </Button>
                       {typeTree.map(({ baseType, count, subtypes }) => {
-                        const isActive = selectedTypeName === baseType
-                        const hasSubtypes = subtypes.length > 1
-                        const isExpanded = expandedBaseTypes.has(baseType)
+                        const isActive = selectedTypeName === baseType;
+                        const hasSubtypes = subtypes.length > 1;
+                        const isExpanded = expandedBaseTypes.has(baseType);
                         const isSubtypeActive = subtypes.some(
                           (st) => selectedTypeName === st.typeName,
-                        )
+                        );
 
                         return (
                           <div key={baseType} className="flex flex-wrap gap-1.5">
                             <Button
                               size="sm"
-                              variant={
-                                isActive || isSubtypeActive
-                                  ? 'secondary'
-                                  : 'ghost'
-                              }
+                              variant={isActive || isSubtypeActive ? "secondary" : "ghost"}
                               className="h-7 px-2 text-[11px] gap-1"
                               onClick={() => setSelectedTypeName(baseType)}
                               onContextMenu={(e) => {
                                 if (hasSubtypes) {
-                                  e.preventDefault()
-                                  toggleBaseTypeExpand(baseType)
+                                  e.preventDefault();
+                                  toggleBaseTypeExpand(baseType);
                                 }
                               }}
                             >
                               {baseType}
-                              <span className="text-[10px] text-muted-foreground">
-                                {count}
-                              </span>
+                              <span className="text-[10px] text-muted-foreground">{count}</span>
                               {hasSubtypes && (
                                 <button
                                   className="ml-0.5 text-muted-foreground hover:text-foreground"
                                   onClick={(e) => {
-                                    e.stopPropagation()
-                                    toggleBaseTypeExpand(baseType)
+                                    e.stopPropagation();
+                                    toggleBaseTypeExpand(baseType);
                                   }}
                                 >
                                   <svg
                                     className={cn(
-                                      'h-3 w-3 transition-transform',
-                                      isExpanded && 'rotate-90',
+                                      "h-3 w-3 transition-transform",
+                                      isExpanded && "rotate-90",
                                     )}
                                     viewBox="0 0 12 12"
                                     fill="none"
@@ -692,24 +626,18 @@ export function ExploreSidebar({
                                 <Button
                                   key={st.typeName}
                                   size="sm"
-                                  variant={
-                                    selectedTypeName === st.typeName
-                                      ? 'secondary'
-                                      : 'ghost'
-                                  }
+                                  variant={selectedTypeName === st.typeName ? "secondary" : "ghost"}
                                   className="h-7 px-2 text-[11px] gap-1"
-                                  onClick={() =>
-                                    setSelectedTypeName(st.typeName)
-                                  }
+                                  onClick={() => setSelectedTypeName(st.typeName)}
                                 >
-                                  {st.typeName.split(':').pop()}
+                                  {st.typeName.split(":").pop()}
                                   <span className="text-[10px] text-muted-foreground">
                                     {st.count}
                                   </span>
                                 </Button>
                               ))}
                           </div>
-                        )
+                        );
                       })}
                     </div>
                   </div>
@@ -717,9 +645,7 @@ export function ExploreSidebar({
                   {/* Providers */}
                   <div className="mt-3 rounded-md border bg-background/60 p-2">
                     <div className="flex items-center justify-between">
-                      <div className="text-[11px] font-semibold text-foreground">
-                        Providers
-                      </div>
+                      <div className="text-[11px] font-semibold text-foreground">Providers</div>
                       {selectedSourceType && (
                         <Button
                           size="sm"
@@ -734,7 +660,7 @@ export function ExploreSidebar({
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        variant={selectedSourceType ? 'ghost' : 'secondary'}
+                        variant={selectedSourceType ? "ghost" : "secondary"}
                         className="h-7 px-2 text-[11px]"
                         onClick={() => setSelectedSourceType(null)}
                       >
@@ -742,49 +668,40 @@ export function ExploreSidebar({
                         All
                       </Button>
                       {providerOptions.map((provider) => {
-                        const iconUrl = provider.iconUrl || null
-                        const key = `provider:${provider.id}`
-                        const isActive = selectedSourceType === key
+                        const iconUrl = provider.iconUrl || null;
+                        const key = `provider:${provider.id}`;
+                        const isActive = selectedSourceType === key;
                         return (
                           <div key={key} className="flex flex-wrap gap-2">
                             <Button
                               size="sm"
-                              variant={isActive ? 'secondary' : 'ghost'}
+                              variant={isActive ? "secondary" : "ghost"}
                               className="h-7 px-2 text-[11px]"
                               onClick={() => setSelectedSourceType(key)}
                             >
-                              {renderProviderIcon(
-                                provider.providerKind,
-                                iconUrl,
-                              )}
+                              {renderProviderIcon(provider.providerKind, iconUrl)}
                               {provider.label}
                             </Button>
                             {provider.instances.map((instance) => {
-                              const instanceKey = `provider:${instance.id}`
-                              const isInstanceActive =
-                                selectedSourceType === instanceKey
+                              const instanceKey = `provider:${instance.id}`;
+                              const isInstanceActive = selectedSourceType === instanceKey;
                               return (
                                 <Button
                                   key={instanceKey}
                                   size="sm"
-                                  variant={
-                                    isInstanceActive ? 'secondary' : 'ghost'
-                                  }
+                                  variant={isInstanceActive ? "secondary" : "ghost"}
                                   className="h-7 px-2 text-[11px]"
-                                  onClick={() =>
-                                    setSelectedSourceType(instanceKey)
-                                  }
+                                  onClick={() => setSelectedSourceType(instanceKey)}
                                 >
                                   {instance.label}
                                 </Button>
-                              )
+                              );
                             })}
                           </div>
-                        )
+                        );
                       })}
                     </div>
-                    {(importSourceOptions.length > 0 ||
-                      importInstanceOptions.length > 0) && (
+                    {(importSourceOptions.length > 0 || importInstanceOptions.length > 0) && (
                       <div className="mt-3">
                         <div className="text-[11px] font-semibold text-muted-foreground">
                           References
@@ -792,44 +709,44 @@ export function ExploreSidebar({
                         {importSourceOptions.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-2">
                             {importSourceOptions.map((source) => {
-                              const meta = providerMeta.get(source)
-                              const key = `import:${source}`
-                              const isActive = selectedSourceType === key
+                              const meta = providerMeta.get(source);
+                              const key = `import:${source}`;
+                              const isActive = selectedSourceType === key;
                               return (
                                 <Button
                                   key={key}
                                   size="sm"
-                                  variant={isActive ? 'secondary' : 'ghost'}
+                                  variant={isActive ? "secondary" : "ghost"}
                                   className="h-7 px-2 text-[11px]"
                                   onClick={() => setSelectedSourceType(key)}
                                 >
                                   {renderProviderIcon(
-                                    meta?.providerKind || 'reference',
+                                    meta?.providerKind || "reference",
                                     meta?.iconUrl || null,
                                   )}
                                   {meta?.label || source}
                                 </Button>
-                              )
+                              );
                             })}
                           </div>
                         )}
                         {importInstanceOptions.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-2">
                             {importInstanceOptions.map((instance) => {
-                              const key = `instance:${instance}`
-                              const isActive = selectedSourceType === key
+                              const key = `instance:${instance}`;
+                              const isActive = selectedSourceType === key;
                               return (
                                 <Button
                                   key={key}
                                   size="sm"
-                                  variant={isActive ? 'secondary' : 'ghost'}
+                                  variant={isActive ? "secondary" : "ghost"}
                                   className="h-7 px-2 text-[11px]"
                                   onClick={() => setSelectedSourceType(key)}
                                 >
-                                  {renderProviderIcon('reference', null)}
+                                  {renderProviderIcon("reference", null)}
                                   {instance}
                                 </Button>
-                              )
+                              );
                             })}
                           </div>
                         )}
@@ -842,23 +759,20 @@ export function ExploreSidebar({
                         </div>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {originOptions.map((origin) => {
-                            const meta = originMeta.get(origin)
-                            const key = `origin:${origin}`
-                            const isActive = selectedSourceType === key
+                            const meta = originMeta.get(origin);
+                            const key = `origin:${origin}`;
+                            const isActive = selectedSourceType === key;
                             return (
                               <Button
                                 key={key}
                                 size="sm"
-                                variant={isActive ? 'secondary' : 'ghost'}
+                                variant={isActive ? "secondary" : "ghost"}
                                 className="h-7 px-2 text-[11px]"
                                 onClick={() => setSelectedSourceType(key)}
                               >
                                 {resolvePluginAssetUrl(meta?.iconUrl) ? (
                                   <img
-                                    src={
-                                      resolvePluginAssetUrl(meta?.iconUrl) ||
-                                      undefined
-                                    }
+                                    src={resolvePluginAssetUrl(meta?.iconUrl) || undefined}
                                     alt=""
                                     className="mr-1 h-3 w-3 object-contain"
                                   />
@@ -867,7 +781,7 @@ export function ExploreSidebar({
                                 )}
                                 {meta?.label || origin}
                               </Button>
-                            )
+                            );
                           })}
                         </div>
                       </div>
@@ -885,10 +799,10 @@ export function ExploreSidebar({
                       size="sm"
                       variant="ghost"
                       onClick={() => {
-                        setSelectedLibraryId(null)
-                        setSelectedCollectionId(null)
-                        setSelectedSourceId(null)
-                        setSelectedSourceType(null)
+                        setSelectedLibraryId(null);
+                        setSelectedCollectionId(null);
+                        setSelectedSourceId(null);
+                        setSelectedSourceType(null);
                       }}
                     >
                       Clear filters
@@ -897,23 +811,19 @@ export function ExploreSidebar({
                 </div>
               </div>
 
-              <Dialog
-                open={isFilterBrowserOpen}
-                onOpenChange={setIsFilterBrowserOpen}
-              >
+              <Dialog open={isFilterBrowserOpen} onOpenChange={setIsFilterBrowserOpen}>
                 <DialogContent className="max-w-3xl">
                   <DialogHeader>
                     <DialogTitle>Browse filters</DialogTitle>
                     <DialogDescription>
-                      Choose libraries, collections, or sources to filter
-                      results.
+                      Choose libraries, collections, or sources to filter results.
                     </DialogDescription>
                   </DialogHeader>
                   <ScrollArea className="h-120 pr-2" type="always">
                     <Accordion
                       type="multiple"
                       className="w-full px-2 pb-2"
-                      defaultValue={['libraries', 'collections', 'sources']}
+                      defaultValue={["libraries", "collections", "sources"]}
                     >
                       {/* LIBRARIES SECTION */}
                       <AccordionItem value="libraries" className="border-b-0">
@@ -926,11 +836,11 @@ export function ExploreSidebar({
                             size="icon"
                             className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={(e) => {
-                              e.stopPropagation()
+                              e.stopPropagation();
                               navigate({
-                                to: '/settings',
-                                search: { tab: 'library' },
-                              })
+                                to: "/settings",
+                                search: { tab: "library" },
+                              });
                             }}
                           >
                             <Plus className="h-3 w-3" />
@@ -945,15 +855,15 @@ export function ExploreSidebar({
                                   selectedCollectionId === null &&
                                   selectedSourceId === null &&
                                   selectedSourceType === null
-                                    ? 'secondary'
-                                    : 'ghost'
+                                    ? "secondary"
+                                    : "ghost"
                                 }
                                 className="w-full justify-between font-normal h-8 text-sm px-2"
                                 onClick={() => {
-                                  setSelectedLibraryId(null)
-                                  setSelectedCollectionId(null)
-                                  setSelectedSourceId(null)
-                                  setSelectedSourceType(null)
+                                  setSelectedLibraryId(null);
+                                  setSelectedCollectionId(null);
+                                  setSelectedSourceId(null);
+                                  setSelectedSourceType(null);
                                 }}
                               >
                                 <span className="flex items-center gap-2 truncate">
@@ -963,47 +873,36 @@ export function ExploreSidebar({
                               </Button>
                             )}
                             {filteredLibraries.map((folder) => {
-                              const providerId = getArtifactProviderId(folder)
-                              const baseProvider = providerId?.split(':')[0]
-                              const meta = baseProvider
-                                ? storageMeta.get(baseProvider)
-                                : undefined
-                              const iconUrl = meta?.iconUrl || null
-                              const resolvedIconUrl =
-                                resolvePluginAssetUrl(iconUrl)
-                              const providerKind = meta?.providerKind || null
+                              const providerId = getArtifactProviderId(folder);
+                              const baseProvider = providerId?.split(":")[0];
+                              const meta = baseProvider ? storageMeta.get(baseProvider) : undefined;
+                              const iconUrl = meta?.iconUrl || null;
+                              const resolvedIconUrl = resolvePluginAssetUrl(iconUrl);
+                              const providerKind = meta?.providerKind || null;
                               const providerLabel = providerId
                                 ? formatProviderLabel(providerId, meta?.label)
-                                : null
+                                : null;
 
                               // If source type filter is active, only show matching libraries
-                              if (selectedSourceType?.startsWith('provider:')) {
-                                if (!providerId) return null
-                                if (
-                                  selectedSourceType !==
-                                  `provider:${providerId}`
-                                )
-                                  return null
+                              if (selectedSourceType?.startsWith("provider:")) {
+                                if (!providerId) return null;
+                                if (selectedSourceType !== `provider:${providerId}`) return null;
                               }
 
                               return (
                                 <Button
                                   key={folder.id}
-                                  variant={
-                                    selectedLibraryId === folder.id
-                                      ? 'secondary'
-                                      : 'ghost'
-                                  }
+                                  variant={selectedLibraryId === folder.id ? "secondary" : "ghost"}
                                   className="w-full justify-between font-normal h-8 text-sm px-2 group/btn"
                                   onClick={() => {
-                                    setSelectedLibraryId(folder.id)
-                                    setSelectedCollectionId(null)
+                                    setSelectedLibraryId(folder.id);
+                                    setSelectedCollectionId(null);
                                     if (
-                                      activeTab === 'search' &&
+                                      activeTab === "search" &&
                                       !activeSearchQuery &&
                                       !searchImageId
                                     ) {
-                                      setActiveTab('new')
+                                      setActiveTab("new");
                                     }
                                   }}
                                 >
@@ -1020,8 +919,7 @@ export function ExploreSidebar({
                                     ) : (
                                       renderProviderIcon(providerKind, null)
                                     )}
-                                    {folder.label ||
-                                      folder.uri.split('/').pop()}
+                                    {folder.label || folder.uri.split("/").pop()}
                                   </span>
                                   <div className="flex items-center gap-2">
                                     {providerLabel && (
@@ -1029,22 +927,18 @@ export function ExploreSidebar({
                                         {providerLabel}
                                       </span>
                                     )}
-                                    <Badge
-                                      variant="secondary"
-                                      className="text-[10px] h-4 px-1"
-                                    >
+                                    <Badge variant="secondary" className="text-[10px] h-4 px-1">
                                       {folder.file_count}
                                     </Badge>
                                   </div>
                                 </Button>
-                              )
+                              );
                             })}
-                            {filteredLibraries.length === 0 &&
-                              !!filterQuery && (
-                                <div className="text-xs text-muted-foreground p-2">
-                                  No libraries match
-                                </div>
-                              )}
+                            {filteredLibraries.length === 0 && !!filterQuery && (
+                              <div className="text-xs text-muted-foreground p-2">
+                                No libraries match
+                              </div>
+                            )}
                           </div>
                         </AccordionContent>
                       </AccordionItem>
@@ -1075,8 +969,7 @@ export function ExploreSidebar({
                               <DialogHeader>
                                 <DialogTitle>Create Collection</DialogTitle>
                                 <DialogDescription>
-                                  Create a new collection to organize your
-                                  images.
+                                  Create a new collection to organize your images.
                                 </DialogDescription>
                               </DialogHeader>
                               <div className="grid gap-4 py-4">
@@ -1088,17 +981,13 @@ export function ExploreSidebar({
                                     id="name"
                                     autoComplete="off"
                                     value={newCollectionName}
-                                    onChange={(e) =>
-                                      setNewCollectionName(e.target.value)
-                                    }
+                                    onChange={(e) => setNewCollectionName(e.target.value)}
                                     className="col-span-3"
                                   />
                                 </div>
                               </div>
                               <DialogFooter>
-                                <Button onClick={handleCreateCollection}>
-                                  Create
-                                </Button>
+                                <Button onClick={handleCreateCollection}>Create</Button>
                               </DialogFooter>
                             </DialogContent>
                           </Dialog>
@@ -1110,55 +999,46 @@ export function ExploreSidebar({
                                 key={collection.id}
                                 variant={
                                   selectedCollectionId === String(collection.id)
-                                    ? 'secondary'
-                                    : dragOverCollectionId ===
-                                        String(collection.id)
-                                      ? 'secondary'
-                                      : 'ghost'
+                                    ? "secondary"
+                                    : dragOverCollectionId === String(collection.id)
+                                      ? "secondary"
+                                      : "ghost"
                                 }
                                 className={cn(
-                                  'w-full justify-between font-normal h-fit py-1 text-sm transition-all px-2',
-                                  dragOverCollectionId ===
-                                    String(collection.id) &&
-                                    'ring-2 ring-primary ring-inset scale-[1.02]',
+                                  "w-full justify-between font-normal h-fit py-1 text-sm transition-all px-2",
+                                  dragOverCollectionId === String(collection.id) &&
+                                    "ring-2 ring-primary ring-inset scale-[1.02]",
                                 )}
                                 onClick={() => {
-                                  setSelectedCollectionId(String(collection.id))
-                                  setSelectedLibraryId(null)
-                                  setSelectedSourceId(null)
+                                  setSelectedCollectionId(String(collection.id));
+                                  setSelectedLibraryId(null);
+                                  setSelectedSourceId(null);
                                   if (
-                                    activeTab === 'search' &&
+                                    activeTab === "search" &&
                                     !activeSearchQuery &&
                                     !searchImageId
                                   ) {
-                                    setActiveTab('new')
+                                    setActiveTab("new");
                                   }
                                 }}
                                 onDragOver={(e) => {
-                                  e.preventDefault()
-                                  setDragOverCollectionId(String(collection.id))
+                                  e.preventDefault();
+                                  setDragOverCollectionId(String(collection.id));
                                 }}
-                                onDragLeave={() =>
-                                  setDragOverCollectionId(null)
-                                }
+                                onDragLeave={() => setDragOverCollectionId(null)}
                                 onDrop={async (e) => {
-                                  e.preventDefault()
-                                  setDragOverCollectionId(null)
+                                  e.preventDefault();
+                                  setDragOverCollectionId(null);
                                   const imageId = e.dataTransfer.getData(
-                                    'application/embeddr-image-id',
-                                  )
+                                    "application/embeddr-image-id",
+                                  );
                                   if (imageId) {
                                     try {
-                                      await addItemToCollection(
-                                        collection.id,
-                                        parseInt(imageId),
-                                      )
-                                      toast.success(
-                                        `Added to ${collection.name}`,
-                                      )
-                                      refetchCollections()
+                                      await addItemToCollection(collection.id, parseInt(imageId));
+                                      toast.success(`Added to ${collection.name}`);
+                                      refetchCollections();
                                     } catch (err) {
-                                      toast.error('Failed to add to collection')
+                                      toast.error("Failed to add to collection");
                                     }
                                   }
                                 }}
@@ -1166,9 +1046,7 @@ export function ExploreSidebar({
                                 <div className="flex items-center gap-2 truncate">
                                   <Layers className="h-3.5 w-3.5 shrink-0" />
                                   <span className="text-start truncate break-all text-ellipsis whitespace-pre-wrap">
-                                    {collection.name ||
-                                      collection.label ||
-                                      'Untitled'}
+                                    {collection.name || collection.label || "Untitled"}
                                   </span>
                                 </div>
                                 <Badge
@@ -1179,12 +1057,11 @@ export function ExploreSidebar({
                                 </Badge>
                               </Button>
                             ))}
-                            {filteredCollections.length === 0 &&
-                              !!filterQuery && (
-                                <div className="text-xs text-muted-foreground p-2">
-                                  No collections match
-                                </div>
-                              )}
+                            {filteredCollections.length === 0 && !!filterQuery && (
+                              <div className="text-xs text-muted-foreground p-2">
+                                No collections match
+                              </div>
+                            )}
                             {collections?.length === 0 && !filterQuery && (
                               <div className="text-xs text-muted-foreground p-2">
                                 No collections
@@ -1197,8 +1074,7 @@ export function ExploreSidebar({
                       <Separator className="my-1" />
 
                       {/* SOURCES SECTION */}
-                      {((sourceCollections && sourceCollections.length > 0) ||
-                        !!filterQuery) && (
+                      {((sourceCollections && sourceCollections.length > 0) || !!filterQuery) && (
                         <AccordionItem value="sources" className="border-b-0">
                           <div className="flex items-center justify-between py-1 pr-2">
                             <AccordionTrigger className="py-2 hover:no-underline flex-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider justify-start gap-2">
@@ -1210,22 +1086,18 @@ export function ExploreSidebar({
                               {filteredSources.map((source: any) => (
                                 <Button
                                   key={source.id}
-                                  variant={
-                                    selectedSourceId === source.id
-                                      ? 'secondary'
-                                      : 'ghost'
-                                  }
+                                  variant={selectedSourceId === source.id ? "secondary" : "ghost"}
                                   className="w-full justify-start font-normal h-auto min-h-8 py-1.5 text-sm px-2"
                                   onClick={() => {
-                                    setSelectedSourceId(source.id)
-                                    setSelectedLibraryId(null)
-                                    setSelectedCollectionId(null)
+                                    setSelectedSourceId(source.id);
+                                    setSelectedLibraryId(null);
+                                    setSelectedCollectionId(null);
                                     if (
-                                      activeTab === 'search' &&
+                                      activeTab === "search" &&
                                       !activeSearchQuery &&
                                       !searchImageId
                                     ) {
-                                      setActiveTab('new')
+                                      setActiveTab("new");
                                     }
                                   }}
                                 >
@@ -1235,17 +1107,13 @@ export function ExploreSidebar({
                                       <span className="truncate break-all whitespace-pre-wrap text-start">
                                         {source.metadata?.post_title ||
                                           source.label ||
-                                          (source.uri &&
-                                            source.uri.split('/').pop()) ||
+                                          (source.uri && source.uri.split("/").pop()) ||
                                           source.id}
                                       </span>
                                     </span>
                                     {source.metadata?.source_url && (
                                       <span className="text-[10px] text-muted-foreground truncate w-full pl-6">
-                                        {
-                                          new URL(source.metadata.source_url)
-                                            .hostname
-                                        }
+                                        {new URL(source.metadata.source_url).hostname}
                                       </span>
                                     )}
                                   </div>
@@ -1272,10 +1140,7 @@ export function ExploreSidebar({
             </TabsContent>
 
             {/* DETAILS TAB */}
-            <TabsContent
-              value="details"
-              className="flex-1 m-0 overflow-hidden flex flex-col"
-            >
+            <TabsContent value="details" className="flex-1 m-0 overflow-hidden flex flex-col">
               {selectedImage ? (
                 <ImageDetailsSidebar
                   image={selectedImage}
@@ -1290,10 +1155,7 @@ export function ExploreSidebar({
             </TabsContent>
 
             {/* SETTINGS TAB (Was Config) */}
-            <TabsContent
-              value="settings"
-              className="flex-1 m-0 overflow-hidden"
-            >
+            <TabsContent value="settings" className="flex-1 m-0 overflow-hidden">
               <FilterConfigPanel
                 gridCols={gridCols}
                 setGridCols={setGridCols}
@@ -1313,5 +1175,5 @@ export function ExploreSidebar({
         </Card>
       </div>
     </div>
-  )
+  );
 }

@@ -1,26 +1,26 @@
-import React, { useCallback } from 'react'
+import React, { useCallback } from "react";
 import {
+  Button,
+  Card,
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from '@embeddr/react-ui/ui'
-import { Card } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Layers } from 'lucide-react'
-import type { PromptImage } from '@/lib/api/types'
-import { useLineageStore } from '@/store/lineageStore'
-import { ImageBrowser } from '@/components/search/ImageBrowser'
-import { CustomGraph } from '@/components/lineage/CustomGraph'
+} from "@embeddr/react-ui/ui";
+import { Layers } from "lucide-react";
+import type { PromptImage } from "@/lib/api/types";
+import { useLineageStore } from "@/store/lineageStore";
+import { ImageBrowser } from "@/components/search/ImageBrowser";
+import { CustomGraph } from "@/components/lineage/CustomGraph";
 
 const LineagePage = () => {
-  const { loadLineage, toggleStacking, stackByPHash } = useLineageStore()
+  const { loadLineage, toggleStacking, stackByPHash } = useLineageStore();
 
   const handleImageSelect = useCallback(
     (image: PromptImage) => {
-      loadLineage(image.id.toString())
+      loadLineage(image.id.toString());
     },
     [loadLineage],
-  )
+  );
 
   return (
     <div className="h-[calc(100vh)] p-1  w-full overflow-hidden bg-background">
@@ -30,9 +30,7 @@ const LineagePage = () => {
           <div className="h-full border-r bg-card">
             <div className="p-4 border-b">
               <h2 className="font-semibold">Image Browser</h2>
-              <p className="text-xs text-muted-foreground">
-                Select an image to view lineage
-              </p>
+              <p className="text-xs text-muted-foreground">Select an image to view lineage</p>
             </div>
             <div className="h-[calc(100%-5rem)] overflow-y-auto p-4">
               <ImageBrowser onSelect={handleImageSelect} />
@@ -48,13 +46,13 @@ const LineagePage = () => {
               <Card className="p-2 bg-background/80 backdrop-blur border-border/50 flex items-center gap-2">
                 <h1 className="text-lg font-bold">Lineage Graph</h1>
                 <Button
-                  variant={stackByPHash ? 'default' : 'outline'}
+                  variant={stackByPHash ? "default" : "outline"}
                   size="sm"
                   onClick={toggleStacking}
                   title="Toggle PHash Stacking"
                 >
                   <Layers className="w-4 h-4 mr-2" />
-                  {stackByPHash ? 'Stacked' : 'Stack'}
+                  {stackByPHash ? "Stacked" : "Stack"}
                 </Button>
               </Card>
             </div>
@@ -63,7 +61,7 @@ const LineagePage = () => {
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
-  )
-}
+  );
+};
 
-export default LineagePage
+export default LineagePage;

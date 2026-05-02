@@ -1,23 +1,23 @@
-import { Button } from '@embeddr/react-ui/ui'
 import {
+  Badge,
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Search, Tag } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { cn } from '@/lib/utils'
+  Input,
+  ScrollArea,
+} from "@embeddr/react-ui/ui";
+import { Search, Tag } from "lucide-react";
+import { useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface TagsFilterProps {
-  tags: Array<{ name: string; count: number }>
-  selectedTags: Array<string>
-  onToggleTag: (tag: string) => void
-  onClearTags: () => void
-  onSoloTag?: (tag: string) => void
+  tags: Array<{ name: string; count: number }>;
+  selectedTags: Array<string>;
+  onToggleTag: (tag: string) => void;
+  onClearTags: () => void;
+  onSoloTag?: (tag: string) => void;
 }
 
 export function TagsFilter({
@@ -27,21 +27,19 @@ export function TagsFilter({
   onClearTags,
   onSoloTag,
 }: TagsFilterProps) {
-  const [search, setSearch] = useState('')
-  const [isOpen, setIsOpen] = useState(false)
+  const [search, setSearch] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
 
   const filteredTags = useMemo(() => {
-    if (!search) return tags
-    return tags.filter((t) =>
-      t.name.toLowerCase().includes(search.toLowerCase()),
-    )
-  }, [tags, search])
+    if (!search) return tags;
+    return tags.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()));
+  }, [tags, search]);
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button
-          variant={selectedTags.length > 0 ? 'secondary' : 'outline'}
+          variant={selectedTags.length > 0 ? "secondary" : "outline"}
           size="sm"
           className="h-8 gap-2 border-dashed"
         >
@@ -76,39 +74,37 @@ export function TagsFilter({
               </div>
             )}
             {filteredTags.map((tag) => {
-              const isSelected = selectedTags.includes(tag.name)
+              const isSelected = selectedTags.includes(tag.name);
               return (
                 <Button
                   key={tag.name}
-                  variant={isSelected ? 'default' : 'outline'}
+                  variant={isSelected ? "default" : "outline"}
                   size="sm"
                   className={cn(
-                    'h-7 text-xs px-2',
-                    isSelected ? 'hover:bg-primary/90' : 'hover:bg-muted',
+                    "h-7 text-xs px-2",
+                    isSelected ? "hover:bg-primary/90" : "hover:bg-muted",
                   )}
                   onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
+                    e.preventDefault();
+                    e.stopPropagation();
                     if ((e.ctrlKey || e.metaKey) && onSoloTag) {
-                      onSoloTag(tag.name)
+                      onSoloTag(tag.name);
                     } else {
-                      onToggleTag(tag.name)
+                      onToggleTag(tag.name);
                     }
                   }}
                 >
                   {tag.name}
                   <span
                     className={cn(
-                      'ml-1.5 text-[10px]',
-                      isSelected
-                        ? 'text-primary-foreground/80'
-                        : 'text-muted-foreground',
+                      "ml-1.5 text-[10px]",
+                      isSelected ? "text-primary-foreground/80" : "text-muted-foreground",
                     )}
                   >
                     {tag.count}
                   </span>
                 </Button>
-              )
+              );
             })}
           </div>
         </ScrollArea>
@@ -121,7 +117,7 @@ export function TagsFilter({
                 size="sm"
                 className="w-full justify-center h-8"
                 onClick={() => {
-                  onClearTags()
+                  onClearTags();
                 }}
               >
                 Clear filters
@@ -131,5 +127,5 @@ export function TagsFilter({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

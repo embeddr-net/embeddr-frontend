@@ -1,59 +1,55 @@
-import React from 'react'
-import { Button } from '@embeddr/react-ui/ui'
+import React from "react";
 import {
-  Layers as LayersIcon,
-  Pin,
-  PinOff,
-  PlugZap,
-  X,
-  Settings,
-  LayoutGrid,
-  Plus,
-  ArrowUp,
-  ArrowDown,
-} from 'lucide-react'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { useWindowStore } from '@/store/windowStore'
-import {
+  Badge,
+  Button,
+  ScrollArea,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import type { EmbeddrAPI } from '@embeddr/zen-shell'
-import { DraggablePanel } from '@/components/ui/DraggablePanel'
+} from "@embeddr/react-ui/ui";
 import {
-  extendApiForPlugin,
-  useEmbeddrAPI,
-  usePluginStore,
-} from '@/plugins/store'
-import { DynamicPluginComponent } from '@/plugins/DynamicLoader'
-import { usePluginLogos } from '@/hooks/usePluginLogos'
-import { lucideIconFromName } from '@/lib/lucide'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
-import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+  ArrowDown,
+  ArrowUp,
+  Layers as LayersIcon,
+  LayoutGrid,
+  Pin,
+  PinOff,
+  PlugZap,
+  Plus,
+  Settings,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import type { EmbeddrAPI } from "@embeddr/zen-shell";
+import { useWindowStore } from "@/store/windowStore";
+import { DraggablePanel } from "@/components/ui/DraggablePanel";
+import { extendApiForPlugin, useEmbeddrAPI, usePluginStore } from "@/plugins/store";
+import { DynamicPluginComponent } from "@/plugins/DynamicLoader";
+import { usePluginLogos } from "@/hooks/usePluginLogos";
+import { lucideIconFromName } from "@/lib/lucide";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { cn } from "@/lib/utils";
 
-type DraggablePanelProps = React.ComponentProps<typeof DraggablePanel>
+type DraggablePanelProps = React.ComponentProps<typeof DraggablePanel>;
 
 interface ZenToolboxProps extends Partial<DraggablePanelProps> {
-  isOpen?: boolean
-  onClose?: () => void
-  workflows: Array<any>
-  selectedWorkflow: any
-  selectWorkflow: (workflow: any) => void
-  workflowSearch: string
-  setWorkflowSearch: (search: string) => void
-  getComponents: (location: string) => Array<{ pluginId: string; def: any }>
-  getActions: (location: string) => Array<{ pluginId: string; def: any }>
-  api: EmbeddrAPI
-  openPlugins: Record<string, boolean>
-  setOpenPlugins: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
-  hiddenWorkflows: Array<string>
-  setHiddenWorkflows: (hidden: Array<string>) => void
-  pinnedWorkflows: Array<string>
-  setPinnedWorkflows: (pinned: Array<string>) => void
+  isOpen?: boolean;
+  onClose?: () => void;
+  workflows: Array<any>;
+  selectedWorkflow: any;
+  selectWorkflow: (workflow: any) => void;
+  workflowSearch: string;
+  setWorkflowSearch: (search: string) => void;
+  getComponents: (location: string) => Array<{ pluginId: string; def: any }>;
+  getActions: (location: string) => Array<{ pluginId: string; def: any }>;
+  api: EmbeddrAPI;
+  openPlugins: Record<string, boolean>;
+  setOpenPlugins: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  hiddenWorkflows: Array<string>;
+  setHiddenWorkflows: (hidden: Array<string>) => void;
+  pinnedWorkflows: Array<string>;
+  setPinnedWorkflows: (pinned: Array<string>) => void;
 }
 
 export function ZenToolbox(props: ZenToolboxProps) {
@@ -82,79 +78,68 @@ export function ZenToolbox(props: ZenToolboxProps) {
     context,
     getComponents: propGetComponents,
     api: propApi,
-  } = props
-  const { plugins } = usePluginStore()
-  const fallbackApi = useEmbeddrAPI()
-  const fallbackGetComponents = usePluginStore((s) => s.getComponents)
-  const getComponents = propGetComponents ?? fallbackGetComponents
-  const api = propApi ?? fallbackApi
-  const { logos } = usePluginLogos()
-  const [pinnedPanels, setPinnedPanels] = useLocalStorage<string[]>(
-    'zen-pinned-panels',
-    [],
-  )
+  } = props;
+  const { plugins } = usePluginStore();
+  const fallbackApi = useEmbeddrAPI();
+  const fallbackGetComponents = usePluginStore((s) => s.getComponents);
+  const getComponents = propGetComponents ?? fallbackGetComponents;
+  const api = propApi ?? fallbackApi;
+  const { logos } = usePluginLogos();
+  const [pinnedPanels, setPinnedPanels] = useLocalStorage<Array<string>>("zen-pinned-panels", []);
 
-  const spawnWindow = useWindowStore((s) => s.spawnWindow)
-  const closeWindow = useWindowStore((s) => s.closeWindow)
-  const minimizeWindow = useWindowStore((s) => s.minimizeWindow)
-  const windows = useWindowStore((s) => s.windows)
+  const spawnWindow = useWindowStore((s) => s.spawnWindow);
+  const closeWindow = useWindowStore((s) => s.closeWindow);
+  const minimizeWindow = useWindowStore((s) => s.minimizeWindow);
+  const windows = useWindowStore((s) => s.windows);
 
-  const panelId = propId || 'zen-toolbox'
-  const isMinimized = useWindowStore((s) => s.windows[panelId]?.isMinimized)
-  const isOpen = propIsOpen ?? isMinimized === false
-  const onClose = propOnClose ?? (() => closeWindow(panelId))
-  const onMinimize = propOnMinimize ?? (() => minimizeWindow(panelId))
+  const panelId = propId || "zen-toolbox";
+  const isMinimized = useWindowStore((s) => s.windows[panelId]?.isMinimized);
+  const isOpen = propIsOpen ?? isMinimized === false;
+  const onClose = propOnClose ?? (() => closeWindow(panelId));
+  const onMinimize = propOnMinimize ?? (() => minimizeWindow(panelId));
   // const onClose = propOnClose ?? (() => minimizeWindow('zen-toolbox'))
 
-  const overlayPanels = getComponents('zen-overlay').filter(
-    ({ def }) => !def.options?.spawnOnly,
-  )
+  const overlayPanels = getComponents("zen-overlay").filter(({ def }) => !def.options?.spawnOnly);
   const groupedOverlayPanels = React.useMemo(() => {
-    const map = new Map<string, Array<{ pluginId: string; def: any }>>()
+    const map = new Map<string, Array<{ pluginId: string; def: any }>>();
     overlayPanels.forEach((item) => {
-      const list = map.get(item.pluginId) || []
-      list.push(item)
-      map.set(item.pluginId, list)
-    })
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b))
-  }, [overlayPanels])
+      const list = map.get(item.pluginId) || [];
+      list.push(item);
+      map.set(item.pluginId, list);
+    });
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [overlayPanels]);
   const pinnedPanelDefs = pinnedPanels
-    .map((id) =>
-      overlayPanels.find((item) => `${item.pluginId}-${item.def.id}` === id),
-    )
-    .filter(Boolean) as Array<{ pluginId: string; def: any }>
+    .map((id) => overlayPanels.find((item) => `${item.pluginId}-${item.def.id}` === id))
+    .filter(Boolean) as Array<{ pluginId: string; def: any }>;
   const corePanelDefs = overlayPanels.filter(
-    ({ pluginId, def }) =>
-      pluginId === 'embeddr-core' &&
-      ['control-panel'].includes(def.id),
-  )
+    ({ pluginId, def }) => pluginId === "embeddr-core" && ["control-panel"].includes(def.id),
+  );
 
-  const movePinnedPanel = (panelId: string, direction: 'up' | 'down') => {
+  const movePinnedPanel = (panelId: string, direction: "up" | "down") => {
     setPinnedPanels((current) => {
-      const index = current.indexOf(panelId)
-      if (index === -1) return current
-      const nextIndex = direction === 'up' ? index - 1 : index + 1
-      if (nextIndex < 0 || nextIndex >= current.length) return current
-      const next = [...current]
-      const temp = next[index]
-      next[index] = next[nextIndex]
-      next[nextIndex] = temp
-      return next
-    })
-  }
+      const index = current.indexOf(panelId);
+      if (index === -1) return current;
+      const nextIndex = direction === "up" ? index - 1 : index + 1;
+      if (nextIndex < 0 || nextIndex >= current.length) return current;
+      const next = [...current];
+      const temp = next[index];
+      next[index] = next[nextIndex];
+      next[nextIndex] = temp;
+      return next;
+    });
+  };
 
   return (
     <DraggablePanel
       id={panelId}
-      title={propTitle ?? 'Toolbox'}
+      title={propTitle ?? "Toolbox"}
       isOpen={isOpen}
       onClose={onClose}
       onMinimize={onMinimize}
-      defaultPosition={
-        propDefaultPosition ?? { x: 80, y: window.innerHeight - 400 }
-      }
+      defaultPosition={propDefaultPosition ?? { x: 80, y: window.innerHeight - 400 }}
       defaultSize={propDefaultSize ?? { width: 360, height: 450 }}
-      className={cn('select-none', propClassName)}
+      className={cn("select-none", propClassName)}
       position={position}
       size={size}
       onPositionChange={onPositionChange}
@@ -195,17 +180,16 @@ export function ZenToolbox(props: ZenToolboxProps) {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {corePanelDefs.map(({ pluginId, def }) => {
-                      const componentId = `${pluginId}-${def.id}`
-                      const PanelIcon = lucideIconFromName(def.icon) || Settings
+                      const componentId = `${pluginId}-${def.id}`;
+                      const PanelIcon = lucideIconFromName(def.icon) || Settings;
                       return (
                         <Button
                           key={componentId}
                           variant="outline"
                           className="justify-start gap-2"
                           onClick={() => {
-                            const componentName =
-                              def.exportName || def.component
-                            if (!componentName) return
+                            const componentName = def.exportName || def.component;
+                            if (!componentName) return;
                             spawnWindow(componentId, def.label, {
                               pluginId,
                               componentName,
@@ -214,13 +198,13 @@ export function ZenToolbox(props: ZenToolboxProps) {
                               panelMode: def.options?.instanceMode,
                               hideHeader: def.options?.hideHeader,
                               transparent: def.options?.transparent,
-                            })
+                            });
                           }}
                         >
                           <PanelIcon className="h-4 w-4" />
                           <span className="text-xs">{def.label}</span>
                         </Button>
-                      )
+                      );
                     })}
                   </div>
                 </div>
@@ -237,14 +221,13 @@ export function ZenToolbox(props: ZenToolboxProps) {
                 ) : (
                   <div className="space-y-2">
                     {pinnedPanelDefs.map(({ pluginId, def }) => {
-                      const componentId = `${pluginId}-${def.id}`
-                      const logoUrl = logos?.[pluginId]
-                      const PanelIcon = lucideIconFromName(def.icon)
-                      const isSingleInstance =
-                        def.options?.instanceMode === 'single'
+                      const componentId = `${pluginId}-${def.id}`;
+                      const logoUrl = logos?.[pluginId];
+                      const PanelIcon = lucideIconFromName(def.icon);
+                      const isSingleInstance = def.options?.instanceMode === "single";
                       const instances = Object.values(windows).filter(
                         (w) => w.componentId === componentId,
-                      )
+                      );
                       return (
                         <div
                           key={componentId}
@@ -264,12 +247,8 @@ export function ZenToolbox(props: ZenToolboxProps) {
                               <PanelIcon className="h-4 w-4 text-muted-foreground" />
                             ) : null}
                             <div className="flex flex-col">
-                              <span className="text-sm font-medium">
-                                {def.label}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground">
-                                {pluginId}
-                              </span>
+                              <span className="text-sm font-medium">{def.label}</span>
+                              <span className="text-[10px] text-muted-foreground">{pluginId}</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -278,9 +257,7 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                 size="icon"
                                 variant="ghost"
                                 className="h-7 w-7"
-                                onClick={() =>
-                                  movePinnedPanel(componentId, 'up')
-                                }
+                                onClick={() => movePinnedPanel(componentId, "up")}
                               >
                                 <ArrowUp className="h-4 w-4" />
                               </Button>
@@ -288,9 +265,7 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                 size="icon"
                                 variant="ghost"
                                 className="h-7 w-7"
-                                onClick={() =>
-                                  movePinnedPanel(componentId, 'down')
-                                }
+                                onClick={() => movePinnedPanel(componentId, "down")}
                               >
                                 <ArrowDown className="h-4 w-4" />
                               </Button>
@@ -316,9 +291,8 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                 variant="outline"
                                 className="h-7"
                                 onClick={() => {
-                                  const componentName =
-                                    def.exportName || def.component
-                                  if (!componentName) return
+                                  const componentName = def.exportName || def.component;
+                                  if (!componentName) return;
                                   spawnWindow(componentId, def.label, {
                                     pluginId,
                                     componentName,
@@ -327,7 +301,7 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                     panelMode: def.options?.instanceMode,
                                     hideHeader: def.options?.hideHeader,
                                     transparent: def.options?.transparent,
-                                  })
+                                  });
                                 }}
                               >
                                 Open
@@ -338,9 +312,8 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                 variant="outline"
                                 className="h-7 w-7"
                                 onClick={() => {
-                                  const componentName =
-                                    def.exportName || def.component
-                                  if (!componentName) return
+                                  const componentName = def.exportName || def.component;
+                                  if (!componentName) return;
                                   spawnWindow(componentId, def.label, {
                                     pluginId,
                                     componentName,
@@ -349,7 +322,7 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                     panelMode: def.options?.instanceMode,
                                     hideHeader: def.options?.hideHeader,
                                     transparent: def.options?.transparent,
-                                  })
+                                  });
                                 }}
                               >
                                 <Plus className="h-4 w-4" />
@@ -357,7 +330,7 @@ export function ZenToolbox(props: ZenToolboxProps) {
                             )}
                           </div>
                         </div>
-                      )
+                      );
                     })}
                   </div>
                 )}
@@ -382,7 +355,7 @@ export function ZenToolbox(props: ZenToolboxProps) {
                     Overlay Panels
                   </div>
                   {groupedOverlayPanels.map(([pluginId, panels]) => {
-                    const logoUrl = logos?.[pluginId]
+                    const logoUrl = logos?.[pluginId];
                     return (
                       <div key={pluginId} className="space-y-2">
                         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -395,23 +368,20 @@ export function ZenToolbox(props: ZenToolboxProps) {
                           ) : (
                             <PlugZap className="h-4 w-4" />
                           )}
-                          <span className="uppercase tracking-wider">
-                            {pluginId}
-                          </span>
+                          <span className="uppercase tracking-wider">{pluginId}</span>
                           <Badge variant="secondary" className="h-4 px-1.5">
                             {panels.length}
                           </Badge>
                         </div>
                         <div className="space-y-2">
                           {panels.map(({ pluginId, def }) => {
-                            const componentId = `${pluginId}-${def.id}`
+                            const componentId = `${pluginId}-${def.id}`;
                             const instances = Object.values(windows).filter(
                               (w) => w.componentId === componentId,
-                            )
-                            const PanelIcon = lucideIconFromName(def.icon)
-                            const isSingleInstance =
-                              def.options?.instanceMode === 'single'
-                            const isPinned = pinnedPanels.includes(componentId)
+                            );
+                            const PanelIcon = lucideIconFromName(def.icon);
+                            const isSingleInstance = def.options?.instanceMode === "single";
+                            const isPinned = pinnedPanels.includes(componentId);
 
                             return (
                               <div
@@ -423,9 +393,7 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                     <PanelIcon className="h-4 w-4 text-muted-foreground" />
                                   ) : null}
                                   <div className="flex flex-col">
-                                    <span className="text-sm font-medium">
-                                      {def.label}
-                                    </span>
+                                    <span className="text-sm font-medium">{def.label}</span>
                                     <span className="text-[10px] text-muted-foreground">
                                       {def.id}
                                     </span>
@@ -435,16 +403,14 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                 <div className="flex items-center gap-2">
                                   <Button
                                     size="icon"
-                                    variant={isPinned ? 'secondary' : 'ghost'}
+                                    variant={isPinned ? "secondary" : "ghost"}
                                     className="h-7 w-7"
                                     onClick={() => {
                                       setPinnedPanels((current) =>
                                         current.includes(componentId)
-                                          ? current.filter(
-                                              (id) => id !== componentId,
-                                            )
+                                          ? current.filter((id) => id !== componentId)
                                           : [...current, componentId],
-                                      )
+                                      );
                                     }}
                                   >
                                     {isPinned ? (
@@ -453,23 +419,17 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                       <PinOff className="h-4 w-4" />
                                     )}
                                   </Button>
-                                  {!isSingleInstance &&
-                                    instances.length > 0 && (
-                                      <Badge
-                                        variant="secondary"
-                                        className="h-5 px-1.5"
-                                      >
-                                        {instances.length}
-                                      </Badge>
-                                    )}
+                                  {!isSingleInstance && instances.length > 0 && (
+                                    <Badge variant="secondary" className="h-5 px-1.5">
+                                      {instances.length}
+                                    </Badge>
+                                  )}
                                   {isSingleInstance && instances.length > 0 && (
                                     <Button
                                       size="icon"
                                       variant="ghost"
                                       className="h-7 w-7"
-                                      onClick={() =>
-                                        closeWindow(instances[0].id)
-                                      }
+                                      onClick={() => closeWindow(instances[0].id)}
                                     >
                                       <X className="h-4 w-4" />
                                     </Button>
@@ -480,8 +440,7 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                       variant="outline"
                                       className="h-7"
                                       onClick={() => {
-                                        const componentName =
-                                          def.exportName || def.component
+                                        const componentName = def.exportName || def.component;
 
                                         spawnWindow(componentId, def.label, {
                                           pluginId,
@@ -491,8 +450,8 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                           panelMode: def.options?.instanceMode,
                                           hideHeader: def.options?.hideHeader,
                                           transparent: def.options?.transparent,
-                                        })
-                                        toast.info(`Opened ${def.label}`)
+                                        });
+                                        toast.info(`Opened ${def.label}`);
                                       }}
                                     >
                                       Open
@@ -503,8 +462,7 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                       variant="outline"
                                       className="h-7 w-7"
                                       onClick={() => {
-                                        const componentName =
-                                          def.exportName || def.component
+                                        const componentName = def.exportName || def.component;
 
                                         spawnWindow(componentId, def.label, {
                                           pluginId,
@@ -514,8 +472,8 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                           panelMode: def.options?.instanceMode,
                                           hideHeader: def.options?.hideHeader,
                                           transparent: def.options?.transparent,
-                                        })
-                                        toast.info(`Opened ${def.label}`)
+                                        });
+                                        toast.info(`Opened ${def.label}`);
                                       }}
                                     >
                                       <Plus className="h-4 w-4" />
@@ -523,30 +481,27 @@ export function ZenToolbox(props: ZenToolboxProps) {
                                   )}
                                 </div>
                               </div>
-                            )
+                            );
                           })}
                         </div>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               )}
 
               {/* Toolbox Plugins - Filter by Intent if needed */}
-              {getComponents('zen-toolbox-tab').map(({ pluginId, def }) => {
-                const pluginApi = extendApiForPlugin(api, pluginId)
+              {getComponents("zen-toolbox-tab").map(({ pluginId, def }) => {
+                const pluginApi = extendApiForPlugin(api, pluginId);
 
                 // In the new contract, backend gives us a string export name
-                const componentName = def.exportName || def.component
+                const componentName = def.exportName || def.component;
                 if (!componentName) {
-                  console.warn(
-                    '[ZenToolbox] toolbox-tab missing component name',
-                    {
-                      pluginId,
-                      def,
-                    },
-                  )
-                  return null
+                  console.warn("[ZenToolbox] toolbox-tab missing component name", {
+                    pluginId,
+                    def,
+                  });
+                  return null;
                 }
 
                 return (
@@ -558,20 +513,19 @@ export function ZenToolbox(props: ZenToolboxProps) {
                       {...(def.props || {})}
                     />
                   </div>
-                )
+                );
               })}
 
-              {getComponents('zen-toolbox-tab').length === 0 &&
-                overlayPanels.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm">
-                    <LayersIcon className="w-8 h-8 mb-2 opacity-50" />
-                    <p>No plugins loaded</p>
-                  </div>
-                )}
+              {getComponents("zen-toolbox-tab").length === 0 && overlayPanels.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm">
+                  <LayersIcon className="w-8 h-8 mb-2 opacity-50" />
+                  <p>No plugins loaded</p>
+                </div>
+              )}
             </div>
           </ScrollArea>
         </TabsContent>
       </Tabs>
     </DraggablePanel>
-  )
+  );
 }

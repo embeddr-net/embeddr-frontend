@@ -8,14 +8,16 @@
     "build": "vite build && tsc",
     "preview": "vite preview",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint",
-    "format": "prettier",
-    "check": "prettier --write . && eslint --fix"
+    "lint:fix": "eslint --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
   },
   "dependencies": {
-    "@embeddr/client-typescript": "link:../client-typescript",
-    "@embeddr/react-ui": "link:../embeddr-react-ui",
-    "@embeddr/zen-shell": "link:../embeddr-zen-shell",
+    "@embeddr/client-typescript": "^0.2.0-alpha.3",
+    "@embeddr/react-ui": "^0.2.0-alpha.2",
+    "@embeddr/zen-shell": "^0.2.0-alpha.3",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",

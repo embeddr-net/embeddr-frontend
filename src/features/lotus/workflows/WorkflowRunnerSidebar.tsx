@@ -1,23 +1,23 @@
-import React from 'react'
-import type { Workflow } from '@/lib/api/endpoints/workflows'
+import React from "react";
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
+  Input,
+  ScrollArea,
+} from "@embeddr/react-ui/ui";
+import type { Workflow } from "@/lib/api/endpoints/workflows";
 
 type WorkflowRunnerSidebarProps = {
-  workflows?: Workflow[]
-  isLoading: boolean
-  selectedId: string | null
-  searchValue: string
-  onSearchChange: (value: string) => void
-  onSelect: (id: string) => void
-}
+  workflows?: Array<Workflow>;
+  isLoading: boolean;
+  selectedId: string | null;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  onSelect: (id: string) => void;
+};
 
 export function WorkflowRunnerSidebar({
   workflows,
@@ -44,16 +44,12 @@ export function WorkflowRunnerSidebar({
         <ScrollArea className="h-full">
           <div className="flex flex-col gap-1 p-2">
             {isLoading && (
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                Loading...
-              </div>
+              <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
             )}
             {workflows?.map((workflow) => (
               <Button
                 key={workflow.id}
-                variant={
-                  selectedId === String(workflow.id) ? 'secondary' : 'ghost'
-                }
+                variant={selectedId === String(workflow.id) ? "secondary" : "ghost"}
                 className="w-full justify-start text-left h-auto py-2"
                 onClick={() => onSelect(String(workflow.id))}
               >
@@ -64,7 +60,7 @@ export function WorkflowRunnerSidebar({
                   <span className="text-xs text-muted-foreground truncate">
                     {workflow.metadata_json?.workflow?.implementation?.type ||
                       (workflow as any)?.type_name ||
-                      'workflow'}
+                      "workflow"}
                   </span>
                 </div>
               </Button>
@@ -73,5 +69,5 @@ export function WorkflowRunnerSidebar({
         </ScrollArea>
       </CardContent>
     </Card>
-  )
+  );
 }

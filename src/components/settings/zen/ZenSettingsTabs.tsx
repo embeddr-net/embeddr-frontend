@@ -1,90 +1,86 @@
-import React, { useState, useEffect } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { Button } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { Label } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
+import React, { useEffect, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@embeddr/react-ui/ui'
-import { Slider } from '@embeddr/react-ui/ui'
-import { Switch } from '@embeddr/react-ui/ui'
-import {
-  Eye,
-  EyeOff,
-  Image as ImageIcon,
-  X as XIcon,
-  KeyRound,
-  User,
-  ShieldCheck,
-  Sun,
-  Moon,
-  Monitor,
-  Building2,
-  Clock,
-  Trash2,
-  Plus,
-  RefreshCw,
-  Activity,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { AppearanceSettings } from '@/components/settings/AppearanceSettings'
-import { AdvancedAppearanceSettings } from '@/components/settings/AdvancedAppearanceSettings'
-import { useThemePacks } from '@/hooks/useThemePacks'
-import { LibrarySettings } from '@/components/settings/LibrarySettings'
-import { UploadSettings } from '@/components/settings/UploadSettings'
-import { PluginSettings } from '@/components/settings/PluginSettings'
-import { IngestionWorkflowEditor } from '@/components/settings/IngestionWorkflowEditor'
-import { IngestionProfiles } from '@/components/settings/IngestionProfiles'
-import { SystemInfo } from '@/components/settings/SystemInfo'
-import { PetalsPanel } from '@/components/settings/PetalsPanel'
-import { LogViewer } from '@/components/settings/LogViewer'
-import { LotusDashboard } from '@/features/lotus/LotusDashboard'
-import { useUserStore } from '@/store/userStore'
-import { useSettingsStore } from '@/store/settingsStore'
-import { useShallow } from 'zustand/react/shallow'
-import { embeddrApi } from '@/lib/api/client'
-import {
-  fetchSecurityOverview,
-  fetchSecurityRoles,
-  fetchSecurityKeys,
-  fetchSecurityProfile,
-  fetchSecurityOperatorProfile,
-  updateSecurityProfile,
-  logoutCurrentKey,
-  logoutAllKeys,
-  createSecurityKeySelf,
-  revokeSecurityKey,
-  listLotusCapabilities,
-} from '@/lib/api'
-import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
+  Input,
+  Label,
+  ScrollArea,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Slider,
+  Switch,
+} from "@embeddr/react-ui/ui";
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@embeddr/react-ui/ui'
-import { toast } from 'sonner'
-import { useGeneration } from '@/context/GenerationContext'
-import { useLotus } from '@/providers/LotusProvider'
-import { usePluginStore, useEmbeddrAPI } from '@/plugins/store'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
-import { CommandBarCustomizer } from '@/components/settings/CommandBarCustomizer'
-import { HotkeysSettings } from '@/components/settings/HotkeysSettings'
-import { ServicesPanel } from '@/components/settings/ServicesPanel'
+  Activity,
+  Building2,
+  Clock,
+  Eye,
+  EyeOff,
+  Image as ImageIcon,
+  KeyRound,
+  Monitor,
+  Moon,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Sun,
+  Trash2,
+  User,
+  X as XIcon,
+} from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
+import { AdvancedAppearanceSettings } from "@/components/settings/AdvancedAppearanceSettings";
+import { useThemePacks } from "@/hooks/useThemePacks";
+import { LibrarySettings } from "@/components/settings/LibrarySettings";
+import { UploadSettings } from "@/components/settings/UploadSettings";
+import { PluginSettings } from "@/components/settings/PluginSettings";
+import { IngestionWorkflowEditor } from "@/components/settings/IngestionWorkflowEditor";
+import { IngestionProfiles } from "@/components/settings/IngestionProfiles";
+import { SystemInfo } from "@/components/settings/SystemInfo";
+import { PetalsPanel } from "@/components/settings/PetalsPanel";
+import { LogViewer } from "@/components/settings/LogViewer";
+import { LotusDashboard } from "@/features/lotus/LotusDashboard";
+import { useUserStore } from "@/store/userStore";
+import { useSettingsStore } from "@/store/settingsStore";
+import { embeddrApi } from "@/lib/api/client";
+import {
+  createSecurityKeySelf,
+  fetchSecurityKeys,
+  fetchSecurityOperatorProfile,
+  fetchSecurityOverview,
+  fetchSecurityProfile,
+  fetchSecurityRoles,
+  listLotusCapabilities,
+  logoutAllKeys,
+  logoutCurrentKey,
+  revokeSecurityKey,
+  updateSecurityProfile,
+} from "@/lib/api";
+import { useGeneration } from "@/context/GenerationContext";
+import { useLotus } from "@/providers/LotusProvider";
+import { useEmbeddrAPI, usePluginStore } from "@/plugins/store";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { CommandBarCustomizer } from "@/components/settings/CommandBarCustomizer";
+import { HotkeysSettings } from "@/components/settings/HotkeysSettings";
+import { ServicesPanel } from "@/components/settings/ServicesPanel";
 
 function TabScrollArea({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-full w-full p-3 flex flex-col">{children}</div>
+  return <div className="min-h-full w-full p-3 flex flex-col">{children}</div>;
 }
 
 export function ZenGeneralTab() {
@@ -94,22 +90,22 @@ export function ZenGeneralTab() {
         <AppearanceSettings />
       </div>
     </TabScrollArea>
-  )
+  );
 }
 
 export function ZenWorkflowsTab() {
-  const { workflows, selectedWorkflow, selectWorkflow } = useGeneration()
-  const { hiddenWorkflows, setHiddenWorkflows } = useLotus()
+  const { workflows, selectedWorkflow, selectWorkflow } = useGeneration();
+  const { hiddenWorkflows, setHiddenWorkflows } = useLotus();
 
-  const onSelectWorkflow = selectWorkflow
+  const onSelectWorkflow = selectWorkflow;
   const onToggleHidden = (id: string | number) => {
-    const idStr = String(id)
+    const idStr = String(id);
     if (hiddenWorkflows.includes(idStr)) {
-      setHiddenWorkflows(hiddenWorkflows.filter((w) => w !== idStr))
+      setHiddenWorkflows(hiddenWorkflows.filter((w) => w !== idStr));
     } else {
-      setHiddenWorkflows([...hiddenWorkflows, idStr])
+      setHiddenWorkflows([...hiddenWorkflows, idStr]);
     }
-  }
+  };
 
   return (
     <TabScrollArea>
@@ -122,24 +118,20 @@ export function ZenWorkflowsTab() {
             {selectedWorkflow ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="font-medium text-lg">
-                    {selectedWorkflow.name}
-                  </div>
+                  <div className="font-medium text-lg">{selectedWorkflow.name}</div>
                   <div className="px-2 py-1 bg-primary/10 text-xs font-mono text-primary">
                     Active
                   </div>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {selectedWorkflow.description || 'No description provided'}
+                  {selectedWorkflow.description || "No description provided"}
                 </div>
                 <div className="text-xs text-muted-foreground font-mono mt-2">
                   ID: {selectedWorkflow.id}
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-muted-foreground italic">
-                No workflow selected
-              </div>
+              <div className="text-sm text-muted-foreground italic">No workflow selected</div>
             )}
           </div>
         </div>
@@ -150,26 +142,21 @@ export function ZenWorkflowsTab() {
           </h3>
           <div className="grid gap-3">
             {workflows.map((workflow) => {
-              const isHidden = hiddenWorkflows.includes(String(workflow.id))
+              const isHidden = hiddenWorkflows.includes(String(workflow.id));
               return (
                 <div
                   key={workflow.id}
                   className={cn(
-                    'flex items-center justify-between p-3 border transition-all',
+                    "flex items-center justify-between p-3 border transition-all",
                     selectedWorkflow?.id === workflow.id
-                      ? 'border-primary bg-primary/5'
-                      : 'hover:bg-muted/50',
-                    isHidden && 'opacity-60 bg-muted/30',
+                      ? "border-primary bg-primary/5"
+                      : "hover:bg-muted/50",
+                    isHidden && "opacity-60 bg-muted/30",
                   )}
                 >
-                  <div
-                    className="flex-1 min-w-0 mr-4"
-                    onClick={() => onSelectWorkflow(workflow)}
-                  >
+                  <div className="flex-1 min-w-0 mr-4" onClick={() => onSelectWorkflow(workflow)}>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium truncate">
-                        {workflow.name}
-                      </span>
+                      <span className="font-medium truncate">{workflow.name}</span>
                       {isHidden && (
                         <span className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground">
                           Hidden
@@ -177,7 +164,7 @@ export function ZenWorkflowsTab() {
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
-                      {workflow.description || 'No description'}
+                      {workflow.description || "No description"}
                     </div>
                   </div>
 
@@ -186,10 +173,10 @@ export function ZenWorkflowsTab() {
                       variant="ghost"
                       size="icon-sm"
                       onClick={(event) => {
-                        event.stopPropagation()
-                        onToggleHidden(workflow.id)
+                        event.stopPropagation();
+                        onToggleHidden(workflow.id);
                       }}
-                      title={isHidden ? 'Show workflow' : 'Hide workflow'}
+                      title={isHidden ? "Show workflow" : "Hide workflow"}
                     >
                       {isHidden ? (
                         <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -208,13 +195,13 @@ export function ZenWorkflowsTab() {
                     )}
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </div>
       </div>
     </TabScrollArea>
-  )
+  );
 }
 
 export function ZenServicesTab() {
@@ -222,7 +209,7 @@ export function ZenServicesTab() {
     <TabScrollArea>
       <ServicesPanel />
     </TabScrollArea>
-  )
+  );
 }
 
 export function ZenLotusTab() {
@@ -230,38 +217,37 @@ export function ZenLotusTab() {
     <div className="h-full min-h-0">
       <LotusDashboard />
     </div>
-  )
+  );
 }
 
 export function ZenPluginsTab() {
-  const { plugins, activePlugins, activatePlugin, deactivatePlugin } =
-    usePluginStore()
-  const api = useEmbeddrAPI()
+  const { plugins, activePlugins, activatePlugin, deactivatePlugin } = usePluginStore();
+  const api = useEmbeddrAPI();
   const { pluginSettings, setPluginSetting } = useSettingsStore(
     useShallow((s) => ({
       pluginSettings: s.pluginSettings,
       setPluginSetting: s.setPluginSetting,
     })),
-  )
+  );
 
   const onUpdateSetting = (pluginId: string, key: string, value: any) => {
-    setPluginSetting(pluginId, key, value)
-  }
+    setPluginSetting(pluginId, key, value);
+  };
 
   const onResetPanels = (plugin: any) => {
-    if (!plugin.components) return
-    let count = 0
+    if (!plugin.components) return;
+    let count = 0;
     plugin.components.forEach((comp: any) => {
-      localStorage.removeItem(`panel-${comp.id}-position`)
-      localStorage.removeItem(`panel-${comp.id}-size`)
-      count++
-    })
-    toast.success(`Reset ${count} panels for ${plugin.name}`)
-    window.dispatchEvent(new Event('local-storage'))
-  }
+      localStorage.removeItem(`panel-${comp.id}-position`);
+      localStorage.removeItem(`panel-${comp.id}-size`);
+      count++;
+    });
+    toast.success(`Reset ${count} panels for ${plugin.name}`);
+    window.dispatchEvent(new Event("local-storage"));
+  };
 
-  const onActivate = activatePlugin
-  const onDeactivate = deactivatePlugin
+  const onActivate = activatePlugin;
+  const onDeactivate = deactivatePlugin;
 
   return (
     <TabScrollArea>
@@ -277,7 +263,7 @@ export function ZenPluginsTab() {
 
         <div className="grid gap-4">
           {Object.values(plugins).map((plugin: any) => {
-            const isActive = activePlugins.includes(plugin.id)
+            const isActive = activePlugins.includes(plugin.id);
             return (
               <div key={plugin.id} className="p-4 border bg-card space-y-4">
                 <div className="flex items-start justify-between">
@@ -288,31 +274,23 @@ export function ZenPluginsTab() {
                         v{plugin.version}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {plugin.description}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{plugin.description}</p>
                     {plugin.author && (
-                      <p className="text-xs text-muted-foreground">
-                        by {plugin.author}
-                      </p>
+                      <p className="text-xs text-muted-foreground">by {plugin.author}</p>
                     )}
                   </div>
                   <Switch
                     checked={isActive}
                     onCheckedChange={(checked) => {
-                      if (checked) onActivate(plugin.id)
-                      else onDeactivate(plugin.id)
+                      if (checked) onActivate(plugin.id);
+                      else onDeactivate(plugin.id);
                     }}
                   />
                 </div>
 
                 {plugin.components && plugin.components.length > 0 && (
                   <div className="flex justify-end pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onResetPanels(plugin)}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => onResetPanels(plugin)}>
                       Reset Panels
                     </Button>
                   </div>
@@ -322,15 +300,11 @@ export function ZenPluginsTab() {
                   <div className="pt-4 border-t space-y-4">
                     {plugin.settings.map((setting: any) => {
                       const value =
-                        pluginSettings[plugin.id]?.[setting.key] ??
-                        setting.defaultValue
+                        pluginSettings[plugin.id]?.[setting.key] ?? setting.defaultValue;
 
-                      if (setting.type === 'boolean') {
+                      if (setting.type === "boolean") {
                         return (
-                          <div
-                            key={setting.key}
-                            className="flex items-center justify-between"
-                          >
+                          <div key={setting.key} className="flex items-center justify-between">
                             <div className="space-y-0.5">
                               <Label>{setting.label}</Label>
                               {setting.description && (
@@ -346,15 +320,12 @@ export function ZenPluginsTab() {
                               }
                             />
                           </div>
-                        )
+                        );
                       }
 
-                      if (setting.type === 'string') {
+                      if (setting.type === "string") {
                         return (
-                          <div
-                            key={setting.key}
-                            className="grid grid-cols-4 items-center gap-4"
-                          >
+                          <div key={setting.key} className="grid grid-cols-4 items-center gap-4">
                             <div className="col-span-1 space-y-0.5">
                               <Label>{setting.label}</Label>
                               {setting.description && (
@@ -366,24 +337,17 @@ export function ZenPluginsTab() {
                             <Input
                               value={value}
                               onChange={(event) =>
-                                onUpdateSetting(
-                                  plugin.id,
-                                  setting.key,
-                                  event.target.value,
-                                )
+                                onUpdateSetting(plugin.id, setting.key, event.target.value)
                               }
                               className="col-span-3"
                             />
                           </div>
-                        )
+                        );
                       }
 
-                      if (setting.type === 'select') {
+                      if (setting.type === "select") {
                         return (
-                          <div
-                            key={setting.key}
-                            className="grid grid-cols-4 items-center gap-4"
-                          >
+                          <div key={setting.key} className="grid grid-cols-4 items-center gap-4">
                             <div className="col-span-1 space-y-0.5">
                               <Label>{setting.label}</Label>
                               {setting.description && (
@@ -395,9 +359,7 @@ export function ZenPluginsTab() {
                             <Select
                               open
                               value={value}
-                              onValueChange={(val) =>
-                                onUpdateSetting(plugin.id, setting.key, val)
-                              }
+                              onValueChange={(val) => onUpdateSetting(plugin.id, setting.key, val)}
                             >
                               <SelectTrigger className="col-span-3">
                                 <SelectValue placeholder="Select option" />
@@ -411,15 +373,12 @@ export function ZenPluginsTab() {
                               </SelectContent>
                             </Select>
                           </div>
-                        )
+                        );
                       }
 
-                      if (setting.type === 'action') {
+                      if (setting.type === "action") {
                         return (
-                          <div
-                            key={setting.key}
-                            className="flex items-center justify-between"
-                          >
+                          <div key={setting.key} className="flex items-center justify-between">
                             <div className="space-y-0.5">
                               <Label>{setting.label}</Label>
                               {setting.description && (
@@ -436,10 +395,10 @@ export function ZenPluginsTab() {
                               Run
                             </Button>
                           </div>
-                        )
+                        );
                       }
 
-                      return null
+                      return null;
                     })}
                   </div>
                 ) : (
@@ -452,7 +411,7 @@ export function ZenPluginsTab() {
                   )
                 )}
               </div>
-            )
+            );
           })}
         </div>
 
@@ -461,7 +420,7 @@ export function ZenPluginsTab() {
         </div>
       </div>
     </TabScrollArea>
-  )
+  );
 }
 
 export function ZenLibraryTab() {
@@ -469,7 +428,7 @@ export function ZenLibraryTab() {
     // <TabScrollArea>
     <LibrarySettings />
     // </TabScrollArea>
-  )
+  );
 }
 
 export function ZenUploadTab() {
@@ -477,7 +436,7 @@ export function ZenUploadTab() {
     <TabScrollArea>
       <UploadSettings />
     </TabScrollArea>
-  )
+  );
 }
 
 export function ZenAutomationTab() {
@@ -493,7 +452,7 @@ export function ZenAutomationTab() {
         </div>
       </div>
     </TabScrollArea>
-  )
+  );
 }
 
 export function ZenSystemTab() {
@@ -510,7 +469,7 @@ export function ZenSystemTab() {
         </div>
       </div>
     </TabScrollArea>
-  )
+  );
 }
 
 export function ZenPersonalizationTab() {
@@ -562,22 +521,22 @@ export function ZenPersonalizationTab() {
       tilingEnabled: s.tilingEnabled,
       setTilingEnabled: s.setTilingEnabled,
     })),
-  )
+  );
 
-  const { packs } = useThemePacks()
-  const [themePackUrl, setThemePackUrl] = React.useState('')
+  const { packs } = useThemePacks();
+  const [themePackUrl, setThemePackUrl] = React.useState("");
   const availablePacks = React.useMemo(
-    () => [{ id: 'default', name: 'Default', version: '' }, ...packs],
+    () => [{ id: "default", name: "Default", version: "" }, ...packs],
     [packs],
-  )
+  );
   const selectedLightPack = React.useMemo(
     () => packs.find((pack) => pack.id === themePackLightId) || null,
     [packs, themePackLightId],
-  )
+  );
   const selectedDarkPack = React.useMemo(
     () => packs.find((pack) => pack.id === themePackDarkId) || null,
     [packs, themePackDarkId],
-  )
+  );
 
   // Local state helper for image input if needed, but managing via store directly for now
 
@@ -594,13 +553,13 @@ export function ZenPersonalizationTab() {
               <Label>Theme Mode</Label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { value: 'light', label: 'Light', icon: Sun },
-                  { value: 'dark', label: 'Dark', icon: Moon },
-                  { value: 'system', label: 'System', icon: Monitor },
+                  { value: "light", label: "Light", icon: Sun },
+                  { value: "dark", label: "Dark", icon: Moon },
+                  { value: "system", label: "System", icon: Monitor },
                 ].map((theme) => (
                   <Button
                     key={theme.value}
-                    variant={themeMode === theme.value ? 'default' : 'outline'}
+                    variant={themeMode === theme.value ? "default" : "outline"}
                     className="flex gap-2 justify-start"
                     onClick={() => setThemeMode(theme.value as any)}
                   >
@@ -627,7 +586,7 @@ export function ZenPersonalizationTab() {
                     {availablePacks.map((pack) => (
                       <SelectItem key={pack.id} value={pack.id}>
                         <span className="flex items-center gap-2">
-                          {'iconUrl' in pack && pack.iconUrl ? (
+                          {"iconUrl" in pack && pack.iconUrl ? (
                             <img
                               src={pack.iconUrl}
                               alt=""
@@ -636,7 +595,7 @@ export function ZenPersonalizationTab() {
                           ) : null}
                           <span>
                             {pack.name}
-                            {pack.version ? ` v${pack.version}` : ''}
+                            {pack.version ? ` v${pack.version}` : ""}
                           </span>
                         </span>
                       </SelectItem>
@@ -644,8 +603,7 @@ export function ZenPersonalizationTab() {
                   </SelectContent>
                 </Select>
                 {selectedLightPack &&
-                  (selectedLightPack.iconUrl ||
-                    selectedLightPack.bannerUrl) && (
+                  (selectedLightPack.iconUrl || selectedLightPack.bannerUrl) && (
                     <div className="flex items-center gap-3 rounded-md border p-3 bg-muted/20">
                       {selectedLightPack.iconUrl && (
                         <img
@@ -655,9 +613,7 @@ export function ZenPersonalizationTab() {
                         />
                       )}
                       <div className="flex-1">
-                        <div className="text-sm font-medium">
-                          {selectedLightPack.name}
-                        </div>
+                        <div className="text-sm font-medium">{selectedLightPack.name}</div>
                         {selectedLightPack.description && (
                           <div className="text-xs text-muted-foreground">
                             {selectedLightPack.description}
@@ -668,11 +624,7 @@ export function ZenPersonalizationTab() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            setBackgroundImage(
-                              selectedLightPack.bannerUrl || null,
-                            )
-                          }
+                          onClick={() => setBackgroundImage(selectedLightPack.bannerUrl || null)}
                         >
                           Use banner
                         </Button>
@@ -694,7 +646,7 @@ export function ZenPersonalizationTab() {
                     {availablePacks.map((pack) => (
                       <SelectItem key={pack.id} value={pack.id}>
                         <span className="flex items-center gap-2">
-                          {'iconUrl' in pack && pack.iconUrl ? (
+                          {"iconUrl" in pack && pack.iconUrl ? (
                             <img
                               src={pack.iconUrl}
                               alt=""
@@ -703,7 +655,7 @@ export function ZenPersonalizationTab() {
                           ) : null}
                           <span>
                             {pack.name}
-                            {pack.version ? ` v${pack.version}` : ''}
+                            {pack.version ? ` v${pack.version}` : ""}
                           </span>
                         </span>
                       </SelectItem>
@@ -713,41 +665,34 @@ export function ZenPersonalizationTab() {
                 <p className="text-xs text-muted-foreground">
                   Theme packs can override fonts, overlays, and custom CSS.
                 </p>
-                {selectedDarkPack &&
-                  (selectedDarkPack.iconUrl || selectedDarkPack.bannerUrl) && (
-                    <div className="flex items-center gap-3 rounded-md border p-3 bg-muted/20">
-                      {selectedDarkPack.iconUrl && (
-                        <img
-                          src={selectedDarkPack.iconUrl}
-                          alt=""
-                          className="h-8 w-8 rounded-md object-contain"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">
-                          {selectedDarkPack.name}
+                {selectedDarkPack && (selectedDarkPack.iconUrl || selectedDarkPack.bannerUrl) && (
+                  <div className="flex items-center gap-3 rounded-md border p-3 bg-muted/20">
+                    {selectedDarkPack.iconUrl && (
+                      <img
+                        src={selectedDarkPack.iconUrl}
+                        alt=""
+                        className="h-8 w-8 rounded-md object-contain"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">{selectedDarkPack.name}</div>
+                      {selectedDarkPack.description && (
+                        <div className="text-xs text-muted-foreground">
+                          {selectedDarkPack.description}
                         </div>
-                        {selectedDarkPack.description && (
-                          <div className="text-xs text-muted-foreground">
-                            {selectedDarkPack.description}
-                          </div>
-                        )}
-                      </div>
-                      {selectedDarkPack.bannerUrl && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setBackgroundImage(
-                              selectedDarkPack.bannerUrl || null,
-                            )
-                          }
-                        >
-                          Use banner
-                        </Button>
                       )}
                     </div>
-                  )}
+                    {selectedDarkPack.bannerUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setBackgroundImage(selectedDarkPack.bannerUrl || null)}
+                      >
+                        Use banner
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -762,14 +707,14 @@ export function ZenPersonalizationTab() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    const next = themePackUrl.trim()
-                    if (!next) return
+                    const next = themePackUrl.trim();
+                    if (!next) return;
                     setThemePackSources(
                       themePackSources.includes(next)
                         ? themePackSources
                         : [...themePackSources, next],
-                    )
-                    setThemePackUrl('')
+                    );
+                    setThemePackUrl("");
                   }}
                 >
                   Add
@@ -788,9 +733,7 @@ export function ZenPersonalizationTab() {
                         size="icon"
                         className="h-6 w-6"
                         onClick={() =>
-                          setThemePackSources(
-                            themePackSources.filter((item) => item !== source),
-                          )
+                          setThemePackSources(themePackSources.filter((item) => item !== source))
                         }
                       >
                         <XIcon className="h-3 w-3" />
@@ -852,9 +795,7 @@ export function ZenPersonalizationTab() {
           </h3>
           <div className="grid gap-6 p-4 border bg-card">
             <div className="flex items-center justify-between p-2 border rounded-md">
-              <span className="text-sm">
-                Show plugin logos in panel headers
-              </span>
+              <span className="text-sm">Show plugin logos in panel headers</span>
               <Switch
                 checked={showPluginLogos}
                 onCheckedChange={(checked) => setShowPluginLogos(checked)}
@@ -873,7 +814,8 @@ export function ZenPersonalizationTab() {
               <div className="space-y-0.5">
                 <span className="text-sm">Enable tiling layout</span>
                 <p className="text-xs text-muted-foreground">
-                  Show a resizable tiling canvas behind floating panels. Drag windows into tiles or hold Shift to enter split mode.
+                  Show a resizable tiling canvas behind floating panels. Drag windows into tiles or
+                  hold Shift to enter split mode.
                 </p>
               </div>
               <Switch
@@ -894,17 +836,13 @@ export function ZenPersonalizationTab() {
               <Label>Background Image URL</Label>
               <div className="flex gap-2">
                 <Input
-                  value={backgroundImage || ''}
+                  value={backgroundImage || ""}
                   onChange={(event) => setBackgroundImage(event.target.value)}
                   placeholder="https://example.com/image.jpg"
                 />
                 {/* Image picker button would need explicit callback passed or handled here, simplifying for now */}
                 {backgroundImage && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setBackgroundImage(null)}
-                  >
+                  <Button variant="outline" size="icon" onClick={() => setBackgroundImage(null)}>
                     <XIcon className="h-4 w-4" />
                   </Button>
                 )}
@@ -930,9 +868,7 @@ export function ZenPersonalizationTab() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <Label>Background Blur</Label>
-                <span className="text-sm text-muted-foreground">
-                  {backgroundBlur}px
-                </span>
+                <span className="text-sm text-muted-foreground">{backgroundBlur}px</span>
               </div>
               <Slider
                 value={[backgroundBlur]}
@@ -954,18 +890,12 @@ export function ZenPersonalizationTab() {
         </div>
       </div>
     </TabScrollArea>
-  )
+  );
 }
 
 export function ZenInterfaceTab() {
-  const [generateText, setGenerateText] = useLocalStorage(
-    'zen-generate-text',
-    'Generate',
-  )
-  const [generateTheme, setGenerateTheme] = useLocalStorage(
-    'zen-generate-theme',
-    'default',
-  )
+  const [generateText, setGenerateText] = useLocalStorage("zen-generate-text", "Generate");
+  const [generateTheme, setGenerateTheme] = useLocalStorage("zen-generate-theme", "default");
 
   return (
     <TabScrollArea>
@@ -1018,7 +948,7 @@ export function ZenInterfaceTab() {
         </div>
       </div>
     </TabScrollArea>
-  )
+  );
 }
 
 export function ZenLogsTab() {
@@ -1026,96 +956,95 @@ export function ZenLogsTab() {
     <TabScrollArea>
       <LogViewer />
     </TabScrollArea>
-  )
+  );
 }
 
-export { TransportAccessSettings as ZenTransportTab } from '@/components/settings/TransportAccessSettings'
+export { TransportAccessSettings as ZenTransportTab } from "@/components/settings/TransportAccessSettings";
 
 export function ZenLotusConfigTab({
   activeTab: _activeTab,
   children,
 }: {
-  activeTab: string
-  children: React.ReactNode
+  activeTab: string;
+  children: React.ReactNode;
 }) {
   return (
     <TabScrollArea>
       <div className="min-h-0 flex-1">{children}</div>
     </TabScrollArea>
-  )
+  );
 }
 
 export function ZenProfileTab() {
-  const { apiKey, setApiKey } = useUserStore()
-  const [key, setKey] = useState(apiKey || '')
-  const [name, setName] = useState('')
-  const [avatar, setAvatar] = useState('')
+  const { apiKey, setApiKey } = useUserStore();
+  const [key, setKey] = useState(apiKey || "");
+  const [name, setName] = useState("");
+  const [avatar, setAvatar] = useState("");
 
   const profileQuery = useQuery({
-    queryKey: ['security', 'profile'],
+    queryKey: ["security", "profile"],
     queryFn: fetchSecurityProfile,
-  })
+  });
   const operatorQuery = useQuery({
-    queryKey: ['security', 'operator'],
+    queryKey: ["security", "operator"],
     queryFn: fetchSecurityOperatorProfile,
-  })
+  });
 
-  const profile = profileQuery.data
-  const operator = operatorQuery.data
+  const profile = profileQuery.data;
+  const operator = operatorQuery.data;
 
   useEffect(() => {
     if (profile) {
-      setName(profile.display_name || profile.username || '')
-      setAvatar(profile.avatar_url || '')
+      setName(profile.display_name || profile.username || "");
+      setAvatar(profile.avatar_url || "");
     }
-  }, [profile])
+  }, [profile]);
 
   useEffect(() => {
-    setKey(apiKey || '')
-  }, [apiKey])
+    setKey(apiKey || "");
+  }, [apiKey]);
 
   const saveProfileMutation = useMutation({
-    mutationFn: () =>
-      updateSecurityProfile({ display_name: name, avatar_url: avatar || null }),
+    mutationFn: () => updateSecurityProfile({ display_name: name, avatar_url: avatar || null }),
     onSuccess: () => {
-      profileQuery.refetch()
-      toast.success('Profile updated')
+      profileQuery.refetch();
+      toast.success("Profile updated");
     },
-    onError: () => toast.error('Failed to update profile'),
-  })
+    onError: () => toast.error("Failed to update profile"),
+  });
 
   const handleSaveAuth = async () => {
-    const val = key.trim() === '' ? null : key.trim()
-    setApiKey(val)
+    const val = key.trim() === "" ? null : key.trim();
+    setApiKey(val);
     try {
-      await embeddrApi.auth.setSession({ apiKey: val, clear: !val })
-      toast.success('Authentication updated')
+      await embeddrApi.auth.setSession({ apiKey: val, clear: !val });
+      toast.success("Authentication updated");
     } catch {
-      toast.error('Failed to update auth session')
+      toast.error("Failed to update auth session");
     }
-  }
+  };
 
   const logoutMutation = useMutation({
     mutationFn: logoutCurrentKey,
     onSuccess: () => {
-      setApiKey(null)
-      setKey('')
-      embeddrApi.auth.setSession({ apiKey: null, clear: true }).catch(() => {})
-      toast.success('Logged out')
+      setApiKey(null);
+      setKey("");
+      embeddrApi.auth.setSession({ apiKey: null, clear: true }).catch(() => {});
+      toast.success("Logged out");
     },
-    onError: () => toast.error('Logout failed'),
-  })
+    onError: () => toast.error("Logout failed"),
+  });
 
   const logoutAllMutation = useMutation({
     mutationFn: logoutAllKeys,
     onSuccess: () => {
-      setApiKey(null)
-      setKey('')
-      embeddrApi.auth.setSession({ apiKey: null, clear: true }).catch(() => {})
-      toast.success('All sessions revoked')
+      setApiKey(null);
+      setKey("");
+      embeddrApi.auth.setSession({ apiKey: null, clear: true }).catch(() => {});
+      toast.success("All sessions revoked");
     },
-    onError: () => toast.error('Logout all failed'),
-  })
+    onError: () => toast.error("Logout all failed"),
+  });
 
   return (
     <TabScrollArea>
@@ -1127,76 +1056,53 @@ export function ZenProfileTab() {
               <Building2 className="h-5 w-5 text-primary" />
               <CardTitle>Operator Workspace</CardTitle>
             </div>
-            <CardDescription>
-              The workspace this instance belongs to.
-            </CardDescription>
+            <CardDescription>The workspace this instance belongs to.</CardDescription>
           </CardHeader>
           <CardContent>
             {operatorQuery.isLoading ? (
               <div className="text-sm text-muted-foreground">Loading…</div>
             ) : operatorQuery.isError ? (
-              <div className="text-sm text-destructive">
-                Could not load operator info.
-              </div>
+              <div className="text-sm text-destructive">Could not load operator info.</div>
             ) : operator ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-14 w-14">
                     <AvatarImage src={operator.avatar_url || undefined} />
                     <AvatarFallback>
-                      {(operator.display_name || operator.name)
-                        .slice(0, 2)
-                        .toUpperCase()}
+                      {(operator.display_name || operator.name).slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="font-semibold text-base">
                       {operator.display_name || operator.name}
                     </div>
-                    <div className="text-xs text-muted-foreground font-mono">
-                      {operator.id}
-                    </div>
+                    <div className="text-xs text-muted-foreground font-mono">{operator.id}</div>
                     <div className="flex gap-2 mt-1">
-                      {operator.is_root && (
-                        <Badge variant="secondary">Root</Badge>
-                      )}
-                      <Badge variant={operator.is_active ? 'default' : 'destructive'}>
-                        {operator.is_active ? 'Active' : 'Inactive'}
+                      {operator.is_root && <Badge variant="secondary">Root</Badge>}
+                      <Badge variant={operator.is_active ? "default" : "destructive"}>
+                        {operator.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="rounded-md border bg-muted/30 p-3 text-center">
-                    <div className="text-2xl font-bold">
-                      {operator.active_user_count}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      Active Clients
-                    </div>
+                    <div className="text-2xl font-bold">{operator.active_user_count}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Active Clients</div>
                   </div>
                   <div className="rounded-md border bg-muted/30 p-3 text-center">
-                    <div className="text-2xl font-bold">
-                      {operator.user_count}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      Total Clients
-                    </div>
+                    <div className="text-2xl font-bold">{operator.user_count}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Total Clients</div>
                   </div>
                   <div className="rounded-md border bg-muted/30 p-3 text-center">
-                    <div className="text-2xl font-bold">
-                      {operator.api_key_count}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      API Keys
-                    </div>
+                    <div className="text-2xl font-bold">{operator.api_key_count}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">API Keys</div>
                   </div>
                 </div>
                 {operator.last_activity_at && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />
-                    Last activity:{' '}
-                    {new Date(operator.last_activity_at).toLocaleString()}
+                    Last activity: {new Date(operator.last_activity_at).toLocaleString()}
                   </div>
                 )}
               </div>
@@ -1211,9 +1117,7 @@ export function ZenProfileTab() {
               <User className="h-5 w-5 text-primary" />
               <CardTitle>Your Client Identity</CardTitle>
             </div>
-            <CardDescription>
-              Display name and avatar for this connected client.
-            </CardDescription>
+            <CardDescription>Display name and avatar for this connected client.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {profileQuery.isLoading ? (
@@ -1223,9 +1127,7 @@ export function ZenProfileTab() {
                 <div className="flex items-start gap-4">
                   <Avatar className="h-16 w-16">
                     <AvatarImage src={avatar || undefined} />
-                    <AvatarFallback>
-                      {(name || 'CL').slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
+                    <AvatarFallback>{(name || "CL").slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 space-y-3">
                     <div className="grid gap-1.5">
@@ -1258,7 +1160,7 @@ export function ZenProfileTab() {
                     onClick={() => saveProfileMutation.mutate()}
                     disabled={saveProfileMutation.isPending}
                   >
-                    {saveProfileMutation.isPending ? 'Saving…' : 'Save Profile'}
+                    {saveProfileMutation.isPending ? "Saving…" : "Save Profile"}
                   </Button>
                 </div>
               </>
@@ -1288,8 +1190,8 @@ export function ZenProfileTab() {
                 onChange={(e) => setKey(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Required when the server runs in secured mode. To create or
-                manage keys go to the Security tab.
+                Required when the server runs in secured mode. To create or manage keys go to the
+                Security tab.
               </p>
             </div>
             <div className="flex justify-end">
@@ -1312,7 +1214,7 @@ export function ZenProfileTab() {
                     onClick={() => logoutMutation.mutate()}
                     disabled={logoutMutation.isPending || logoutAllMutation.isPending}
                   >
-                    {logoutMutation.isPending ? 'Signing out…' : 'Sign out'}
+                    {logoutMutation.isPending ? "Signing out…" : "Sign out"}
                   </Button>
                   <Button
                     variant="destructive"
@@ -1320,7 +1222,7 @@ export function ZenProfileTab() {
                     onClick={() => logoutAllMutation.mutate()}
                     disabled={logoutMutation.isPending || logoutAllMutation.isPending}
                   >
-                    {logoutAllMutation.isPending ? 'Revoking…' : 'Revoke all'}
+                    {logoutAllMutation.isPending ? "Revoking…" : "Revoke all"}
                   </Button>
                 </div>
               </div>
@@ -1329,83 +1231,85 @@ export function ZenProfileTab() {
         </Card>
       </div>
     </TabScrollArea>
-  )
+  );
 }
 
 // ─── Scope picker used by Security tab ──────────────────────────────────────
 
 const SCOPE_GROUPS = [
   {
-    label: 'Core data',
-    description: 'Read and write artifacts and collections.',
-    scopes: [
-      'artifacts:read',
-      'artifacts:write',
-      'collections:read',
-      'collections:write',
-    ],
+    label: "Core data",
+    description: "Read and write artifacts and collections.",
+    scopes: ["artifacts:read", "artifacts:write", "collections:read", "collections:write"],
   },
   {
-    label: 'System',
-    description: 'Diagnostics and system settings.',
-    scopes: ['system:read', 'system:write'],
+    label: "System",
+    description: "Diagnostics and system settings.",
+    scopes: ["system:read", "system:write"],
   },
   {
-    label: 'Plugins',
-    description: 'Discover plugin metadata.',
-    scopes: ['plugins:read'],
+    label: "Plugins",
+    description: "Discover plugin metadata.",
+    scopes: ["plugins:read"],
   },
   {
-    label: 'Key management',
-    description: 'Allow creating personal keys.',
-    scopes: ['keys:create:self'],
+    label: "Key management",
+    description: "Allow creating personal keys.",
+    scopes: ["keys:create:self"],
   },
   {
-    label: 'Lotus',
-    description: 'Search and dispatch Lotus capabilities.',
-    scopes: ['lotus:list', 'lotus:dispatch', 'lotus:*'],
+    label: "Lotus",
+    description: "Search and dispatch Lotus capabilities.",
+    scopes: ["lotus:list", "lotus:dispatch", "lotus:*"],
   },
-]
+];
 
 const KEY_PRESETS = [
   {
-    id: 'comfyui',
-    label: 'ComfyUI',
-    scopes: ['artifacts:read', 'artifacts:write', 'collections:read', 'system:read'],
+    id: "comfyui",
+    label: "ComfyUI",
+    scopes: ["artifacts:read", "artifacts:write", "collections:read", "system:read"],
   },
-  { id: 'readonly', label: 'Read-only', scopes: ['artifacts:read', 'collections:read', 'lotus:list'] },
   {
-    id: 'full',
-    label: 'Full access',
-    scopes: ['artifacts:read', 'artifacts:write', 'collections:read', 'collections:write', 'lotus:*', 'system:read'],
+    id: "readonly",
+    label: "Read-only",
+    scopes: ["artifacts:read", "collections:read", "lotus:list"],
   },
-]
+  {
+    id: "full",
+    label: "Full access",
+    scopes: [
+      "artifacts:read",
+      "artifacts:write",
+      "collections:read",
+      "collections:write",
+      "lotus:*",
+      "system:read",
+    ],
+  },
+];
 
 function ScopePicker({
   selected,
   onChange,
 }: {
-  selected: string[]
-  onChange: (s: string[]) => void
+  selected: Array<string>;
+  onChange: (s: Array<string>) => void;
 }) {
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState("");
   const lotusCapsQuery = useQuery({
-    queryKey: ['lotus', 'capabilities', 'scopepicker'],
+    queryKey: ["lotus", "capabilities", "scopepicker"],
     queryFn: () => listLotusCapabilities({ limit: 500 }),
     staleTime: 60_000,
-  })
-  const q = search.trim().toLowerCase()
+  });
+  const q = search.trim().toLowerCase();
   const capabilityScopes = (lotusCapsQuery.data?.items ?? []).map(
     (cap) => `lotus:capability:${cap.id}`,
-  )
+  );
   const toggle = (scope: string) =>
-    onChange(
-      selected.includes(scope)
-        ? selected.filter((s) => s !== scope)
-        : [...selected, scope],
-    )
-  const applyPreset = (scopes: string[]) =>
-    onChange(Array.from(new Set([...selected, ...scopes])))
+    onChange(selected.includes(scope) ? selected.filter((s) => s !== scope) : [...selected, scope]);
+  const applyPreset = (scopes: Array<string>) =>
+    onChange(Array.from(new Set([...selected, ...scopes])));
 
   return (
     <div className="space-y-3">
@@ -1428,11 +1332,7 @@ function ScopePicker({
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {selected.map((scope) => (
-            <Badge
-              key={scope}
-              variant="secondary"
-              className="flex items-center gap-1"
-            >
+            <Badge key={scope} variant="secondary" className="flex items-center gap-1">
               {scope}
               <button
                 type="button"
@@ -1461,10 +1361,8 @@ function ScopePicker({
         <ScrollArea className="h-56 rounded border">
           <div className="grid gap-3 p-3">
             {SCOPE_GROUPS.map((group) => {
-              const scopes = group.scopes.filter((s) =>
-                q ? s.toLowerCase().includes(q) : true,
-              )
-              if (q && scopes.length === 0) return null
+              const scopes = group.scopes.filter((s) => (q ? s.toLowerCase().includes(q) : true));
+              if (q && scopes.length === 0) return null;
               return (
                 <div key={group.label} className="space-y-1.5">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -1476,10 +1374,10 @@ function ScopePicker({
                         key={scope}
                         type="button"
                         className={cn(
-                          'rounded border px-2 py-0.5 text-xs transition-colors',
+                          "rounded border px-2 py-0.5 text-xs transition-colors",
                           selected.includes(scope)
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'hover:bg-muted',
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "hover:bg-muted",
                         )}
                         onClick={() => toggle(scope)}
                       >
@@ -1488,19 +1386,17 @@ function ScopePicker({
                     ))}
                   </div>
                 </div>
-              )
+              );
             })}
             {/* Lotus capability scopes */}
-            {(!q || 'lotus:capability'.includes(q)) && (
+            {(!q || "lotus:capability".includes(q)) && (
               <div className="space-y-1.5">
                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Lotus capabilities
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {lotusCapsQuery.isLoading ? (
-                    <span className="text-xs text-muted-foreground">
-                      Loading…
-                    </span>
+                    <span className="text-xs text-muted-foreground">Loading…</span>
                   ) : (
                     capabilityScopes
                       .filter((s) => (q ? s.toLowerCase().includes(q) : true))
@@ -1510,10 +1406,10 @@ function ScopePicker({
                           key={scope}
                           type="button"
                           className={cn(
-                            'rounded border px-2 py-0.5 text-xs transition-colors',
+                            "rounded border px-2 py-0.5 text-xs transition-colors",
                             selected.includes(scope)
-                              ? 'border-primary bg-primary/10 text-primary'
-                              : 'hover:bg-muted',
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "hover:bg-muted",
                           )}
                           onClick={() => toggle(scope)}
                         >
@@ -1528,67 +1424,67 @@ function ScopePicker({
         </ScrollArea>
       </div>
     </div>
-  )
+  );
 }
 
 export function ZenSecurityTab() {
   const overviewQuery = useQuery({
-    queryKey: ['security', 'overview'],
+    queryKey: ["security", "overview"],
     queryFn: fetchSecurityOverview,
-  })
+  });
   const rolesQuery = useQuery({
-    queryKey: ['security', 'roles'],
+    queryKey: ["security", "roles"],
     queryFn: fetchSecurityRoles,
-  })
+  });
   const keysQuery = useQuery({
-    queryKey: ['security', 'keys'],
+    queryKey: ["security", "keys"],
     queryFn: fetchSecurityKeys,
-  })
+  });
 
-  const [newKeyName, setNewKeyName] = useState('')
-  const [selectedScopes, setSelectedScopes] = useState<string[]>([])
-  const [createdKey, setCreatedKey] = useState<string | null>(null)
-  const [revokingId, setRevokingId] = useState<string | null>(null)
+  const [newKeyName, setNewKeyName] = useState("");
+  const [selectedScopes, setSelectedScopes] = useState<Array<string>>([]);
+  const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
-  const overview = overviewQuery.data
-  const roles = rolesQuery.data?.items ?? []
-  const keys = keysQuery.data?.items ?? []
+  const overview = overviewQuery.data;
+  const roles = rolesQuery.data?.items ?? [];
+  const keys = keysQuery.data?.items ?? [];
 
   const createKeyMutation = useMutation({
     mutationFn: createSecurityKeySelf,
     onSuccess: (data) => {
-      setCreatedKey(data.key)
-      setNewKeyName('')
-      setSelectedScopes([])
-      keysQuery.refetch()
-      toast.success('Client key created — copy it now, it will not be shown again')
+      setCreatedKey(data.key);
+      setNewKeyName("");
+      setSelectedScopes([]);
+      keysQuery.refetch();
+      toast.success("Client key created — copy it now, it will not be shown again");
     },
-    onError: () => toast.error('Failed to create client key'),
-  })
+    onError: () => toast.error("Failed to create client key"),
+  });
 
   const revokeKeyMutation = useMutation({
     mutationFn: (keyId: string) => revokeSecurityKey(keyId),
     onSuccess: () => {
-      setRevokingId(null)
-      keysQuery.refetch()
-      toast.success('Key revoked')
+      setRevokingId(null);
+      keysQuery.refetch();
+      toast.success("Key revoked");
     },
     onError: () => {
-      setRevokingId(null)
-      toast.error('Failed to revoke key')
+      setRevokingId(null);
+      toast.error("Failed to revoke key");
     },
-  })
+  });
 
   const handleCreateKey = () => {
     if (!newKeyName.trim()) {
-      toast.error('Key name is required')
-      return
+      toast.error("Key name is required");
+      return;
     }
     createKeyMutation.mutate({
       name: newKeyName.trim(),
       scopes: selectedScopes,
-    })
-  }
+    });
+  };
 
   return (
     <TabScrollArea>
@@ -1600,27 +1496,23 @@ export function ZenSecurityTab() {
               <ShieldCheck className="h-5 w-5 text-primary" />
               <CardTitle>Security Overview</CardTitle>
             </div>
-            <CardDescription>
-              Auth mode and key stats for this instance.
-            </CardDescription>
+            <CardDescription>Auth mode and key stats for this instance.</CardDescription>
           </CardHeader>
           <CardContent>
             {overviewQuery.isLoading ? (
               <div className="text-sm text-muted-foreground">Loading…</div>
             ) : overviewQuery.isError ? (
-              <div className="text-sm text-destructive">
-                Failed to load security overview.
-              </div>
+              <div className="text-sm text-destructive">Failed to load security overview.</div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-md border bg-muted/30 p-3">
                   <div className="text-xs text-muted-foreground mb-1">Auth Mode</div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={overview?.auth_enabled ? 'default' : 'secondary'}>
-                      {overview?.auth_enabled ? 'Secured' : 'Open'}
+                    <Badge variant={overview?.auth_enabled ? "default" : "secondary"}>
+                      {overview?.auth_enabled ? "Secured" : "Open"}
                     </Badge>
                     <span className="text-sm font-medium capitalize">
-                      {overview?.auth_mode ?? '—'}
+                      {overview?.auth_mode ?? "—"}
                     </span>
                   </div>
                 </div>
@@ -1629,7 +1521,7 @@ export function ZenSecurityTab() {
                   <div className="text-sm font-medium truncate">
                     {overview?.current_user?.display_name ||
                       overview?.current_user?.username ||
-                      'Anonymous'}
+                      "Anonymous"}
                   </div>
                 </div>
                 <div className="rounded-md border bg-muted/30 p-3">
@@ -1661,7 +1553,7 @@ export function ZenSecurityTab() {
                 onClick={() => keysQuery.refetch()}
                 disabled={keysQuery.isFetching}
               >
-                <RefreshCw className={cn('h-4 w-4', keysQuery.isFetching && 'animate-spin')} />
+                <RefreshCw className={cn("h-4 w-4", keysQuery.isFetching && "animate-spin")} />
               </Button>
             </div>
           </CardHeader>
@@ -1674,15 +1566,12 @@ export function ZenSecurityTab() {
               <div className="text-sm text-muted-foreground">No client keys.</div>
             ) : (
               keys.map((k) => (
-                <div
-                  key={k.id}
-                  className="flex items-start gap-3 rounded-md border p-3"
-                >
+                <div key={k.id} className="flex items-start gap-3 rounded-md border p-3">
                   <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium">{k.name}</span>
-                      <Badge variant={k.is_active ? 'default' : 'secondary'} className="text-xs">
-                        {k.is_active ? 'Active' : 'Inactive'}
+                      <Badge variant={k.is_active ? "default" : "secondary"} className="text-xs">
+                        {k.is_active ? "Active" : "Inactive"}
                       </Badge>
                       <span className="font-mono text-xs text-muted-foreground">
                         {k.key_prefix}…
@@ -1701,25 +1590,21 @@ export function ZenSecurityTab() {
                       </div>
                     )}
                     <div className="flex flex-wrap gap-1">
-                      {(k.scopes.length ? k.scopes : k.permissions).map(
-                        (s) => (
-                          <Badge key={s} variant="outline" className="text-xs">
-                            {s}
-                          </Badge>
-                        ),
-                      )}
+                      {(k.scopes.length ? k.scopes : k.permissions).map((s) => (
+                        <Badge key={s} variant="outline" className="text-xs">
+                          {s}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="text-destructive hover:text-destructive shrink-0"
-                    disabled={
-                      revokingId === k.id || revokeKeyMutation.isPending
-                    }
+                    disabled={revokingId === k.id || revokeKeyMutation.isPending}
                     onClick={() => {
-                      setRevokingId(k.id)
-                      revokeKeyMutation.mutate(k.id)
+                      setRevokingId(k.id);
+                      revokeKeyMutation.mutate(k.id);
                     }}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -1757,14 +1642,11 @@ export function ZenSecurityTab() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                {selectedScopes.length} scope{selectedScopes.length !== 1 ? 's' : ''} selected
+                {selectedScopes.length} scope{selectedScopes.length !== 1 ? "s" : ""} selected
               </span>
-              <Button
-                onClick={handleCreateKey}
-                disabled={createKeyMutation.isPending}
-              >
+              <Button onClick={handleCreateKey} disabled={createKeyMutation.isPending}>
                 <Plus className="h-4 w-4 mr-1.5" />
-                {createKeyMutation.isPending ? 'Creating…' : 'Create Key'}
+                {createKeyMutation.isPending ? "Creating…" : "Create Key"}
               </Button>
             </div>
             {createdKey && (
@@ -1772,9 +1654,7 @@ export function ZenSecurityTab() {
                 <div className="text-xs font-semibold text-primary uppercase tracking-wide">
                   New Key — copy now
                 </div>
-                <div className="font-mono text-sm break-all select-all">
-                  {createdKey}
-                </div>
+                <div className="font-mono text-sm break-all select-all">{createdKey}</div>
               </div>
             )}
           </CardContent>
@@ -1784,9 +1664,7 @@ export function ZenSecurityTab() {
         <Card>
           <CardHeader>
             <CardTitle>Roles</CardTitle>
-            <CardDescription>
-              Role definitions and their permission sets.
-            </CardDescription>
+            <CardDescription>Role definitions and their permission sets.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             {rolesQuery.isLoading ? (
@@ -1801,7 +1679,9 @@ export function ZenSecurityTab() {
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">{role.name}</span>
                     {role.is_system && (
-                      <Badge variant="secondary" className="text-xs">System</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        System
+                      </Badge>
                     )}
                   </div>
                   {role.description && (
@@ -1825,5 +1705,5 @@ export function ZenSecurityTab() {
         </Card>
       </div>
     </TabScrollArea>
-  )
+  );
 }

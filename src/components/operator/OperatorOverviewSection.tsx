@@ -1,82 +1,69 @@
-import React, { useEffect, useState } from 'react'
-import { useMutation, type UseQueryResult } from '@tanstack/react-query'
+import React, { useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
-  updateSecurityOperatorProfile,
-  fetchSecurityOperatorProfile,
-} from '@/lib/api'
-import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@embeddr/react-ui/ui'
-import { toast } from 'sonner'
-import type { SecurityOperatorProfile } from './operator-types'
+  Input,
+} from "@embeddr/react-ui/ui";
+import { toast } from "sonner";
+import type { UseQueryResult } from "@tanstack/react-query";
+import type { fetchSecurityOperatorProfile } from "@/lib/api";
+import type { SecurityOperatorProfile } from "./operator-types";
+import { updateSecurityOperatorProfile } from "@/lib/api";
 
 interface OperatorOverviewSectionProps {
-  operatorQuery: UseQueryResult<
-    Awaited<ReturnType<typeof fetchSecurityOperatorProfile>>
-  >
+  operatorQuery: UseQueryResult<Awaited<ReturnType<typeof fetchSecurityOperatorProfile>>>;
 }
 
-export const OperatorOverviewSection = ({
-  operatorQuery,
-}: OperatorOverviewSectionProps) => {
-  const operator = operatorQuery.data as SecurityOperatorProfile | undefined
-  const [displayName, setDisplayName] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
+export const OperatorOverviewSection = ({ operatorQuery }: OperatorOverviewSectionProps) => {
+  const operator = operatorQuery.data as SecurityOperatorProfile | undefined;
+  const [displayName, setDisplayName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   useEffect(() => {
-    if (!operator) return
-    setDisplayName(operator.display_name || operator.name)
-    setAvatarUrl(operator.avatar_url || '')
-  }, [operator])
+    if (!operator) return;
+    setDisplayName(operator.display_name || operator.name);
+    setAvatarUrl(operator.avatar_url || "");
+  }, [operator]);
 
   const updateOperatorMutation = useMutation({
     mutationFn: updateSecurityOperatorProfile,
     onSuccess: (data) => {
-      setDisplayName(data.display_name || data.name)
-      setAvatarUrl(data.avatar_url || '')
-      operatorQuery.refetch()
-      toast.success('Operator profile updated')
+      setDisplayName(data.display_name || data.name);
+      setAvatarUrl(data.avatar_url || "");
+      operatorQuery.refetch();
+      toast.success("Operator profile updated");
     },
-    onError: () => toast.error('Failed to update operator profile'),
-  })
+    onError: () => toast.error("Failed to update operator profile"),
+  });
 
   const handleSave = () => {
     updateOperatorMutation.mutate({
       display_name: displayName.trim() || null,
       avatar_url: avatarUrl.trim() || null,
-    })
-  }
+    });
+  };
 
   return (
     <>
       <Card>
         <CardHeader>
           <CardTitle>Operator Profile</CardTitle>
-          <CardDescription>
-            Customize the operator display name and avatar.
-          </CardDescription>
+          <CardDescription>Customize the operator display name and avatar.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {operatorQuery.isLoading ? (
-            <div className="text-sm text-muted-foreground">
-              Loading operator…
-            </div>
+            <div className="text-sm text-muted-foreground">Loading operator…</div>
           ) : operatorQuery.isError || !operator ? (
-            <div className="text-sm text-destructive">
-              Unable to load operator profile.
-            </div>
+            <div className="text-sm text-destructive">Unable to load operator profile.</div>
           ) : (
             <div className="flex flex-col gap-4 md:flex-row">
               <Avatar className="h-20 w-20">
@@ -116,13 +103,8 @@ export const OperatorOverviewSection = ({
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <Button
-                    onClick={handleSave}
-                    disabled={updateOperatorMutation.isPending}
-                  >
-                    {updateOperatorMutation.isPending
-                      ? 'Saving…'
-                      : 'Save operator'}
+                  <Button onClick={handleSave} disabled={updateOperatorMutation.isPending}>
+                    {updateOperatorMutation.isPending ? "Saving…" : "Save operator"}
                   </Button>
                 </div>
               </div>
@@ -138,38 +120,33 @@ export const OperatorOverviewSection = ({
         </CardHeader>
         <CardContent className="space-y-3">
           {operatorQuery.isLoading ? (
-            <div className="text-sm text-muted-foreground">
-              Loading activity…
-            </div>
+            <div className="text-sm text-muted-foreground">Loading activity…</div>
           ) : operatorQuery.isError || !operator ? (
-            <div className="text-sm text-destructive">
-              Unable to load operator activity.
-            </div>
+            <div className="text-sm text-destructive">Unable to load operator activity.</div>
           ) : (
             <>
               <div className="flex items-center gap-2">
                 {operator.is_root && <Badge>Root</Badge>}
-                <Badge variant={operator.is_active ? 'default' : 'secondary'}>
-                  {operator.is_active ? 'Active' : 'Disabled'}
+                <Badge variant={operator.is_active ? "default" : "secondary"}>
+                  {operator.is_active ? "Active" : "Disabled"}
                 </Badge>
               </div>
               <div className="grid gap-2 text-sm text-muted-foreground">
                 <div>
-                  Clients: {operator.user_count} total,{' '}
-                  {operator.active_user_count} active
+                  Clients: {operator.user_count} total, {operator.active_user_count} active
                 </div>
                 <div>Client keys: {operator.api_key_count}</div>
                 <div>
-                  Last activity:{' '}
+                  Last activity:{" "}
                   {operator.last_activity_at
                     ? new Date(operator.last_activity_at).toLocaleString()
-                    : 'No activity yet'}
+                    : "No activity yet"}
                 </div>
                 <div>
-                  Created:{' '}
+                  Created:{" "}
                   {operator.created_at
                     ? new Date(operator.created_at).toLocaleDateString()
-                    : 'Unknown'}
+                    : "Unknown"}
                 </div>
               </div>
             </>
@@ -177,5 +154,5 @@ export const OperatorOverviewSection = ({
         </CardContent>
       </Card>
     </>
-  )
-}
+  );
+};

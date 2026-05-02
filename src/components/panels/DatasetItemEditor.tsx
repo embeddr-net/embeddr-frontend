@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Button } from '@embeddr/react-ui/ui'
-import { Label } from '@embeddr/react-ui/ui'
-import { Textarea } from '@embeddr/react-ui/ui'
+import { useEffect, useState } from "react";
+import { Button, Label, ScrollArea, Textarea } from "@embeddr/react-ui/ui";
 import {
   Edit,
   ExternalLink,
@@ -10,79 +8,72 @@ import {
   Loader2,
   SaveIcon,
   Wand2,
-} from 'lucide-react'
-import { toast } from 'sonner'
-import { Link } from '@tanstack/react-router'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import type { PromptImage } from '@/lib/api/types'
-import type { Dataset, DatasetItem } from '@/hooks/useDatasets'
-import { BACKEND_URL } from '@/lib/api/config'
-import { cn } from '@/lib/utils'
-import {
-  useGenerateItemCaption,
-  useUpdateDatasetItem,
-} from '@/hooks/useDatasets'
-import { ImageSelectorDialog } from '@/components/dialogs/ImageSelectorDialog'
+} from "lucide-react";
+import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
+import type { PromptImage } from "@/lib/api/types";
+import type { Dataset, DatasetItem } from "@/hooks/useDatasets";
+import { BACKEND_URL } from "@/lib/api/config";
+import { cn } from "@/lib/utils";
+import { useGenerateItemCaption, useUpdateDatasetItem } from "@/hooks/useDatasets";
+import { ImageSelectorDialog } from "@/components/dialogs/ImageSelectorDialog";
 
 interface DatasetItemEditorProps {
-  dataset: Dataset
-  selectedItem: DatasetItem | null
+  dataset: Dataset;
+  selectedItem: DatasetItem | null;
 }
 
-export function DatasetItemEditor({
-  dataset,
-  selectedItem,
-}: DatasetItemEditorProps) {
-  const updateItem = useUpdateDatasetItem()
-  const generateCaption = useGenerateItemCaption()
-  const [captionBuffer, setCaptionBuffer] = useState('')
-  const [activeLayer, setActiveLayer] = useState<'base' | 'pair'>('base')
-  const [isSelectOpen, setIsSelectOpen] = useState(false)
+export function DatasetItemEditor({ dataset, selectedItem }: DatasetItemEditorProps) {
+  const updateItem = useUpdateDatasetItem();
+  const generateCaption = useGenerateItemCaption();
+  const [captionBuffer, setCaptionBuffer] = useState("");
+  const [activeLayer, setActiveLayer] = useState<"base" | "pair">("base");
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
 
   useEffect(() => {
     if (selectedItem) {
-      setCaptionBuffer(selectedItem.caption || '')
+      setCaptionBuffer(selectedItem.caption || "");
     }
-  }, [selectedItem])
+  }, [selectedItem]);
 
   const handleSaveCaption = async () => {
-    if (!selectedItem) return
+    if (!selectedItem) return;
     try {
       await updateItem.mutateAsync({
         datasetId: dataset.id,
         itemId: selectedItem.id,
         updates: { caption: captionBuffer },
-      })
-      toast.success('Caption updated')
+      });
+      toast.success("Caption updated");
     } catch (error) {
-      toast.error('Failed to update caption')
+      toast.error("Failed to update caption");
     }
-  }
+  };
 
   const handleGenerateCaption = async () => {
-    if (!selectedItem) return
+    if (!selectedItem) return;
     try {
       const result = await generateCaption.mutateAsync({
         datasetId: dataset.id,
         itemId: selectedItem.id,
-      })
-      setCaptionBuffer(result.caption)
-      toast.success('Caption generated')
+      });
+      setCaptionBuffer(result.caption);
+      toast.success("Caption generated");
     } catch (error) {
-      toast.error('Failed to generate caption')
+      toast.error("Failed to generate caption");
     }
-  }
+  };
 
   const handleGeneratePair = () => {
-    toast.info('Pair generation is not available yet.')
-  }
+    toast.info("Pair generation is not available yet.");
+  };
 
   const handleSelectPair = () => {
-    setIsSelectOpen(true)
-  }
+    setIsSelectOpen(true);
+  };
 
   const handlePairSelected = async (image: PromptImage) => {
-    if (!selectedItem) return
+    if (!selectedItem) return;
     // We need the absolute path. The PromptImage has image_url which is a URL.
     // But we might need the path.
     // The backend stores paths.
@@ -95,40 +86,40 @@ export function DatasetItemEditor({
     // Let's fetch the local image details using the ID.
     try {
       // We need to import fetchLocalImage
-      const { fetchLocalImage } = await import('@/lib/api/endpoints/images')
-      const localImage = await fetchLocalImage(image.id)
+      const { fetchLocalImage } = await import("@/lib/api/endpoints/images");
+      const localImage = await fetchLocalImage(image.id);
 
       await updateItem.mutateAsync({
         datasetId: dataset.id,
         itemId: selectedItem.id,
         updates: { pair_image_path: localImage.path },
-      })
-      setActiveLayer('pair')
-      toast.success('Pair image updated')
+      });
+      setActiveLayer("pair");
+      toast.success("Pair image updated");
     } catch (error) {
-      console.error(error)
-      toast.error('Failed to update pair image')
+      console.error(error);
+      toast.error("Failed to update pair image");
     }
-  }
+  };
 
   if (!selectedItem) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         Select an item to edit
       </div>
-    )
+    );
   }
 
-  const showPairToggle = dataset.type === 'image_pair'
-  const hasPair = !!selectedItem.pair_image_path
+  const showPairToggle = dataset.type === "image_pair";
+  const hasPair = !!selectedItem.pair_image_path;
 
   // If not a pair dataset, force base view
-  const currentView = showPairToggle ? activeLayer : 'base'
+  const currentView = showPairToggle ? activeLayer : "base";
 
   const displayImage =
-    currentView === 'base'
+    currentView === "base"
       ? selectedItem.processed_image_path || selectedItem.original_path
-      : selectedItem.pair_image_path
+      : selectedItem.pair_image_path;
 
   return (
     <div className="h-full p-2 flex gap-2 shrink-0">
@@ -143,10 +134,8 @@ export function DatasetItemEditor({
       <div className="aspect-square h-full overflow-hidden border bg-muted relative group flex items-center justify-center">
         {displayImage ? (
           <img
-            src={`${BACKEND_URL}/images/file?path=${encodeURIComponent(
-              displayImage,
-            )}`}
-            alt={currentView === 'base' ? 'Base Image' : 'Pair Image'}
+            src={`${BACKEND_URL}/images/file?path=${encodeURIComponent(displayImage)}`}
+            alt={currentView === "base" ? "Base Image" : "Pair Image"}
             className="w-full h-full object-contain"
           />
         ) : (
@@ -164,9 +153,9 @@ export function DatasetItemEditor({
           <div className="flex bg-background/80 backdrop-blur-sm gap-1 border shadow-sm p-0.5">
             <Button
               size="icon-sm"
-              variant={currentView === 'base' ? 'outline' : 'ghost'}
+              variant={currentView === "base" ? "outline" : "ghost"}
               className="h-7 w-7"
-              onClick={() => setActiveLayer('base')}
+              onClick={() => setActiveLayer("base")}
               title="Base Image"
             >
               <ImageIcon className="w-4 h-4" />
@@ -175,9 +164,9 @@ export function DatasetItemEditor({
             {showPairToggle && (
               <Button
                 size="icon-sm"
-                variant={currentView === 'pair' ? 'outline' : 'ghost'}
-                className={cn('h-7 w-7', !hasPair && 'text-muted-foreground')}
-                onClick={() => setActiveLayer('pair')}
+                variant={currentView === "pair" ? "outline" : "ghost"}
+                className={cn("h-7 w-7", !hasPair && "text-muted-foreground")}
+                onClick={() => setActiveLayer("pair")}
                 title="Pair Image"
               >
                 <Layers className="w-4 h-4" />
@@ -188,7 +177,7 @@ export function DatasetItemEditor({
 
         {/* Top Right Indicators */}
         <div className="absolute top-2 right-2 flex gap-1">
-          {currentView === 'base' && selectedItem.original_image_id && (
+          {currentView === "base" && selectedItem.original_image_id && (
             <Link
               to="/images/$imageId"
               params={{ imageId: selectedItem.original_image_id.toString() }}
@@ -204,7 +193,7 @@ export function DatasetItemEditor({
               </Button>
             </Link>
           )}
-          {currentView === 'base' && selectedItem.processed_image_path && (
+          {currentView === "base" && selectedItem.processed_image_path && (
             <div className="bg-background/80 backdrop-blur-sm px-2 py-1  border text-xs font-medium shadow-sm">
               Processed
             </div>
@@ -213,17 +202,12 @@ export function DatasetItemEditor({
 
         {/* Bottom Right Actions */}
         <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          {currentView === 'base' && (
-            <Button
-              size="sm"
-              variant="secondary"
-              className="h-8 w-8 p-0"
-              title="Edit Image"
-            >
+          {currentView === "base" && (
+            <Button size="sm" variant="secondary" className="h-8 w-8 p-0" title="Edit Image">
               <Edit className="w-4 h-4" />
             </Button>
           )}
-          {currentView === 'pair' && (
+          {currentView === "pair" && (
             <>
               <Button
                 size="sm"
@@ -251,11 +235,7 @@ export function DatasetItemEditor({
       <div className="flex-1 flex flex-col gap-1 min-h-0 overflow-hidden">
         <Label hidden>Caption</Label>
         <div className="flex-1 min-h-0 relative">
-          <ScrollArea
-            type="always"
-            variant="left-border"
-            className="h-full border bg-card!"
-          >
+          <ScrollArea type="always" variant="left-border" className="h-full border bg-card!">
             <Textarea
               className="flex min-h-full bg-card! h-full w-full resize-none font-mono text-sm border-none focus-visible:ring-0 p-4 border-0! shadow-none"
               value={captionBuffer}
@@ -271,25 +251,13 @@ export function DatasetItemEditor({
             onClick={handleGenerateCaption}
             disabled={generateCaption.isPending}
           >
-            {generateCaption.isPending ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <Wand2 />
-            )}
+            {generateCaption.isPending ? <Loader2 className="animate-spin" /> : <Wand2 />}
           </Button>
-          <Button
-            size="icon-sm"
-            onClick={handleSaveCaption}
-            disabled={updateItem.isPending}
-          >
-            {updateItem.isPending ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <SaveIcon />
-            )}
+          <Button size="icon-sm" onClick={handleSaveCaption} disabled={updateItem.isPending}>
+            {updateItem.isPending ? <Loader2 className="animate-spin" /> : <SaveIcon />}
           </Button>
         </div>
       </div>
     </div>
-  )
+  );
 }

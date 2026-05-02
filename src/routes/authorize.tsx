@@ -1,43 +1,39 @@
-import { useCallback, useEffect, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useCallback, useEffect, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
+  Badge,
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { AlertTriangle, CheckCircle2, Shield, User, XCircle } from 'lucide-react'
-import {
-  fetchAuthorizationInfo,
-  submitAuthorizationConsent,
-  type AuthorizationInfo,
-} from '@/lib/api/endpoints/security'
+} from "@embeddr/react-ui/ui";
+import { AlertTriangle, CheckCircle2, Shield, User, XCircle } from "lucide-react";
+import type { AuthorizationInfo } from "@/lib/api/endpoints/security";
+import { fetchAuthorizationInfo, submitAuthorizationConsent } from "@/lib/api/endpoints/security";
 
 const AuthorizePage = () => {
-  const navigate = useNavigate()
-  const searchParams = new URLSearchParams(window.location.search)
+  const navigate = useNavigate();
+  const searchParams = new URLSearchParams(window.location.search);
 
-  const clientId = searchParams.get('client_id') ?? ''
-  const scope = searchParams.get('scope') ?? ''
-  const redirectUri = searchParams.get('redirect_uri') ?? ''
-  const state = searchParams.get('state') ?? undefined
-  const codeChallenge = searchParams.get('code_challenge') ?? undefined
-  const codeChallengeMethod =
-    searchParams.get('code_challenge_method') ?? 'S256'
+  const clientId = searchParams.get("client_id") ?? "";
+  const scope = searchParams.get("scope") ?? "";
+  const redirectUri = searchParams.get("redirect_uri") ?? "";
+  const state = searchParams.get("state") ?? undefined;
+  const codeChallenge = searchParams.get("code_challenge") ?? undefined;
+  const codeChallengeMethod = searchParams.get("code_challenge_method") ?? "S256";
 
-  const [info, setInfo] = useState<AuthorizationInfo | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
+  const [info, setInfo] = useState<AuthorizationInfo | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const loadInfo = useCallback(async () => {
     if (!clientId || !redirectUri) {
-      setError('Missing required parameters: client_id and redirect_uri')
-      setLoading(false)
-      return
+      setError("Missing required parameters: client_id and redirect_uri");
+      setLoading(false);
+      return;
     }
 
     try {
@@ -46,46 +42,46 @@ const AuthorizePage = () => {
         scope: scope || undefined,
         redirect_uri: redirectUri,
         state,
-      })
-      setInfo(data)
-      setError(null)
+      });
+      setInfo(data);
+      setError(null);
     } catch (err: any) {
-      if (err.message === 'login_required') {
+      if (err.message === "login_required") {
         // Redirect to login with return URL
-        const returnUrl = `/authorize${window.location.search}`
-        navigate({ to: '/access', search: { next: returnUrl } })
-        return
+        const returnUrl = `/authorize${window.location.search}`;
+        navigate({ to: "/access", search: { next: returnUrl } });
+        return;
       }
-      setError(err.message || 'Failed to load authorization request')
+      setError(err.message || "Failed to load authorization request");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [clientId, scope, redirectUri, state, navigate])
+  }, [clientId, scope, redirectUri, state, navigate]);
 
   useEffect(() => {
-    loadInfo()
-  }, [loadInfo])
+    loadInfo();
+  }, [loadInfo]);
 
   const handleConsent = async (approved: boolean) => {
-    setSubmitting(true)
-    setError(null)
+    setSubmitting(true);
+    setError(null);
     try {
       const result = await submitAuthorizationConsent({
         client_id: clientId,
-        scope: info?.requested_scopes.join(' ') ?? scope,
+        scope: info?.requested_scopes.join(" ") ?? scope,
         redirect_uri: redirectUri,
         state,
         code_challenge: codeChallenge,
         code_challenge_method: codeChallengeMethod,
         approved,
-      })
+      });
       // Redirect to the app's callback
-      window.location.href = result.redirect_to
+      window.location.href = result.redirect_to;
     } catch (err: any) {
-      setError(err.message || 'Failed to process authorization')
-      setSubmitting(false)
+      setError(err.message || "Failed to process authorization");
+      setSubmitting(false);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -96,7 +92,7 @@ const AuthorizePage = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (error && !info) {
@@ -114,10 +110,10 @@ const AuthorizePage = () => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
-  if (!info) return null
+  if (!info) return null;
 
   return (
     <div className="flex h-full min-h-0 items-center justify-center p-6">
@@ -128,12 +124,8 @@ const AuthorizePage = () => {
             <CardTitle>Authorize Application</CardTitle>
           </div>
           <CardDescription>
-            <span className="font-semibold text-foreground">
-              {info.client_name}
-            </span>
-            {info.client_description && (
-              <span> &mdash; {info.client_description}</span>
-            )}
+            <span className="font-semibold text-foreground">{info.client_name}</span>
+            {info.client_description && <span> &mdash; {info.client_description}</span>}
             <br />
             wants access to your Embeddr account.
           </CardDescription>
@@ -145,14 +137,10 @@ const AuthorizePage = () => {
                 <User className="h-4 w-4 text-primary" />
               </div>
               <div className="text-sm">
-                <div className="font-medium">
-                  {info.user.display_name || info.user.username}
-                </div>
+                <div className="font-medium">{info.user.display_name || info.user.username}</div>
                 <div className="text-xs text-muted-foreground">
                   {info.user.username}
-                  {info.user.operator_name && (
-                    <span> &middot; {info.user.operator_name}</span>
-                  )}
+                  {info.user.operator_name && <span> &middot; {info.user.operator_name}</span>}
                 </div>
               </div>
             </div>
@@ -173,9 +161,7 @@ const AuthorizePage = () => {
                 <li key={scope} className="flex items-start gap-2">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                   <div>
-                    <span className="text-sm">
-                      {info.scope_descriptions[scope] || scope}
-                    </span>
+                    <span className="text-sm">{info.scope_descriptions[scope] || scope}</span>
                     <Badge variant="outline" className="ml-2 text-[10px]">
                       {scope}
                     </Badge>
@@ -186,27 +172,18 @@ const AuthorizePage = () => {
           </div>
 
           <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
-            Authorizing will redirect you to{' '}
-            <code className="rounded bg-muted px-1">
-              {new URL(redirectUri).origin}
-            </code>
+            Authorizing will redirect you to{" "}
+            <code className="rounded bg-muted px-1">{new URL(redirectUri).origin}</code>
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={() => handleConsent(false)}
-              disabled={submitting}
-            >
+            <Button variant="outline" onClick={() => handleConsent(false)} disabled={submitting}>
               <XCircle className="mr-1.5 h-4 w-4" />
               Deny
             </Button>
-            <Button
-              onClick={() => handleConsent(true)}
-              disabled={submitting}
-            >
+            <Button onClick={() => handleConsent(true)} disabled={submitting}>
               {submitting ? (
-                'Authorizing...'
+                "Authorizing..."
               ) : (
                 <>
                   <CheckCircle2 className="mr-1.5 h-4 w-4" />
@@ -218,9 +195,9 @@ const AuthorizePage = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export const Route = createFileRoute('/authorize')({
+export const Route = createFileRoute("/authorize")({
   component: AuthorizePage,
-})
+});

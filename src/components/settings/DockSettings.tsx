@@ -1,28 +1,26 @@
-import React, { useMemo } from 'react'
-import { useSettingsStore } from '@/store/settingsStore'
-import { usePluginStore } from '@/plugins/store'
-import { useShallow } from 'zustand/react/shallow'
+import React, { useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Label } from '@embeddr/react-ui/ui'
-import { Switch } from '@embeddr/react-ui/ui'
-import {
+  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
+  Switch,
+} from "@embeddr/react-ui/ui";
+import { usePluginStore } from "@/plugins/store";
+import { useSettingsStore } from "@/store/settingsStore";
 
 const buildDockId = (pluginId: string, def: any) => {
-  const base = def?.id || def?.exportName || def?.label || 'dock'
-  return `dock:${pluginId}/${base}`
-}
+  const base = def?.id || def?.exportName || def?.label || "dock";
+  return `dock:${pluginId}/${base}`;
+};
 
 export function DockSettings() {
   const {
@@ -45,26 +43,26 @@ export function DockSettings() {
       dockConfig: s.dockConfig,
       updateDockConfig: s.updateDockConfig,
     })),
-  )
+  );
 
   const { plugins, activePlugins } = usePluginStore(
     useShallow((s) => ({ plugins: s.plugins, activePlugins: s.activePlugins })),
-  )
+  );
 
   const docks = useMemo(() => {
-    const out: Array<{ id: string; label: string }> = []
+    const out: Array<{ id: string; label: string }> = [];
     activePlugins.forEach((pluginId) => {
-      const plugin = plugins[pluginId]
-      if (!plugin?.components) return
+      const plugin = plugins[pluginId];
+      if (!plugin?.components) return;
       plugin.components.forEach((comp: any) => {
-        if (comp.location !== 'zen-dock') return
-        const id = buildDockId(pluginId, comp)
-        const label = `${comp.label || comp.name || comp.exportName || id} (${pluginId})`
-        out.push({ id, label })
-      })
-    })
-    return out
-  }, [activePlugins, plugins])
+        if (comp.location !== "zen-dock") return;
+        const id = buildDockId(pluginId, comp);
+        const label = `${comp.label || comp.name || comp.exportName || id} (${pluginId})`;
+        out.push({ id, label });
+      });
+    });
+    return out;
+  }, [activePlugins, plugins]);
 
   return (
     <div className="space-y-4">
@@ -85,10 +83,7 @@ export function DockSettings() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Placement</Label>
-              <Select
-                value={dockPlacement}
-                onValueChange={(v) => setDockPlacement(v as any)}
-              >
+              <Select value={dockPlacement} onValueChange={(v) => setDockPlacement(v as any)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -103,14 +98,9 @@ export function DockSettings() {
             <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
               <div className="space-y-1">
                 <Label>Auto-hide</Label>
-                <div className="text-xs text-muted-foreground">
-                  Fade the dock until hovered.
-                </div>
+                <div className="text-xs text-muted-foreground">Fade the dock until hovered.</div>
               </div>
-              <Switch
-                checked={dockAutoHide}
-                onCheckedChange={setDockAutoHide}
-              />
+              <Switch checked={dockAutoHide} onCheckedChange={setDockAutoHide} />
             </div>
           </div>
         </CardContent>
@@ -122,12 +112,10 @@ export function DockSettings() {
         </CardHeader>
         <CardContent className="space-y-3">
           {docks.length === 0 ? (
-            <div className="text-xs text-muted-foreground">
-              No docks registered.
-            </div>
+            <div className="text-xs text-muted-foreground">No docks registered.</div>
           ) : (
             docks.map((dock) => {
-              const visible = dockConfig[dock.id]?.visible ?? true
+              const visible = dockConfig[dock.id]?.visible ?? true;
               return (
                 <div
                   key={dock.id}
@@ -137,9 +125,7 @@ export function DockSettings() {
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={visible}
-                      onCheckedChange={(checked) =>
-                        updateDockConfig(dock.id, { visible: checked })
-                      }
+                      onCheckedChange={(checked) => updateDockConfig(dock.id, { visible: checked })}
                     />
                     <Button
                       size="sm"
@@ -165,11 +151,11 @@ export function DockSettings() {
                     </Button>
                   </div>
                 </div>
-              )
+              );
             })
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

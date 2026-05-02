@@ -1,324 +1,310 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { BACKEND_URL } from '@/lib/api'
-import { fetchWithAuth } from '@/lib/api/fetch'
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BACKEND_URL } from "@/lib/api";
+import { fetchWithAuth } from "@/lib/api/fetch";
 
 export interface Dataset {
-  id: number
-  name: string
-  description?: string
-  type: 'regular' | 'image_pair'
-  collection_id?: number
-  created_at: string
-  updated_at: string
-  item_count: number
-  captioning_config?: string
+  id: number;
+  name: string;
+  description?: string;
+  type: "regular" | "image_pair";
+  collection_id?: number;
+  created_at: string;
+  updated_at: string;
+  item_count: number;
+  captioning_config?: string;
 }
 
 export interface DatasetItem {
-  id: number
-  dataset_id: number
-  original_image_id: number
-  processed_image_path?: string
-  pair_image_path?: string
-  caption?: string
-  original_path: string
+  id: number;
+  dataset_id: number;
+  original_image_id: number;
+  processed_image_path?: string;
+  pair_image_path?: string;
+  caption?: string;
+  original_path: string;
 }
 
 async function fetchDatasets(): Promise<Array<Dataset>> {
-  const response = await fetchWithAuth(`${BACKEND_URL}/datasets`)
+  const response = await fetchWithAuth(`${BACKEND_URL}/datasets`);
   if (!response.ok) {
-    throw new Error('Failed to fetch datasets')
+    throw new Error("Failed to fetch datasets");
   }
-  return response.json()
+  return response.json();
 }
 
 async function getDataset(id: number): Promise<Dataset> {
-  const response = await fetchWithAuth(`${BACKEND_URL}/datasets/${id}`)
+  const response = await fetchWithAuth(`${BACKEND_URL}/datasets/${id}`);
   if (!response.ok) {
-    throw new Error('Failed to fetch dataset')
+    throw new Error("Failed to fetch dataset");
   }
-  return response.json()
+  return response.json();
 }
 
 async function getDatasetItems(id: number): Promise<Array<DatasetItem>> {
-  const response = await fetch(`${BACKEND_URL}/datasets/${id}/items`)
+  const response = await fetch(`${BACKEND_URL}/datasets/${id}/items`);
   if (!response.ok) {
-    throw new Error('Failed to fetch dataset items')
+    throw new Error("Failed to fetch dataset items");
   }
-  return response.json()
+  return response.json();
 }
 
 async function createDataset(data: {
-  name: string
-  description?: string
-  type: 'regular' | 'image_pair'
-  collection_id?: number
+  name: string;
+  description?: string;
+  type: "regular" | "image_pair";
+  collection_id?: number;
 }): Promise<Dataset> {
   const response = await fetch(`${BACKEND_URL}/datasets`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
-  })
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to create dataset')
+    throw new Error("Failed to create dataset");
   }
-  return response.json()
+  return response.json();
 }
 
 async function deleteDataset(id: number): Promise<void> {
   const response = await fetch(`${BACKEND_URL}/datasets/${id}`, {
-    method: 'DELETE',
-  })
+    method: "DELETE",
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to delete dataset')
+    throw new Error("Failed to delete dataset");
   }
 }
 
-async function exportDataset(
-  id: number,
-): Promise<{ path: string; message: string }> {
+async function exportDataset(id: number): Promise<{ path: string; message: string }> {
   const response = await fetch(`${BACKEND_URL}/datasets/${id}/export`, {
-    method: 'POST',
-  })
+    method: "POST",
+  });
   if (!response.ok) {
-    throw new Error('Failed to export dataset')
+    throw new Error("Failed to export dataset");
   }
-  return response.json()
+  return response.json();
 }
 
 async function updateDatasetItem(data: {
-  datasetId: number
-  itemId: number
+  datasetId: number;
+  itemId: number;
   updates: {
-    processed_image_path?: string
-    pair_image_path?: string
-    pair_image_id?: number
-    caption?: string
-  }
+    processed_image_path?: string;
+    pair_image_path?: string;
+    pair_image_id?: number;
+    caption?: string;
+  };
 }): Promise<DatasetItem> {
-  const response = await fetch(
-    `${BACKEND_URL}/datasets/${data.datasetId}/items/${data.itemId}`,
-    {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data.updates),
+  const response = await fetch(`${BACKEND_URL}/datasets/${data.datasetId}/items/${data.itemId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
     },
-  )
+    body: JSON.stringify(data.updates),
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to update dataset item')
+    throw new Error("Failed to update dataset item");
   }
-  return response.json()
+  return response.json();
 }
 
 async function updateDataset(data: {
-  id: number
+  id: number;
   updates: {
-    name?: string
-    description?: string
-    captioning_config?: string
-  }
+    name?: string;
+    description?: string;
+    captioning_config?: string;
+  };
 }): Promise<Dataset> {
   const response = await fetch(`${BACKEND_URL}/datasets/${data.id}`, {
-    method: 'PATCH',
+    method: "PATCH",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(data.updates),
-  })
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to update dataset')
+    throw new Error("Failed to update dataset");
   }
-  return response.json()
+  return response.json();
 }
 
 export function useDatasets() {
   return useQuery({
-    queryKey: ['datasets'],
+    queryKey: ["datasets"],
     queryFn: fetchDatasets,
-  })
+  });
 }
 
 export function useDataset(id: number | null) {
   return useQuery({
-    queryKey: ['dataset', id],
+    queryKey: ["dataset", id],
     queryFn: () => (id ? getDataset(id) : Promise.resolve(null)),
     enabled: !!id,
-  })
+  });
 }
 
 export function useUpdateDataset() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateDataset,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['dataset', data.id] })
-      queryClient.invalidateQueries({ queryKey: ['datasets'] })
+      queryClient.invalidateQueries({ queryKey: ["dataset", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["datasets"] });
     },
-  })
+  });
 }
 
 export function useDatasetItems(id: number | null) {
   return useQuery({
-    queryKey: ['dataset-items', id],
+    queryKey: ["dataset-items", id],
     queryFn: () => (id ? getDatasetItems(id) : Promise.resolve([])),
     enabled: !!id,
-  })
+  });
 }
 
 export function useCreateDataset() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createDataset,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['datasets'] })
+      queryClient.invalidateQueries({ queryKey: ["datasets"] });
     },
-  })
+  });
 }
 
 export function useDeleteDataset() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteDataset,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['datasets'] })
+      queryClient.invalidateQueries({ queryKey: ["datasets"] });
     },
-  })
+  });
 }
 
 export function useUpdateDatasetItem() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateDatasetItem,
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ['dataset-items', variables.datasetId],
-      })
+        queryKey: ["dataset-items", variables.datasetId],
+      });
     },
-  })
+  });
 }
 
 async function addDatasetItems(data: {
-  datasetId: number
-  imageIds: Array<number>
+  datasetId: number;
+  imageIds: Array<number>;
 }): Promise<Array<DatasetItem>> {
-  const response = await fetch(
-    `${BACKEND_URL}/datasets/${data.datasetId}/items`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ image_ids: data.imageIds }),
+  const response = await fetch(`${BACKEND_URL}/datasets/${data.datasetId}/items`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
     },
-  )
+    body: JSON.stringify({ image_ids: data.imageIds }),
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to add items to dataset')
+    throw new Error("Failed to add items to dataset");
   }
-  return response.json()
+  return response.json();
 }
 
-async function deleteDatasetItem(data: {
-  datasetId: number
-  itemId: number
-}): Promise<void> {
-  const response = await fetch(
-    `${BACKEND_URL}/datasets/${data.datasetId}/items/${data.itemId}`,
-    {
-      method: 'DELETE',
-    },
-  )
+async function deleteDatasetItem(data: { datasetId: number; itemId: number }): Promise<void> {
+  const response = await fetch(`${BACKEND_URL}/datasets/${data.datasetId}/items/${data.itemId}`, {
+    method: "DELETE",
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to delete dataset item')
+    throw new Error("Failed to delete dataset item");
   }
 }
 
 export function useDeleteDatasetItem() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteDatasetItem,
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ['dataset-items', variables.datasetId],
-      })
-      queryClient.invalidateQueries({ queryKey: ['datasets'] })
+        queryKey: ["dataset-items", variables.datasetId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["datasets"] });
     },
-  })
+  });
 }
 
 export function useAddDatasetItems() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: addDatasetItems,
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ['dataset-items', variables.datasetId],
-      })
-      queryClient.invalidateQueries({ queryKey: ['datasets'] })
+        queryKey: ["dataset-items", variables.datasetId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["datasets"] });
     },
-  })
+  });
 }
 
 export function useExportDataset() {
   return useMutation({
     mutationFn: exportDataset,
-  })
+  });
 }
 
 async function autoCaptionDataset(id: number): Promise<{ message: string }> {
   const response = await fetch(`${BACKEND_URL}/datasets/${id}/caption`, {
-    method: 'POST',
-  })
+    method: "POST",
+  });
   if (!response.ok) {
-    throw new Error('Failed to start auto-captioning')
+    throw new Error("Failed to start auto-captioning");
   }
-  return response.json()
+  return response.json();
 }
 
 async function generateItemCaption(data: {
-  datasetId: number
-  itemId: number
+  datasetId: number;
+  itemId: number;
 }): Promise<{ caption: string }> {
   const response = await fetch(
     `${BACKEND_URL}/datasets/${data.datasetId}/items/${data.itemId}/caption`,
     {
-      method: 'POST',
+      method: "POST",
     },
-  )
+  );
   if (!response.ok) {
-    throw new Error('Failed to generate caption')
+    throw new Error("Failed to generate caption");
   }
-  return response.json()
+  return response.json();
 }
 
 export function useAutoCaptionDataset() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: autoCaptionDataset,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['captioning-status'] })
+      queryClient.invalidateQueries({ queryKey: ["captioning-status"] });
     },
-  })
+  });
 }
 
 export function useGenerateItemCaption() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: generateItemCaption,
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ['dataset-items', variables.datasetId],
-      })
-      queryClient.invalidateQueries({ queryKey: ['captioning-status'] })
+        queryKey: ["dataset-items", variables.datasetId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["captioning-status"] });
     },
-  })
+  });
 }

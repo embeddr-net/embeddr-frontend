@@ -1,19 +1,17 @@
-import React from 'react'
+import React from "react";
 import {
+  Badge,
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
+} from "@embeddr/react-ui/ui";
 
 export function LotusDefaultsTab({
   blobProviders,
@@ -39,33 +37,33 @@ export function LotusDefaultsTab({
   saveRoutingPending,
   onSaveRouting,
 }: {
-  blobProviders: string[]
-  providerResolvers: Record<string, string>
-  defaultBlobProvider: string
-  setDefaultBlobProvider: (value: string) => void
-  defaultBlobResolver: string
-  setDefaultBlobResolver: (value: string) => void
-  saveBlobDefaultsPending: boolean
-  onSaveBlobDefaults: () => void
-  automationTotal: number
-  automationActive: number
-  ingestionPipelineId: string
-  setIngestionPipelineId: (value: string) => void
-  pipelineOptions: Array<{ id: string; name: string }>
-  saveIngestionPipelinePending: boolean
-  onSaveIngestionPipeline: () => void
-  textProvider: string
-  setTextProvider: (value: string) => void
-  similarProvider: string
-  setSimilarProvider: (value: string) => void
-  searchProviders: Array<{ id: string; title: string }>
-  saveRoutingPending: boolean
-  onSaveRouting: () => void
+  blobProviders: Array<string>;
+  providerResolvers: Record<string, string>;
+  defaultBlobProvider: string;
+  setDefaultBlobProvider: (value: string) => void;
+  defaultBlobResolver: string;
+  setDefaultBlobResolver: (value: string) => void;
+  saveBlobDefaultsPending: boolean;
+  onSaveBlobDefaults: () => void;
+  automationTotal: number;
+  automationActive: number;
+  ingestionPipelineId: string;
+  setIngestionPipelineId: (value: string) => void;
+  pipelineOptions: Array<{ id: string; name: string }>;
+  saveIngestionPipelinePending: boolean;
+  onSaveIngestionPipeline: () => void;
+  textProvider: string;
+  setTextProvider: (value: string) => void;
+  similarProvider: string;
+  setSimilarProvider: (value: string) => void;
+  searchProviders: Array<{ id: string; title: string }>;
+  saveRoutingPending: boolean;
+  onSaveRouting: () => void;
 }) {
-  const providerValue = defaultBlobProvider || '__unset__'
+  const providerValue = defaultBlobProvider || "__unset__";
   const resolvedResolver = defaultBlobProvider
     ? providerResolvers[defaultBlobProvider]
-    : defaultBlobResolver
+    : defaultBlobResolver;
 
   return (
     <div className="flex flex-col gap-4">
@@ -76,15 +74,13 @@ export function LotusDefaultsTab({
         <CardContent className="flex flex-col gap-4 text-xs">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <span className="text-[11px] text-muted-foreground">
-                Default upload provider
-              </span>
+              <span className="text-[11px] text-muted-foreground">Default upload provider</span>
               <Select
                 value={providerValue}
                 onValueChange={(value) => {
-                  const next = value === '__unset__' ? '' : value
-                  setDefaultBlobProvider(next)
-                  setDefaultBlobResolver(providerResolvers[next] || '')
+                  const next = value === "__unset__" ? "" : value;
+                  setDefaultBlobProvider(next);
+                  setDefaultBlobResolver(providerResolvers[next] || "");
                 }}
               >
                 <SelectTrigger>
@@ -99,43 +95,33 @@ export function LotusDefaultsTab({
                   ))}
                 </SelectContent>
               </Select>
-              {defaultBlobProvider &&
-                providerResolvers[defaultBlobProvider] && (
-                  <span className="text-[10px] text-muted-foreground">
-                    resolver: {providerResolvers[defaultBlobProvider]}
-                  </span>
-                )}
+              {defaultBlobProvider && providerResolvers[defaultBlobProvider] && (
+                <span className="text-[10px] text-muted-foreground">
+                  resolver: {providerResolvers[defaultBlobProvider]}
+                </span>
+              )}
             </div>
             <div className="flex flex-col gap-2">
-              <span className="text-[11px] text-muted-foreground">
-                Resolver (auto)
-              </span>
+              <span className="text-[11px] text-muted-foreground">Resolver (auto)</span>
               <div className="rounded border border-muted/60 bg-muted/20 px-2 py-1 text-[11px]">
-                {resolvedResolver || 'Auto-resolved by provider'}
+                {resolvedResolver || "Auto-resolved by provider"}
               </div>
               <span className="text-[10px] text-muted-foreground">
-                Resolvers are inferred from the selected provider; no manual
-                default needed.
+                Resolvers are inferred from the selected provider; no manual default needed.
               </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              onClick={onSaveBlobDefaults}
-              disabled={saveBlobDefaultsPending}
-            >
+            <Button onClick={onSaveBlobDefaults} disabled={saveBlobDefaultsPending}>
               Save Blob Defaults
             </Button>
             {saveBlobDefaultsPending && (
-              <span className="text-[11px] text-muted-foreground">
-                Saving...
-              </span>
+              <span className="text-[11px] text-muted-foreground">Saving...</span>
             )}
           </div>
           {blobProviders.length === 0 && (
             <div className="text-[11px] text-muted-foreground">
-              No blob providers registered yet. Add a storage plugin to expose
-              providers here.
+              No blob providers registered yet. Add a storage plugin to expose providers here.
             </div>
           )}
         </CardContent>
@@ -151,13 +137,8 @@ export function LotusDefaultsTab({
             <Badge variant="secondary">active: {automationActive}</Badge>
           </div>
           <div className="flex flex-col gap-2">
-            <span className="text-[11px] text-muted-foreground">
-              Ingestion pipeline automation
-            </span>
-            <Select
-              value={ingestionPipelineId}
-              onValueChange={setIngestionPipelineId}
-            >
+            <span className="text-[11px] text-muted-foreground">Ingestion pipeline automation</span>
+            <Select value={ingestionPipelineId} onValueChange={setIngestionPipelineId}>
               <SelectTrigger>
                 <SelectValue placeholder="Select pipeline" />
               </SelectTrigger>
@@ -171,16 +152,11 @@ export function LotusDefaultsTab({
             </Select>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              onClick={onSaveIngestionPipeline}
-              disabled={saveIngestionPipelinePending}
-            >
+            <Button onClick={onSaveIngestionPipeline} disabled={saveIngestionPipelinePending}>
               Save Pipeline
             </Button>
             {saveIngestionPipelinePending && (
-              <span className="text-[11px] text-muted-foreground">
-                Saving...
-              </span>
+              <span className="text-[11px] text-muted-foreground">Saving...</span>
             )}
           </div>
         </CardContent>
@@ -193,9 +169,7 @@ export function LotusDefaultsTab({
         <CardContent className="flex flex-col gap-4 text-xs">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <span className="text-[11px] text-muted-foreground">
-                Text search provider
-              </span>
+              <span className="text-[11px] text-muted-foreground">Text search provider</span>
               <Select value={textProvider} onValueChange={setTextProvider}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select provider" />
@@ -210,13 +184,8 @@ export function LotusDefaultsTab({
               </Select>
             </div>
             <div className="flex flex-col gap-2">
-              <span className="text-[11px] text-muted-foreground">
-                Similarity provider
-              </span>
-              <Select
-                value={similarProvider}
-                onValueChange={setSimilarProvider}
-              >
+              <span className="text-[11px] text-muted-foreground">Similarity provider</span>
+              <Select value={similarProvider} onValueChange={setSimilarProvider}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select provider" />
                 </SelectTrigger>
@@ -236,13 +205,11 @@ export function LotusDefaultsTab({
               Save Routing
             </Button>
             {saveRoutingPending && (
-              <span className="text-[11px] text-muted-foreground">
-                Saving...
-              </span>
+              <span className="text-[11px] text-muted-foreground">Saving...</span>
             )}
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

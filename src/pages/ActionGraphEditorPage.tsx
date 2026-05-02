@@ -1,59 +1,55 @@
-import { useActionGraph } from '@/hooks/useActionGraph'
-import { usePluginWorkflows } from '@/hooks/usePluginWorkflows'
 import {
+  Badge,
+  Button,
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
   CardDescription,
   CardFooter,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { Label } from '@embeddr/react-ui/ui'
-import { Spinner } from '@embeddr/react-ui/ui'
-import {
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  Input,
+  Label,
+  ScrollArea,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
-import { Switch } from '@embeddr/react-ui/ui'
+  Spinner,
+  Switch,
+} from "@embeddr/react-ui/ui";
 import {
-  Play,
   ArrowRight,
-  Settings,
   Box,
   Database,
   FileImage,
-  Plus,
-  Save,
-  Trash2,
-  RefreshCw,
   Link as LinkIcon,
+  Play,
+  Plus,
+  RefreshCw,
+  Save,
+  Settings,
+  Trash2,
   Type,
-} from 'lucide-react'
-import { ImageSelectorDialog } from '@/components/dialogs/ImageSelectorDialog'
-import { Badge } from '@embeddr/react-ui/ui'
-import { useWebSocket } from '@/providers/WebSocketProvider'
-import { useState, useEffect, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import {
-  fetchAvailableActions,
-  type AvailableAction,
-} from '@/lib/api/endpoints/actions'
-import { Checkbox } from '@embeddr/react-ui/ui'
-import { toast } from 'sonner'
-import { ScrollArea } from '@embeddr/react-ui/ui'
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import type { AvailableAction } from "@/lib/api/endpoints/actions";
+import { ImageSelectorDialog } from "@/components/dialogs/ImageSelectorDialog";
+import { useWebSocket } from "@/providers/WebSocketProvider";
+import { fetchAvailableActions } from "@/lib/api/endpoints/actions";
+import { usePluginWorkflows } from "@/hooks/usePluginWorkflows";
+import { useActionGraph } from "@/hooks/useActionGraph";
 
 const getIconForPlugin = (pluginName: string) => {
-  if (pluginName.includes('scraper')) return <Database className="h-4 w-4" />
-  if (pluginName.includes('thumbnail')) return <FileImage className="h-4 w-4" />
-  if (pluginName.includes('embed')) return <Box className="h-4 w-4" />
-  if (pluginName.includes('comfy')) return <Settings className="h-4 w-4" />
-  return <Box className="h-4 w-4" />
-}
+  if (pluginName.includes("scraper")) return <Database className="h-4 w-4" />;
+  if (pluginName.includes("thumbnail")) return <FileImage className="h-4 w-4" />;
+  if (pluginName.includes("embed")) return <Box className="h-4 w-4" />;
+  if (pluginName.includes("comfy")) return <Settings className="h-4 w-4" />;
+  return <Box className="h-4 w-4" />;
+};
 
 export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
   const {
@@ -64,170 +60,160 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
     isRunning,
     saveGraph,
     isSaving,
-  } = useActionGraph(artifactId)
+  } = useActionGraph(artifactId);
 
-  const { lastMessage } = useWebSocket()
+  const { lastMessage } = useWebSocket();
 
   // Local Graph State for Editing
-  const [nodes, setNodes] = useState<any[]>([])
-  const [isDirty, setIsDirty] = useState(false)
+  const [nodes, setNodes] = useState<Array<any>>([]);
+  const [isDirty, setIsDirty] = useState(false);
 
   // Execution State
-  const [nodeStatuses, setNodeStatuses] = useState<Record<string, string>>({})
-  const [currentExecutionId, setCurrentExecutionId] = useState<string | null>(
-    null,
-  )
-  const [logs, setLogs] = useState<string[]>([])
-  const [globalInputs, setGlobalInputs] = useState<Record<string, any>>({})
+  const [nodeStatuses, setNodeStatuses] = useState<Record<string, string>>({});
+  const [currentExecutionId, setCurrentExecutionId] = useState<string | null>(null);
+  const [logs, setLogs] = useState<Array<string>>([]);
+  const [globalInputs, setGlobalInputs] = useState<Record<string, any>>({});
   const [imageSelectorState, setImageSelectorState] = useState<{
-    open: boolean
-    nodeId: string | null
-    key: string | null
-  }>({ open: false, nodeId: null, key: null })
+    open: boolean;
+    nodeId: string | null;
+    key: string | null;
+  }>({ open: false, nodeId: null, key: null });
 
   // Available Actions
   const { data: availableActions, isLoading: actionsLoading } = useQuery({
-    queryKey: ['available-actions'],
+    queryKey: ["available-actions"],
     queryFn: fetchAvailableActions,
-  })
+  });
 
   // Workflow provider plugin workflows for selection inputs (registry-resolved)
-  const { data: pluginWorkflows } = usePluginWorkflows()
+  const { data: pluginWorkflows } = usePluginWorkflows();
 
   // Sync initial graph
   useEffect(() => {
     if (initialGraph?.nodes) {
-      const loaded = JSON.parse(JSON.stringify(initialGraph.nodes))
+      const loaded = JSON.parse(JSON.stringify(initialGraph.nodes));
 
       // Migration: Ensure schema validity (e.g. outputs array -> dict)
       loaded.forEach((n: any) => {
         if (Array.isArray(n.outputs)) {
-          const newOutputs: any = {}
+          const newOutputs: any = {};
           n.outputs.forEach((k: string) => {
-            newOutputs[k] = { type: 'artifact_refs', accepts: ['*'] }
-          })
-          n.outputs = newOutputs
+            newOutputs[k] = { type: "artifact_refs", accepts: ["*"] };
+          });
+          n.outputs = newOutputs;
         }
-      })
+      });
 
-      setNodes(loaded)
+      setNodes(loaded);
     }
-  }, [initialGraph])
+  }, [initialGraph]);
 
   // Sync Global Inputs Defaults
   useEffect(() => {
-    const defaults: Record<string, any> = {}
+    const defaults: Record<string, any> = {};
     nodes.forEach((node) => {
       if (node.inputs) {
         Object.entries(node.inputs).forEach(([key, input]: [string, any]) => {
           if (input.exposed && input.value !== undefined) {
-            const paramName = `${node.id}.${key}`
-            defaults[paramName] = input.value
+            const paramName = `${node.id}.${key}`;
+            defaults[paramName] = input.value;
           }
-        })
+        });
       }
-    })
+    });
     setGlobalInputs((prev) => {
-      const next = { ...prev }
-      let changed = false
+      const next = { ...prev };
+      let changed = false;
       Object.entries(defaults).forEach(([k, v]) => {
         if (next[k] === undefined) {
-          next[k] = v
-          changed = true
+          next[k] = v;
+          changed = true;
         }
-      })
-      return changed ? next : prev
-    })
-  }, [nodes])
+      });
+      return changed ? next : prev;
+    });
+  }, [nodes]);
 
   // WebSocket for Execution Updates
   useEffect(() => {
-    if (!lastMessage) return
-    const msg = lastMessage as any
-    if (msg.type === 'execution_update') {
-      const { id, node_id, status, primary_artifact_id } = msg.data
+    if (!lastMessage) return;
+    const msg = lastMessage as any;
+    if (msg.type === "execution_update") {
+      const { id, node_id, status, primary_artifact_id } = msg.data;
       if (id === currentExecutionId || primary_artifact_id === artifactId) {
         if (node_id) {
-          setNodeStatuses((prev) => ({ ...prev, [node_id]: status }))
+          setNodeStatuses((prev) => ({ ...prev, [node_id]: status }));
         }
         setLogs((prev) => [
           ...prev,
-          `[${new Date().toLocaleTimeString()}] ${node_id || 'System'}: ${status}`,
-        ])
+          `[${new Date().toLocaleTimeString()}] ${node_id || "System"}: ${status}`,
+        ]);
       }
     }
-  }, [lastMessage, currentExecutionId, artifactId])
+  }, [lastMessage, currentExecutionId, artifactId]);
 
   /* --- Graph Operations --- */
 
   const addNode = (action: AvailableAction) => {
     // Sanitize ID
-    const safeName = action.name
-      ? action.name.replace(/[^a-zA-Z0-9_-]/g, '_')
-      : 'action'
-    const newNodeId = `${safeName}_${nodes.length + 1}`
+    const safeName = action.name ? action.name.replace(/[^a-zA-Z0-9_-]/g, "_") : "action";
+    const newNodeId = `${safeName}_${nodes.length + 1}`;
 
-    const inputs: any = {}
+    const inputs: any = {};
     // Initialize inputs based on action definition
     if (action.inputs) {
-      const inputKeys = Array.isArray(action.inputs)
-        ? action.inputs
-        : Object.keys(action.inputs)
+      const inputKeys = Array.isArray(action.inputs) ? action.inputs : Object.keys(action.inputs);
 
-      const schema = (action as any).payload_schema || {}
+      const schema = (action as any).payload_schema || {};
 
       inputKeys.forEach((key) => {
-        const inputSchema = schema[key] || {}
+        const inputSchema = schema[key] || {};
         // Heuristic: if key contains 'seed', imply integer
-        let type = inputSchema.type || 'string'
+        let type = inputSchema.type || "string";
         if (!inputSchema.type) {
           if (
-            key.toLowerCase().includes('seed') ||
-            key.toLowerCase().includes('steps') ||
-            key.toLowerCase().includes('width') ||
-            key.toLowerCase().includes('height')
+            key.toLowerCase().includes("seed") ||
+            key.toLowerCase().includes("steps") ||
+            key.toLowerCase().includes("width") ||
+            key.toLowerCase().includes("height")
           ) {
-            type = 'integer'
+            type = "integer";
           }
         }
 
         inputs[key] = {
           type: type,
           value:
-            inputSchema.default !== undefined
-              ? inputSchema.default
-              : type === 'integer'
-                ? 0
-                : '',
+            inputSchema.default !== undefined ? inputSchema.default : type === "integer" ? 0 : "",
           link: null,
           exposed: false,
           schema: inputSchema,
-        }
-      })
+        };
+      });
     }
 
     // Initialize Outputs (convert array to dict if needed)
-    const outputs: any = {}
+    const outputs: any = {};
     if (action.outputs) {
       if (Array.isArray(action.outputs)) {
         action.outputs.forEach((key: string) => {
           outputs[key] = {
-            type: 'artifact_refs', // Default safest assumption
-            accepts: ['*'],
+            type: "artifact_refs", // Default safest assumption
+            accepts: ["*"],
             hidden: false,
-          }
-        })
+          };
+        });
       } else {
         // Deep copy definition
         Object.entries(action.outputs).forEach(([k, v]) => {
-          outputs[k] = { ...v }
-        })
+          outputs[k] = { ...v };
+        });
       }
     }
 
     const newNode = {
       id: newNodeId,
-      kind: 'plugin_action',
+      kind: "plugin_action",
       plugin: action.plugin_name,
       action: action.job_type, // or action.name
       inputs,
@@ -235,22 +221,22 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
       metadata: {
         ui: { x: 0, y: 0 },
       },
-    }
-    setNodes([...nodes, newNode])
-    setIsDirty(true)
-  }
+    };
+    setNodes([...nodes, newNode]);
+    setIsDirty(true);
+  };
 
   const removeNode = (nodeId: string) => {
-    setNodes(nodes.filter((n) => n.id !== nodeId))
-    setIsDirty(true)
+    setNodes(nodes.filter((n) => n.id !== nodeId));
+    setIsDirty(true);
     // Also remove links to this node?
     // Ideally yes, but let's leave that for user to fix for now.
-  }
+  };
 
   const updateNodeInput = (nodeId: string, inputKey: string, updates: any) => {
     setNodes(
       nodes.map((node) => {
-        if (node.id !== nodeId) return node
+        if (node.id !== nodeId) return node;
         return {
           ...node,
           inputs: {
@@ -260,11 +246,11 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
               ...updates,
             },
           },
-        }
+        };
       }),
-    )
-    setIsDirty(true)
-  }
+    );
+    setIsDirty(true);
+  };
 
   const handleSave = async () => {
     try {
@@ -275,33 +261,33 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
         nodes,
         edges: [], // clear edges, let backend infer or ignore
         interface: initialGraph.interface || {}, // preserve interface
-      }
-      await saveGraph(newGraph)
-      setIsDirty(false)
+      };
+      await saveGraph(newGraph);
+      setIsDirty(false);
     } catch (e) {
       // Error handled in hook
     }
-  }
+  };
 
   const handleRun = async () => {
-    setLogs([])
-    setNodeStatuses({})
+    setLogs([]);
+    setNodeStatuses({});
     try {
-      const res = await runGraph(globalInputs)
-      if (res?.execution_id) setCurrentExecutionId(res.execution_id)
+      const res = await runGraph(globalInputs);
+      if (res?.execution_id) setCurrentExecutionId(res.execution_id);
     } catch (e) {
-      console.error(e)
-      setLogs((prev) => [...prev, `[Error] Run failed: ${String(e)}`])
+      console.error(e);
+      setLogs((prev) => [...prev, `[Error] Run failed: ${String(e)}`]);
     }
-  }
+  };
 
   if (isLoading)
     return (
       <div className="h-full flex items-center justify-center">
         <Spinner />
       </div>
-    )
-  if (!artifact) return <div>Artifact not found</div>
+    );
+  if (!artifact) return <div>Artifact not found</div>;
 
   return (
     <div className="h-[calc(100vh-6rem)] flex flex-col gap-1 p-1">
@@ -313,22 +299,16 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
             {artifact.metadata_json?.name || artifact.id}
             {isDirty && <Badge variant="secondary">Unsaved Changes</Badge>}
           </h1>
-          <p className="text-xs text-muted-foreground">
-            {artifact.metadata_json?.description}
-          </p>
+          <p className="text-xs text-muted-foreground">{artifact.metadata_json?.description}</p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleSave}
-            disabled={!isDirty || isSaving}
-          >
+          <Button variant="outline" onClick={handleSave} disabled={!isDirty || isSaving}>
             <Save className="w-4 h-4 mr-2" />
             Save
           </Button>
           <Button onClick={handleRun} disabled={isRunning || isDirty}>
             <Play className="w-4 h-4 mr-2" />
-            {isRunning ? 'Running...' : 'Run Graph'}
+            {isRunning ? "Running..." : "Run Graph"}
           </Button>
         </div>
       </div>
@@ -347,7 +327,7 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
                   )}
 
                   {nodes.map((node, idx) => {
-                    const status = nodeStatuses[node.id] || 'idle'
+                    const status = nodeStatuses[node.id] || "idle";
                     return (
                       <div key={node.id} className="relative group">
                         {/* Connector Line Visual */}
@@ -358,17 +338,14 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
                         <Card
                           className={`
                        transition-all duration-200
-                       ${status === 'running' ? 'border-blue-500 ring-1 ring-blue-500' : ''}
-                       ${status === 'completed' ? 'border-green-500' : ''}
-                       ${status === 'failed' ? 'border-red-500' : ''}
+                       ${status === "running" ? "border-blue-500 ring-1 ring-blue-500" : ""}
+                       ${status === "completed" ? "border-green-500" : ""}
+                       ${status === "failed" ? "border-red-500" : ""}
                      `}
                         >
                           <CardHeader className="py-3 px-4 bg-muted/40 flex flex-row items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <Badge
-                                variant="outline"
-                                className="bg-background"
-                              >
+                              <Badge variant="outline" className="bg-background">
                                 {idx + 1}
                               </Badge>
                               <div className="font-medium flex items-center gap-2">
@@ -396,261 +373,213 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
                                 Inputs
                               </h4>
                               {node.inputs &&
-                                Object.entries(node.inputs).map(
-                                  ([key, input]: [string, any]) => (
-                                    <div
-                                      key={key}
-                                      className="bg-secondary/20 p-2  border text-sm space-y-2"
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <Label className="text-xs font-medium">
-                                          {key}
-                                        </Label>
-                                        <div className="flex items-center gap-1">
-                                          <Button
-                                            variant={
-                                              input.link ? 'secondary' : 'ghost'
-                                            }
-                                            size="icon"
-                                            className={`h-5 w-5 ${input.link ? 'text-primary' : 'text-muted-foreground'}`}
-                                            onClick={() =>
-                                              updateNodeInput(node.id, key, {
-                                                link: input.link
-                                                  ? null
-                                                  : {
-                                                      node_id: '',
-                                                      output_port: '',
-                                                    },
-                                              })
-                                            }
-                                            title="Toggle Link"
-                                          >
-                                            <LinkIcon className="w-3 h-3" />
-                                          </Button>
-                                        </div>
+                                Object.entries(node.inputs).map(([key, input]: [string, any]) => (
+                                  <div
+                                    key={key}
+                                    className="bg-secondary/20 p-2  border text-sm space-y-2"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-xs font-medium">{key}</Label>
+                                      <div className="flex items-center gap-1">
+                                        <Button
+                                          variant={input.link ? "secondary" : "ghost"}
+                                          size="icon"
+                                          className={`h-5 w-5 ${input.link ? "text-primary" : "text-muted-foreground"}`}
+                                          onClick={() =>
+                                            updateNodeInput(node.id, key, {
+                                              link: input.link
+                                                ? null
+                                                : {
+                                                    node_id: "",
+                                                    output_port: "",
+                                                  },
+                                            })
+                                          }
+                                          title="Toggle Link"
+                                        >
+                                          <LinkIcon className="w-3 h-3" />
+                                        </Button>
                                       </div>
-
-                                      {input.link ? (
-                                        <div className="flex gap-2">
-                                          <Select
-                                            value={input.link.node_id}
-                                            onValueChange={(val) =>
-                                              updateNodeInput(node.id, key, {
-                                                link: {
-                                                  ...input.link,
-                                                  node_id: val,
-                                                },
-                                              })
-                                            }
-                                          >
-                                            <SelectTrigger className="h-7 text-xs">
-                                              <SelectValue placeholder="Node" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              {nodes
-                                                .filter((n) => n.id !== node.id)
-                                                .map((n) => (
-                                                  <SelectItem
-                                                    key={n.id}
-                                                    value={n.id}
-                                                  >
-                                                    {n.id}
-                                                  </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                          </Select>
-
-                                          {/* If we had schema for outputs, we could show select. For now input text for port */}
-                                          <Input
-                                            className="h-7 text-xs"
-                                            placeholder="Output Port"
-                                            value={input.link.output_port || ''}
-                                            onChange={(e) =>
-                                              updateNodeInput(node.id, key, {
-                                                link: {
-                                                  ...input.link,
-                                                  output_port: e.target.value,
-                                                },
-                                              })
-                                            }
-                                          />
-                                        </div>
-                                      ) : (
-                                        <div className="flex gap-2 items-center">
-                                          {/* Dynamic Control based on Type */}
-                                          {(() => {
-                                            const type = input.type || 'string'
-                                            const isNumber =
-                                              type === 'integer' ||
-                                              type === 'number'
-                                            const isBool = type === 'boolean'
-                                            const isImage =
-                                              type === 'image' ||
-                                              type === 'artifact' ||
-                                              type === 'artifact:image'
-                                            const isReadOnly =
-                                              input.schema?.readOnly
-
-                                            // Special Handling for Options Source or Heuristic Name
-                                            const isWorkflowSelector =
-                                              input.schema?.options_source ===
-                                                'comfy:workflows' ||
-                                              input.schema?.options_source ===
-                                                'artifact:action:comfy.workflow' ||
-                                              (node.action ===
-                                                'comfy_run_workflow' &&
-                                                key === 'workflow_name') ||
-                                              (node.action === 'run_workflow' &&
-                                                key === 'workflow_artifact_id')
-
-                                            if (
-                                              isWorkflowSelector &&
-                                              pluginWorkflows
-                                            ) {
-                                              return (
-                                                <Select
-                                                  disabled={isReadOnly}
-                                                  value={input.value || ''}
-                                                  onValueChange={(val) => {
-                                                    updateNodeInput(
-                                                      node.id,
-                                                      key,
-                                                      {
-                                                        value: val,
-                                                      },
-                                                    )
-                                                  }}
-                                                >
-                                                  <SelectTrigger className="h-7 text-xs">
-                                                    <SelectValue placeholder="Select Workflow..." />
-                                                  </SelectTrigger>
-                                                  <SelectContent>
-                                                    {pluginWorkflows.map(
-                                                      (wf) => (
-                                                        <SelectItem
-                                                          key={String(
-                                                            wf.id ?? wf.name,
-                                                          )}
-                                                          value={String(
-                                                            wf.name ?? wf.id,
-                                                          )}
-                                                        >
-                                                          {wf.name ?? wf.id}
-                                                        </SelectItem>
-                                                      ),
-                                                    )}
-                                                  </SelectContent>
-                                                </Select>
-                                              )
-                                            }
-                                            if (isImage) {
-                                              return (
-                                                <div className="flex gap-2 w-full">
-                                                  <Input
-                                                    disabled={isReadOnly}
-                                                    value={
-                                                      typeof input.value ===
-                                                      'object'
-                                                        ? JSON.stringify(
-                                                            input.value,
-                                                          )
-                                                        : (input.value ?? '')
-                                                    }
-                                                    onChange={(e) =>
-                                                      updateNodeInput(
-                                                        node.id,
-                                                        key,
-                                                        {
-                                                          value: e.target.value,
-                                                        },
-                                                      )
-                                                    }
-                                                    placeholder="Artifact ID or Path..."
-                                                    className="h-7 text-xs font-mono flex-1"
-                                                  />
-                                                  <Button
-                                                    variant="outline"
-                                                    size="icon"
-                                                    className="h-7 w-7"
-                                                    onClick={() =>
-                                                      setImageSelectorState({
-                                                        open: true,
-                                                        nodeId: node.id,
-                                                        key,
-                                                      })
-                                                    }
-                                                    title="Select Image from Library"
-                                                  >
-                                                    <FileImage className="h-3 w-3" />
-                                                  </Button>
-                                                </div>
-                                              )
-                                            }
-                                            if (isBool) {
-                                              return (
-                                                <div className="flex items-center h-7">
-                                                  <Switch
-                                                    disabled={isReadOnly}
-                                                    checked={!!input.value}
-                                                    onCheckedChange={(c) =>
-                                                      updateNodeInput(
-                                                        node.id,
-                                                        key,
-                                                        { value: c },
-                                                      )
-                                                    }
-                                                  />
-                                                </div>
-                                              )
-                                            }
-
-                                            return (
-                                              <Input
-                                                disabled={isReadOnly}
-                                                type={
-                                                  isNumber ? 'number' : 'text'
-                                                }
-                                                className="h-7 text-xs font-mono"
-                                                value={
-                                                  typeof input.value ===
-                                                  'object'
-                                                    ? JSON.stringify(
-                                                        input.value,
-                                                      )
-                                                    : (input.value ?? '')
-                                                }
-                                                onChange={(e) =>
-                                                  updateNodeInput(
-                                                    node.id,
-                                                    key,
-                                                    {
-                                                      value: isNumber
-                                                        ? Number(e.target.value)
-                                                        : e.target.value,
-                                                    },
-                                                  )
-                                                }
-                                                placeholder="Value..."
-                                              />
-                                            )
-                                          })()}
-
-                                          <Checkbox
-                                            checked={input.exposed}
-                                            onCheckedChange={(c) =>
-                                              updateNodeInput(node.id, key, {
-                                                exposed: !!c,
-                                              })
-                                            }
-                                            title="Expose as Global Input"
-                                          />
-                                        </div>
-                                      )}
                                     </div>
-                                  ),
-                                )}
-                              {(!node.inputs ||
-                                Object.keys(node.inputs).length === 0) && (
+
+                                    {input.link ? (
+                                      <div className="flex gap-2">
+                                        <Select
+                                          value={input.link.node_id}
+                                          onValueChange={(val) =>
+                                            updateNodeInput(node.id, key, {
+                                              link: {
+                                                ...input.link,
+                                                node_id: val,
+                                              },
+                                            })
+                                          }
+                                        >
+                                          <SelectTrigger className="h-7 text-xs">
+                                            <SelectValue placeholder="Node" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {nodes
+                                              .filter((n) => n.id !== node.id)
+                                              .map((n) => (
+                                                <SelectItem key={n.id} value={n.id}>
+                                                  {n.id}
+                                                </SelectItem>
+                                              ))}
+                                          </SelectContent>
+                                        </Select>
+
+                                        {/* If we had schema for outputs, we could show select. For now input text for port */}
+                                        <Input
+                                          className="h-7 text-xs"
+                                          placeholder="Output Port"
+                                          value={input.link.output_port || ""}
+                                          onChange={(e) =>
+                                            updateNodeInput(node.id, key, {
+                                              link: {
+                                                ...input.link,
+                                                output_port: e.target.value,
+                                              },
+                                            })
+                                          }
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="flex gap-2 items-center">
+                                        {/* Dynamic Control based on Type */}
+                                        {(() => {
+                                          const type = input.type || "string";
+                                          const isNumber = type === "integer" || type === "number";
+                                          const isBool = type === "boolean";
+                                          const isImage =
+                                            type === "image" ||
+                                            type === "artifact" ||
+                                            type === "artifact:image";
+                                          const isReadOnly = input.schema?.readOnly;
+
+                                          // Special Handling for Options Source or Heuristic Name
+                                          const isWorkflowSelector =
+                                            input.schema?.options_source === "comfy:workflows" ||
+                                            input.schema?.options_source ===
+                                              "artifact:action:comfy.workflow" ||
+                                            (node.action === "comfy_run_workflow" &&
+                                              key === "workflow_name") ||
+                                            (node.action === "run_workflow" &&
+                                              key === "workflow_artifact_id");
+
+                                          if (isWorkflowSelector && pluginWorkflows) {
+                                            return (
+                                              <Select
+                                                disabled={isReadOnly}
+                                                value={input.value || ""}
+                                                onValueChange={(val) => {
+                                                  updateNodeInput(node.id, key, {
+                                                    value: val,
+                                                  });
+                                                }}
+                                              >
+                                                <SelectTrigger className="h-7 text-xs">
+                                                  <SelectValue placeholder="Select Workflow..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {pluginWorkflows.map((wf) => (
+                                                    <SelectItem
+                                                      key={String(wf.id ?? wf.name)}
+                                                      value={String(wf.name ?? wf.id)}
+                                                    >
+                                                      {wf.name ?? wf.id}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
+                                            );
+                                          }
+                                          if (isImage) {
+                                            return (
+                                              <div className="flex gap-2 w-full">
+                                                <Input
+                                                  disabled={isReadOnly}
+                                                  value={
+                                                    typeof input.value === "object"
+                                                      ? JSON.stringify(input.value)
+                                                      : (input.value ?? "")
+                                                  }
+                                                  onChange={(e) =>
+                                                    updateNodeInput(node.id, key, {
+                                                      value: e.target.value,
+                                                    })
+                                                  }
+                                                  placeholder="Artifact ID or Path..."
+                                                  className="h-7 text-xs font-mono flex-1"
+                                                />
+                                                <Button
+                                                  variant="outline"
+                                                  size="icon"
+                                                  className="h-7 w-7"
+                                                  onClick={() =>
+                                                    setImageSelectorState({
+                                                      open: true,
+                                                      nodeId: node.id,
+                                                      key,
+                                                    })
+                                                  }
+                                                  title="Select Image from Library"
+                                                >
+                                                  <FileImage className="h-3 w-3" />
+                                                </Button>
+                                              </div>
+                                            );
+                                          }
+                                          if (isBool) {
+                                            return (
+                                              <div className="flex items-center h-7">
+                                                <Switch
+                                                  disabled={isReadOnly}
+                                                  checked={!!input.value}
+                                                  onCheckedChange={(c) =>
+                                                    updateNodeInput(node.id, key, { value: c })
+                                                  }
+                                                />
+                                              </div>
+                                            );
+                                          }
+
+                                          return (
+                                            <Input
+                                              disabled={isReadOnly}
+                                              type={isNumber ? "number" : "text"}
+                                              className="h-7 text-xs font-mono"
+                                              value={
+                                                typeof input.value === "object"
+                                                  ? JSON.stringify(input.value)
+                                                  : (input.value ?? "")
+                                              }
+                                              onChange={(e) =>
+                                                updateNodeInput(node.id, key, {
+                                                  value: isNumber
+                                                    ? Number(e.target.value)
+                                                    : e.target.value,
+                                                })
+                                              }
+                                              placeholder="Value..."
+                                            />
+                                          );
+                                        })()}
+
+                                        <Checkbox
+                                          checked={input.exposed}
+                                          onCheckedChange={(c) =>
+                                            updateNodeInput(node.id, key, {
+                                              exposed: !!c,
+                                            })
+                                          }
+                                          title="Expose as Global Input"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              {(!node.inputs || Object.keys(node.inputs).length === 0) && (
                                 <div className="text-xs text-muted-foreground italic">
                                   No inputs defined
                                 </div>
@@ -673,8 +602,7 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
                                       <div className="w-2 h-2  bg-blue-400" />
                                     </div>
                                   ))}
-                                {(!node.outputs ||
-                                  Object.keys(node.outputs).length === 0) && (
+                                {(!node.outputs || Object.keys(node.outputs).length === 0) && (
                                   <div className="text-xs text-muted-foreground italic">
                                     No outputs defined
                                   </div>
@@ -684,7 +612,7 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
                           </CardContent>
                         </Card>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </ScrollArea>
@@ -693,26 +621,18 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
               <div className="border-t bg-card h-48 flex flex-col mt-4  overflow-hidden">
                 <div className="bg-muted px-4 py-2 text-xs font-semibold uppercase flex justify-between items-center">
                   <span>Input Parameters & Logs</span>
-                  {isRunning && (
-                    <span className="animate-pulse text-blue-500">
-                      Executing...
-                    </span>
-                  )}
+                  {isRunning && <span className="animate-pulse text-blue-500">Executing...</span>}
                 </div>
                 <div className="flex-1 flex overflow-hidden">
                   <div className="w-1/3 border-r p-4 overflow-y-auto space-y-3">
-                    <h5 className="text-xs font-bold text-muted-foreground">
-                      Global Inputs
-                    </h5>
+                    <h5 className="text-xs font-bold text-muted-foreground">Global Inputs</h5>
                     {nodes
                       .flatMap((n) =>
-                        Object.entries(n.inputs).map(
-                          ([k, v]: [string, any]) => ({
-                            nodeId: n.id,
-                            port: k,
-                            ...v,
-                          }),
-                        ),
+                        Object.entries(n.inputs).map(([k, v]: [string, any]) => ({
+                          nodeId: n.id,
+                          port: k,
+                          ...v,
+                        })),
                       )
                       .filter((i) => i.exposed).length === 0 ? (
                       <div className="text-xs text-muted-foreground italic">
@@ -720,27 +640,25 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
                       </div>
                     ) : (
                       nodes.flatMap((n) =>
-                        Object.entries(n.inputs).map(
-                          ([k, v]: [string, any]) => {
-                            if (!v.exposed) return null
-                            const paramName = `${n.id}.${k}`
-                            return (
-                              <div key={paramName}>
-                                <Label className="text-xs">{paramName}</Label>
-                                <Input
-                                  className="h-7 text-xs"
-                                  value={globalInputs[paramName] || ''}
-                                  onChange={(e) =>
-                                    setGlobalInputs((prev) => ({
-                                      ...prev,
-                                      [paramName]: e.target.value,
-                                    }))
-                                  }
-                                />
-                              </div>
-                            )
-                          },
-                        ),
+                        Object.entries(n.inputs).map(([k, v]: [string, any]) => {
+                          if (!v.exposed) return null;
+                          const paramName = `${n.id}.${k}`;
+                          return (
+                            <div key={paramName}>
+                              <Label className="text-xs">{paramName}</Label>
+                              <Input
+                                className="h-7 text-xs"
+                                value={globalInputs[paramName] || ""}
+                                onChange={(e) =>
+                                  setGlobalInputs((prev) => ({
+                                    ...prev,
+                                    [paramName]: e.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+                          );
+                        }),
                       )
                     )}
                   </div>
@@ -749,9 +667,7 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
                       <div key={i}>{l}</div>
                     ))}
                     {logs.length === 0 && (
-                      <span className="opacity-30">
-                        Waiting for execution logs...
-                      </span>
+                      <span className="opacity-30">Waiting for execution logs...</span>
                     )}
                   </div>
                 </div>
@@ -760,9 +676,7 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
 
             {/* Right Sidebar: Palette */}
             <div className="w-64 bg-card border  flex flex-col shadow-sm">
-              <div className="p-3 border-b bg-muted/40 font-semibold text-sm">
-                Action Palette
-              </div>
+              <div className="p-3 border-b bg-muted/40 font-semibold text-sm">Action Palette</div>
               <ScrollArea className="flex-1">
                 <div className="p-3 space-y-3">
                   {actionsLoading ? (
@@ -797,9 +711,7 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
       </div>
       <ImageSelectorDialog
         open={imageSelectorState.open}
-        onOpenChange={(open) =>
-          setImageSelectorState((prev) => ({ ...prev, open }))
-        }
+        onOpenChange={(open) => setImageSelectorState((prev) => ({ ...prev, open }))}
         onSelect={(img) => {
           if (imageSelectorState.nodeId && imageSelectorState.key) {
             // Determine what to save. If the input expects an Artifact ID (UUID), use img.id
@@ -808,11 +720,11 @@ export const ActionGraphEditor = ({ artifactId }: { artifactId: string }) => {
             // transform plugin expects artifact usage if possible.
             updateNodeInput(imageSelectorState.nodeId, imageSelectorState.key, {
               value: img.id,
-            })
-            setImageSelectorState({ open: false, nodeId: null, key: null })
+            });
+            setImageSelectorState({ open: false, nodeId: null, key: null });
           }
         }}
       />
     </div>
-  )
-}
+  );
+};

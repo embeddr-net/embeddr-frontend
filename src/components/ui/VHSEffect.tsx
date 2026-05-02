@@ -1,4 +1,4 @@
-import React from 'react'
+import React from "react";
 
 export const VHSEffect: React.FC = () => {
   return (
@@ -121,5 +121,5 @@ export const VHSEffect: React.FC = () => {
         <div className="vhs-vignette" />
       </div>
     </>
-  )
-}
+  );
+};

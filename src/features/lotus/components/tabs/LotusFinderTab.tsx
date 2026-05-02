@@ -1,13 +1,13 @@
-import React from 'react'
+import React from "react";
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Switch } from '@embeddr/react-ui/ui'
-import { Textarea } from '@embeddr/react-ui/ui'
+  Switch,
+  Textarea,
+} from "@embeddr/react-ui/ui";
 
 export function LotusFinderTab({
   finderEnableSearch,
@@ -17,12 +17,12 @@ export function LotusFinderTab({
   onSaveFinderDefaults,
   saveFinderDefaultsPending,
 }: {
-  finderEnableSearch: boolean
-  setFinderEnableSearch: (value: boolean) => void
-  finderShebangsText: string
-  setFinderShebangsText: (value: string) => void
-  onSaveFinderDefaults: () => void
-  saveFinderDefaultsPending: boolean
+  finderEnableSearch: boolean;
+  setFinderEnableSearch: (value: boolean) => void;
+  finderShebangsText: string;
+  setFinderShebangsText: (value: string) => void;
+  onSaveFinderDefaults: () => void;
+  saveFinderDefaultsPending: boolean;
 }) {
   return (
     <Card className="embeddr-lotus-finder embeddr-lotus-finder-card border-muted/60 bg-transparent">
@@ -36,8 +36,7 @@ export function LotusFinderTab({
               Enable server search by default
             </span>
             <span className="text-[10px] text-muted-foreground">
-              When disabled, Finder only matches local actions unless you use a
-              shebang.
+              When disabled, Finder only matches local actions unless you use a shebang.
             </span>
           </div>
           <Switch
@@ -48,9 +47,7 @@ export function LotusFinderTab({
         </div>
 
         <div className="embeddr-lotus-finder-inputs flex flex-col gap-2">
-          <span className="text-[11px] text-muted-foreground">
-            Shebang shortcuts (JSON)
-          </span>
+          <span className="text-[11px] text-muted-foreground">Shebang shortcuts (JSON)</span>
           <Textarea
             value={finderShebangsText}
             onChange={(event) => setFinderShebangsText(event.target.value)}
@@ -72,5 +69,5 @@ export function LotusFinderTab({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

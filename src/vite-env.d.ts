@@ -1,8 +1,8 @@
 /// <reference types="vite/client" />
 
-declare const __APP_VERSION__: string
+declare const __APP_VERSION__: string;
 
-declare module '*.mp3' {
-  const src: string
-  export default src
+declare module "*.mp3" {
+  const src: string;
+  export default src;
 }

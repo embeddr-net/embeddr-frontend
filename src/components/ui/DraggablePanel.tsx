@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DraggablePanel as LibDraggablePanel } from "@embeddr/react-ui";
 import { useLocalStorage, useScreenSafeArea } from "@embeddr/zen-shell";
 import { useWindowStore } from "@/store/windowStore";
@@ -52,15 +46,12 @@ type PanelSize = { width: number; height: number };
 const FLOAT_EPSILON = 0.5;
 
 function positionsEqual(a: PanelPosition, b: PanelPosition) {
-  return (
-    Math.abs(a.x - b.x) <= FLOAT_EPSILON && Math.abs(a.y - b.y) <= FLOAT_EPSILON
-  );
+  return Math.abs(a.x - b.x) <= FLOAT_EPSILON && Math.abs(a.y - b.y) <= FLOAT_EPSILON;
 }
 
 function sizesEqual(a: PanelSize, b: PanelSize) {
   return (
-    Math.abs(a.width - b.width) <= FLOAT_EPSILON &&
-    Math.abs(a.height - b.height) <= FLOAT_EPSILON
+    Math.abs(a.width - b.width) <= FLOAT_EPSILON && Math.abs(a.height - b.height) <= FLOAT_EPSILON
   );
 }
 
@@ -108,12 +99,9 @@ export function DraggablePanel({
   const isBackdrop = useWindowStore((s) => s.backdropWindowId === id);
   const isMergeHoverTarget = useWindowStore((s) => s.mergeHoverTargetId === id);
   const orderIndex = useWindowStore((s) => s.panelOrder.indexOf(id));
-  const isLastInOrder = useWindowStore(
-    (s) => s.panelOrder[s.panelOrder.length - 1] === id,
-  );
+  const isLastInOrder = useWindowStore((s) => s.panelOrder[s.panelOrder.length - 1] === id);
 
-  const initialPosition =
-    controlledPosition ?? windowState?.position ?? defaultPosition;
+  const initialPosition = controlledPosition ?? windowState?.position ?? defaultPosition;
   const initialSize = controlledSize ?? windowState?.size ?? defaultSize;
 
   const [localPosition, setLocalPosition] = useState(initialPosition);
@@ -147,10 +135,7 @@ export function DraggablePanel({
   }, [localSize]);
 
   useEffect(() => {
-    if (
-      controlledShowTitle !== undefined &&
-      internalShowTitle !== controlledShowTitle
-    ) {
+    if (controlledShowTitle !== undefined && internalShowTitle !== controlledShowTitle) {
       setInternalShowTitle(controlledShowTitle);
     }
   }, [controlledShowTitle, internalShowTitle, setInternalShowTitle]);
@@ -169,16 +154,7 @@ export function DraggablePanel({
         },
       });
     }
-  }, [
-    defaultPosition,
-    defaultSize,
-    id,
-    minHeight,
-    minWidth,
-    openWindow,
-    title,
-    windowState,
-  ]);
+  }, [defaultPosition, defaultSize, id, minHeight, minWidth, openWindow, title, windowState]);
 
   useEffect(() => {
     if (!windowState) return;
@@ -215,36 +191,22 @@ export function DraggablePanel({
 
       const minX = screenSafeArea.left;
       const minY = screenSafeArea.top;
-      const maxX = Math.max(
-        minX,
-        window.innerWidth - screenSafeArea.right - nextSize.width,
-      );
-      const maxY = Math.max(
-        minY,
-        window.innerHeight - screenSafeArea.bottom - nextSize.height,
-      );
+      const maxX = Math.max(minX, window.innerWidth - screenSafeArea.right - nextSize.width);
+      const maxY = Math.max(minY, window.innerHeight - screenSafeArea.bottom - nextSize.height);
 
       return {
         x: Math.min(Math.max(nextPosition.x, minX), maxX),
         y: Math.min(Math.max(nextPosition.y, minY), maxY),
       };
     },
-    [
-      screenSafeArea.bottom,
-      screenSafeArea.left,
-      screenSafeArea.right,
-      screenSafeArea.top,
-    ],
+    [screenSafeArea.bottom, screenSafeArea.left, screenSafeArea.right, screenSafeArea.top],
   );
 
   const clampSizeToSafeArea = useCallback(
     (nextSize: PanelSize, atPosition: PanelPosition) => {
       if (typeof window === "undefined") return nextSize;
 
-      const maxWidth = Math.max(
-        minWidth,
-        window.innerWidth - screenSafeArea.right - atPosition.x,
-      );
+      const maxWidth = Math.max(minWidth, window.innerWidth - screenSafeArea.right - atPosition.x);
       const maxHeight = Math.max(
         minHeight,
         window.innerHeight - screenSafeArea.bottom - atPosition.y,
@@ -294,9 +256,7 @@ export function DraggablePanel({
     if (!pointer) return null;
 
     const currentWindows = useWindowStore.getState().windows;
-    const candidates = document.querySelectorAll(
-      '[data-panel-drop-zone="tab"]',
-    );
+    const candidates = document.querySelectorAll('[data-panel-drop-zone="tab"]');
 
     for (const node of Array.from(candidates)) {
       const el = node as HTMLElement;
@@ -329,10 +289,7 @@ export function DraggablePanel({
 
   const handlePositionChange = useCallback(
     (pos: PanelPosition) => {
-      const constrained = clampPositionToSafeArea(
-        pos,
-        controlledSize ?? sizeRef.current,
-      );
+      const constrained = clampPositionToSafeArea(pos, controlledSize ?? sizeRef.current);
 
       lastPositionRef.current = constrained;
       isInteractingRef.current = true;
@@ -350,7 +307,13 @@ export function DraggablePanel({
         setMergeHoverTarget(targetId);
       }
     },
-    [clampPositionToSafeArea, controlledSize, findMergeTarget, onPositionChange, setMergeHoverTarget],
+    [
+      clampPositionToSafeArea,
+      controlledSize,
+      findMergeTarget,
+      onPositionChange,
+      setMergeHoverTarget,
+    ],
   );
 
   const handleSizeChange = useCallback(
@@ -372,17 +335,10 @@ export function DraggablePanel({
   );
 
   const handleDragEnd = useCallback(() => {
-    const rawPosition =
-      lastPositionRef.current ?? controlledPosition ?? positionRef.current;
-    const snappedPosition = clampPositionToSafeArea(
-      rawPosition,
-      controlledSize ?? sizeRef.current,
-    );
+    const rawPosition = lastPositionRef.current ?? controlledPosition ?? positionRef.current;
+    const snappedPosition = clampPositionToSafeArea(rawPosition, controlledSize ?? sizeRef.current);
 
-    const positionChanged = !positionsEqual(
-      positionRef.current,
-      snappedPosition,
-    );
+    const positionChanged = !positionsEqual(positionRef.current, snappedPosition);
     positionRef.current = snappedPosition;
 
     if (positionChanged) {
@@ -444,10 +400,7 @@ export function DraggablePanel({
     if (isInteractingRef.current || isBackdrop) return;
 
     const basePosition = controlledPosition ?? positionRef.current;
-    const clampedSize = clampSizeToSafeArea(
-      controlledSize ?? sizeRef.current,
-      basePosition,
-    );
+    const clampedSize = clampSizeToSafeArea(controlledSize ?? sizeRef.current, basePosition);
     const clampedPosition = clampPositionToSafeArea(basePosition, clampedSize);
 
     const sizeChanged = !sizesEqual(sizeRef.current, clampedSize);

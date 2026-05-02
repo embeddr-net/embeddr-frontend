@@ -1,19 +1,18 @@
-import React from 'react'
+import React from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Textarea } from '@embeddr/react-ui/ui'
-import { Label } from '@embeddr/react-ui/ui'
-import { Switch } from '@embeddr/react-ui/ui'
-import { useSettingsStore } from '@/store/settingsStore'
+  Label,
+  Switch,
+  Textarea,
+} from "@embeddr/react-ui/ui";
+import { useSettingsStore } from "@/store/settingsStore";
 
 export function AdvancedAppearanceSettings() {
-  const { customCss, setCustomCss, customCssEnabled, setCustomCssEnabled } =
-    useSettingsStore()
+  const { customCss, setCustomCss, customCssEnabled, setCustomCssEnabled } = useSettingsStore();
 
   return (
     <Card className="my-1">
@@ -63,17 +62,15 @@ export function AdvancedAppearanceSettings() {
                 <code>.embeddr-command-bar-profile-button</code>: Profile button
               </li>
               <li>
-                <code>.embeddr-panel-PLUGID</code>: Target a specific plugin's
-                panel
+                <code>.embeddr-panel-PLUGID</code>: Target a specific plugin's panel
               </li>
               <li>
-                <code>.embeddr-component-NAME</code>: Target a specific
-                component
+                <code>.embeddr-component-NAME</code>: Target a specific component
               </li>
             </ul>
           </div>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,14 +1,8 @@
-import React, { useMemo } from 'react'
-import { useSettingsStore } from '@/store/settingsStore'
-import { usePluginStore } from '@/plugins/store'
-import { useShallow } from 'zustand/react/shallow'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Switch } from '@embeddr/react-ui/ui'
+import React, { useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
+import { Card, CardContent, CardHeader, CardTitle, Switch } from "@embeddr/react-ui/ui";
+import { usePluginStore } from "@/plugins/store";
+import { useSettingsStore } from "@/store/settingsStore";
 
 export function ZenEffectsSettings() {
   const {
@@ -27,25 +21,25 @@ export function ZenEffectsSettings() {
       effectToggles: s.effectToggles,
       setEffectToggle: s.setEffectToggle,
     })),
-  )
+  );
 
   const { plugins, activePlugins } = usePluginStore(
     useShallow((s) => ({ plugins: s.plugins, activePlugins: s.activePlugins })),
-  )
+  );
 
   const effectComponents = useMemo(() => {
-    const components: Array<{ pluginId: string; def: any }> = []
+    const components: Array<{ pluginId: string; def: any }> = [];
     activePlugins.forEach((pluginId) => {
-      const plugin = plugins[pluginId]
-      if (!plugin?.components) return
+      const plugin = plugins[pluginId];
+      if (!plugin?.components) return;
       plugin.components.forEach((comp: any) => {
-        if (comp.location === 'zen-effect') {
-          components.push({ pluginId, def: comp })
+        if (comp.location === "zen-effect") {
+          components.push({ pluginId, def: comp });
         }
-      })
-    })
-    return components
-  }, [activePlugins, plugins])
+      });
+    });
+    return components;
+  }, [activePlugins, plugins]);
 
   return (
     <div className="space-y-4 p-3">
@@ -56,10 +50,7 @@ export function ZenEffectsSettings() {
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
             <span className="text-sm">Enable effects</span>
-            <Switch
-              checked={effectsEnabled}
-              onCheckedChange={setEffectsEnabled}
-            />
+            <Switch checked={effectsEnabled} onCheckedChange={setEffectsEnabled} />
           </div>
           <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
             <div className="flex flex-col">
@@ -68,10 +59,7 @@ export function ZenEffectsSettings() {
                 Global effects only (requires effect scope)
               </span>
             </div>
-            <Switch
-              checked={globalEffectsEnabled}
-              onCheckedChange={setGlobalEffectsEnabled}
-            />
+            <Switch checked={globalEffectsEnabled} onCheckedChange={setGlobalEffectsEnabled} />
           </div>
         </CardContent>
       </Card>
@@ -82,17 +70,13 @@ export function ZenEffectsSettings() {
         </CardHeader>
         <CardContent className="space-y-2">
           {effectComponents.length === 0 ? (
-            <div className="text-xs text-muted-foreground">
-              No effects registered.
-            </div>
+            <div className="text-xs text-muted-foreground">No effects registered.</div>
           ) : (
             effectComponents.map(({ pluginId, def }) => {
-              const componentName = def.exportName || def.component
-              const effectId = `${pluginId}:${def.id || def.name || componentName}`
+              const componentName = def.exportName || def.component;
+              const effectId = `${pluginId}:${def.id || def.name || componentName}`;
               const isEnabled =
-                effectToggles[effectId] !== undefined
-                  ? effectToggles[effectId]
-                  : true
+                effectToggles[effectId] !== undefined ? effectToggles[effectId] : true;
               return (
                 <div
                   key={effectId}
@@ -102,20 +86,18 @@ export function ZenEffectsSettings() {
                     <span className="text-sm font-medium">
                       {def.label || def.name || componentName}
                     </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {pluginId}
-                    </span>
+                    <span className="text-[10px] text-muted-foreground">{pluginId}</span>
                   </div>
                   <Switch
                     checked={isEnabled}
                     onCheckedChange={(val) => setEffectToggle(effectId, val)}
                   />
                 </div>
-              )
+              );
             })
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

@@ -1,22 +1,21 @@
-import React, { useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
-import { Button } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { useOperatorConsoleData } from '@/hooks/useOperatorConsoleData'
-import { OperatorOverviewSection } from '@/components/operator/OperatorOverviewSection'
-import { OperatorArtifactsSection } from '@/components/operator/OperatorArtifactsSection'
-import { OperatorClientsSection } from '@/components/operator/OperatorClientsSection'
-import { OperatorRolesSection } from '@/components/operator/OperatorRolesSection'
-import { OperatorKeysSection } from '@/components/operator/OperatorKeysSection'
-import { OperatorServiceClientsSection } from '@/components/operator/OperatorServiceClientsSection'
-import { OperatorOperatorsSection } from '@/components/operator/OperatorOperatorsSection'
+import React, { useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Button, ScrollArea } from "@embeddr/react-ui/ui";
+import { useOperatorConsoleData } from "@/hooks/useOperatorConsoleData";
+import { OperatorOverviewSection } from "@/components/operator/OperatorOverviewSection";
+import { OperatorArtifactsSection } from "@/components/operator/OperatorArtifactsSection";
+import { OperatorClientsSection } from "@/components/operator/OperatorClientsSection";
+import { OperatorRolesSection } from "@/components/operator/OperatorRolesSection";
+import { OperatorKeysSection } from "@/components/operator/OperatorKeysSection";
+import { OperatorServiceClientsSection } from "@/components/operator/OperatorServiceClientsSection";
+import { OperatorOperatorsSection } from "@/components/operator/OperatorOperatorsSection";
 
 const OperatorConsolePage = () => {
   const [activeSection, setActiveSection] = useState<
-    'overview' | 'users' | 'roles' | 'keys' | 'service-clients' | 'operators' | 'artifacts'
-  >('overview')
+    "overview" | "users" | "roles" | "keys" | "service-clients" | "operators" | "artifacts"
+  >("overview");
 
-  const data = useOperatorConsoleData()
+  const data = useOperatorConsoleData();
 
   return (
     <ScrollArea className="h-full w-full">
@@ -34,28 +33,28 @@ const OperatorConsolePage = () => {
             </div>
             <div className="flex flex-col gap-1">
               {[
-                { id: 'overview', label: 'Overview' },
-                { id: 'users', label: 'Clients' },
-                { id: 'roles', label: 'Roles' },
-                { id: 'keys', label: 'Client Keys' },
-                { id: 'service-clients', label: 'Service Clients' },
-                { id: 'artifacts', label: 'Artifacts' },
-                { id: 'operators', label: 'Operators' },
+                { id: "overview", label: "Overview" },
+                { id: "users", label: "Clients" },
+                { id: "roles", label: "Roles" },
+                { id: "keys", label: "Client Keys" },
+                { id: "service-clients", label: "Service Clients" },
+                { id: "artifacts", label: "Artifacts" },
+                { id: "operators", label: "Operators" },
               ].map((section) => (
                 <Button
                   key={section.id}
-                  variant={activeSection === section.id ? 'default' : 'ghost'}
+                  variant={activeSection === section.id ? "default" : "ghost"}
                   className="justify-start"
                   onClick={() =>
                     setActiveSection(
                       section.id as
-                        | 'overview'
-                        | 'users'
-                        | 'roles'
-                        | 'keys'
-                        | 'service-clients'
-                        | 'artifacts'
-                        | 'operators',
+                        | "overview"
+                        | "users"
+                        | "roles"
+                        | "keys"
+                        | "service-clients"
+                        | "artifacts"
+                        | "operators",
                     )
                   }
                 >
@@ -70,11 +69,11 @@ const OperatorConsolePage = () => {
             )}
           </div>
           <div className="space-y-6">
-            {activeSection === 'overview' && (
+            {activeSection === "overview" && (
               <OperatorOverviewSection operatorQuery={data.operatorQuery} />
             )}
-            {activeSection === 'artifacts' && <OperatorArtifactsSection />}
-            {activeSection === 'users' && (
+            {activeSection === "artifacts" && <OperatorArtifactsSection />}
+            {activeSection === "users" && (
               <OperatorClientsSection
                 users={data.users}
                 roles={data.roles}
@@ -82,7 +81,7 @@ const OperatorConsolePage = () => {
                 isForbidden={data.isForbidden}
               />
             )}
-            {activeSection === 'roles' && (
+            {activeSection === "roles" && (
               <OperatorRolesSection
                 roles={data.roles}
                 rolesQuery={data.rolesQuery}
@@ -90,7 +89,7 @@ const OperatorConsolePage = () => {
                 isForbidden={data.isForbidden}
               />
             )}
-            {activeSection === 'keys' && (
+            {activeSection === "keys" && (
               <OperatorKeysSection
                 users={data.users}
                 keys={data.keys}
@@ -99,10 +98,8 @@ const OperatorConsolePage = () => {
                 isForbidden={data.isForbidden}
               />
             )}
-            {activeSection === 'service-clients' && (
-              <OperatorServiceClientsSection />
-            )}
-            {activeSection === 'operators' && (
+            {activeSection === "service-clients" && <OperatorServiceClientsSection />}
+            {activeSection === "operators" && (
               <OperatorOperatorsSection
                 operators={data.operators}
                 operatorsQuery={data.operatorsQuery}
@@ -113,9 +110,9 @@ const OperatorConsolePage = () => {
         </div>
       </div>
     </ScrollArea>
-  )
-}
+  );
+};
 
-export const Route = createFileRoute('/operator')({
+export const Route = createFileRoute("/operator")({
   component: OperatorConsolePage,
-})
+});

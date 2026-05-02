@@ -1,14 +1,14 @@
-import React from 'react'
-import { DynamicPluginComponent } from './DynamicLoader'
-import { PluginErrorBoundary } from './PluginErrorBoundary'
+import React from "react";
+import { DynamicPluginComponent } from "./DynamicLoader";
+import { PluginErrorBoundary } from "./PluginErrorBoundary";
 
 export function PluginWindowContent(props: {
-  pluginId: string
-  componentName: string
-  api: any
-  [key: string]: any
+  pluginId: string;
+  componentName: string;
+  api: any;
+  [key: string]: any;
 }) {
-  const { pluginId, componentName, api, ...rest } = props
+  const { pluginId, componentName, api, ...rest } = props;
   return (
     <PluginErrorBoundary pluginId={pluginId} componentName={componentName}>
       <DynamicPluginComponent
@@ -18,5 +18,5 @@ export function PluginWindowContent(props: {
         {...rest}
       />
     </PluginErrorBoundary>
-  )
+  );
 }

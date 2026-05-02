@@ -1,57 +1,50 @@
-import { useState } from 'react'
-import { embeddrApi } from '@/lib/api/client'
-import { Button } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { Loader2, Terminal } from 'lucide-react'
-import { Card } from '@embeddr/react-ui/ui'
+import { useState } from "react";
+import { Button, Card, Input, ScrollArea } from "@embeddr/react-ui/ui";
+import { Loader2, Terminal } from "lucide-react";
+import { embeddrApi } from "@/lib/api/client";
 
 export const CliConsole = () => {
-  const [input, setInput] = useState('')
-  const [history, setHistory] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
+  const [input, setInput] = useState("");
+  const [history, setHistory] = useState<Array<any>>([]);
+  const [loading, setLoading] = useState(false);
 
   const handleRun = async () => {
-    if (!input.trim()) return
+    if (!input.trim()) return;
 
-    setLoading(true)
-    const cmdArgs = input.split(' ') // Naive splitting, doesn't handle quotes well
+    setLoading(true);
+    const cmdArgs = input.split(" "); // Naive splitting, doesn't handle quotes well
 
     // Add to history optimistically
-    const entryId = Date.now()
-    setHistory((prev) => [
-      ...prev,
-      { id: entryId, type: 'input', content: input },
-    ])
-    setInput('')
+    const entryId = Date.now();
+    setHistory((prev) => [...prev, { id: entryId, type: "input", content: input }]);
+    setInput("");
 
     try {
-      const res = await embeddrApi.system.runCommand(cmdArgs)
+      const res = await embeddrApi.system.runCommand(cmdArgs);
 
       setHistory((prev) => [
         ...prev,
         {
           id: entryId + 1,
-          type: 'output',
-          content:
-            res.stdout || res.stderr || (res.success ? 'Success' : 'Failed'),
+          type: "output",
+          content: res.stdout || res.stderr || (res.success ? "Success" : "Failed"),
           isError: !res.success || !!res.stderr,
         },
-      ])
+      ]);
     } catch (e) {
       setHistory((prev) => [
         ...prev,
         {
           id: entryId + 1,
-          type: 'output',
+          type: "output",
           content: (e as Error).message,
           isError: true,
         },
-      ])
+      ]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex flex-col h-full bg-black text-green-400 font-mono text-sm p-4">
@@ -62,16 +55,9 @@ export const CliConsole = () => {
           </div>
         )}
         {history.map((entry) => (
-          <div
-            key={entry.id}
-            className={`mb-2 ${entry.type === 'input' ? 'font-bold' : ''}`}
-          >
-            <span className="opacity-50 mr-2">
-              {entry.type === 'input' ? '$ embeddr' : '>'}
-            </span>
-            <span className={entry.isError ? 'text-red-400' : ''}>
-              {entry.content}
-            </span>
+          <div key={entry.id} className={`mb-2 ${entry.type === "input" ? "font-bold" : ""}`}>
+            <span className="opacity-50 mr-2">{entry.type === "input" ? "$ embeddr" : ">"}</span>
+            <span className={entry.isError ? "text-red-400" : ""}>{entry.content}</span>
           </div>
         ))}
       </ScrollArea>
@@ -83,7 +69,7 @@ export const CliConsole = () => {
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleRun()}
+          onKeyDown={(e) => e.key === "Enter" && handleRun()}
           disabled={loading}
           className="flex-1 bg-transparent border-green-900 text-green-400 placeholder:text-green-900 focus-visible:ring-offset-0"
           placeholder="process scan..."
@@ -98,5 +84,5 @@ export const CliConsole = () => {
         </Button>
       </div>
     </div>
-  )
-}
+  );
+};

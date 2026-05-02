@@ -1,56 +1,56 @@
-import { BACKEND_URL } from '../config'
+import { BACKEND_URL } from "../config";
 
 // Workflow Types
 export interface WorkflowPort {
-  name: string
-  type: string
-  description?: string
-  default?: any
-  exposure: number | 'internal' | 'ui' | 'api' | 'mcp'
-  group?: string
-  widget?: string
-  options?: any[]
+  name: string;
+  type: string;
+  description?: string;
+  default?: any;
+  exposure: number | "internal" | "ui" | "api" | "mcp";
+  group?: string;
+  widget?: string;
+  options?: Array<any>;
 }
 
 export interface WorkflowArtifactMetadata {
-  schema_version: string
-  inputs: Record<string, WorkflowPort>
-  outputs: Record<string, WorkflowPort>
-  side_effects: string[]
+  schema_version: string;
+  inputs: Record<string, WorkflowPort>;
+  outputs: Record<string, WorkflowPort>;
+  side_effects: Array<string>;
   implementation: {
-    type: string
-    version?: string
-    payload: Record<string, any>
-  }
+    type: string;
+    version?: string;
+    payload: Record<string, any>;
+  };
 }
 
 export interface WorkflowArtifact {
-  id: string
-  type_name: string
-  created_at: string
+  id: string;
+  type_name: string;
+  created_at: string;
   metadata_json: {
-    name: string
-    description?: string
-    workflow: WorkflowArtifactMetadata
-    payload?: Record<string, any>
-  }
+    name: string;
+    description?: string;
+    workflow: WorkflowArtifactMetadata;
+    payload?: Record<string, any>;
+  };
 }
 
 // Legacy Compatibility Type
 export interface Workflow {
-  id: string | number
-  name: string
-  description?: string
-  data: Record<string, any>
-  meta: Record<string, any>
-  is_active: boolean
-  created_at: string
+  id: string | number;
+  name: string;
+  description?: string;
+  data: Record<string, any>;
+  meta: Record<string, any>;
+  is_active: boolean;
+  created_at: string;
   metadata_json: {
-    name: string
-    description?: string
-    workflow: WorkflowArtifactMetadata
-    payload?: Record<string, any>
-  }
+    name: string;
+    description?: string;
+    workflow: WorkflowArtifactMetadata;
+    payload?: Record<string, any>;
+  };
 }
 
 // Helper to adapt workflow artifacts to legacy shape
@@ -59,7 +59,7 @@ function adaptToLegacy(artifact: WorkflowArtifact): Workflow {
   const payload =
     artifact.metadata_json.payload ||
     artifact.metadata_json.workflow?.implementation?.payload ||
-    {}
+    {};
 
   return {
     id: artifact.id,
@@ -70,101 +70,96 @@ function adaptToLegacy(artifact: WorkflowArtifact): Workflow {
     is_active: true, // artifact system doesn't have is_active yet
     created_at: artifact.created_at,
     metadata_json: artifact.metadata_json,
-  }
+  };
 }
 
 export async function fetchWorkflows(): Promise<Array<Workflow>> {
-  const response = await fetch(`${BACKEND_URL}/workflows?limit=100`)
+  const response = await fetch(`${BACKEND_URL}/workflows?limit=100`);
   if (!response.ok) {
-    throw new Error('Failed to fetch workflows')
+    throw new Error("Failed to fetch workflows");
   }
-  const artifacts: WorkflowArtifact[] = await response.json()
-  return artifacts.map(adaptToLegacy)
+  const artifacts: Array<WorkflowArtifact> = await response.json();
+  return artifacts.map(adaptToLegacy);
 }
 
 export async function getWorkflow(id: string | number): Promise<Workflow> {
-  const response = await fetch(`${BACKEND_URL}/workflows/${id}`)
+  const response = await fetch(`${BACKEND_URL}/workflows/${id}`);
   if (!response.ok) {
-    throw new Error('Failed to fetch workflow')
+    throw new Error("Failed to fetch workflow");
   }
-  const artifact: WorkflowArtifact = await response.json()
-  return adaptToLegacy(artifact)
+  const artifact: WorkflowArtifact = await response.json();
+  return adaptToLegacy(artifact);
 }
 
 export async function getWorkflowTemplates(): Promise<Record<string, string>> {
-  const response = await fetch(`${BACKEND_URL}/workflows/templates`)
-  if (!response.ok) throw new Error('Failed to fetch templates')
-  return await response.json()
+  const response = await fetch(`${BACKEND_URL}/workflows/templates`);
+  if (!response.ok) throw new Error("Failed to fetch templates");
+  return await response.json();
 }
 
 export async function createWorkflow(data: {
-  name: string
-  description?: string
-  graph?: Record<string, any>
-  template?: string
+  name: string;
+  description?: string;
+  graph?: Record<string, any>;
+  template?: string;
 }): Promise<Workflow> {
   const payload: any = {
     name: data.name,
     description: data.description,
     template: data.template,
     payload: data.graph,
-  }
+  };
 
   const response = await fetch(`${BACKEND_URL}/workflows`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
-  })
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to create workflow')
+    throw new Error("Failed to create workflow");
   }
-  const artifact = await response.json()
-  return adaptToLegacy(artifact)
+  const artifact = await response.json();
+  return adaptToLegacy(artifact);
 }
 
-export async function duplicateWorkflow(
-  id: string | number,
-): Promise<Workflow> {
+export async function duplicateWorkflow(id: string | number): Promise<Workflow> {
   const response = await fetch(`${BACKEND_URL}/workflows/${id}/duplicate`, {
-    method: 'POST',
-  })
+    method: "POST",
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to duplicate workflow')
+    throw new Error("Failed to duplicate workflow");
   }
-  const artifact = await response.json()
-  return adaptToLegacy(artifact)
+  const artifact = await response.json();
+  return adaptToLegacy(artifact);
 }
 
-export async function composeWorkflows(
-  ids: string[],
-  name: string,
-): Promise<Workflow> {
+export async function composeWorkflows(ids: Array<string>, name: string): Promise<Workflow> {
   // Query param style for ids or body? Backend expects body `workflow_ids`
   const response = await fetch(
     `${BACKEND_URL}/workflows/compose?name=${encodeURIComponent(name)}`,
     {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(ids),
     },
-  )
+  );
 
   if (!response.ok) {
-    throw new Error('Failed to compose workflows')
+    throw new Error("Failed to compose workflows");
   }
-  const artifact = await response.json()
-  return adaptToLegacy(artifact)
+  const artifact = await response.json();
+  return adaptToLegacy(artifact);
 }
 
 export async function getWorkflowHistory(id: string): Promise<any> {
-  console.log(id)
-  return { status: 'pending' }
+  console.log(id);
+  return { status: "pending" };
 }
 
 export async function updateWorkflowMetadata(
@@ -176,50 +171,50 @@ export async function updateWorkflowMetadata(
   // Let's check backend `update_workflow`: expects `WorkflowArtifactMetadata`.
 
   const response = await fetch(`${BACKEND_URL}/workflows/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(metadata),
-  })
-  if (!response.ok) throw new Error('Failed to update workflow')
-  return adaptToLegacy(await response.json())
+  });
+  if (!response.ok) throw new Error("Failed to update workflow");
+  return adaptToLegacy(await response.json());
 }
 
 // Deprecated stubs
 export async function updateWorkflow(id: any, data: any): Promise<any> {
-  console.warn('updateWorkflow is deprecated/stubbed', id, data)
-  return {}
+  console.warn("updateWorkflow is deprecated/stubbed", id, data);
+  return {};
 }
 
 export async function deleteWorkflow(id: string | number): Promise<void> {
   const response = await fetch(`${BACKEND_URL}/workflows/${id}`, {
-    method: 'DELETE',
-  })
+    method: "DELETE",
+  });
   if (!response.ok) {
-    throw new Error('Failed to delete workflow')
+    throw new Error("Failed to delete workflow");
   }
 }
 
 export async function syncWorkflows(): Promise<{ status: string }> {
-  return { status: 'ok' }
+  return { status: "ok" };
 }
 
 export async function runWorkflow(
   id: string | number,
   inputs: Record<string, any>,
 ): Promise<{
-  status: string
-  execution_id?: string
-  prompt_id?: string | null
-  outputs?: Array<any>
+  status: string;
+  execution_id?: string;
+  prompt_id?: string | null;
+  outputs?: Array<any>;
 }> {
   const response = await fetch(`${BACKEND_URL}/workflows/${id}/run`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ inputs }),
-  })
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to run workflow')
+    throw new Error("Failed to run workflow");
   }
-  return await response.json()
+  return await response.json();
 }

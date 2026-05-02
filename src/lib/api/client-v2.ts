@@ -1,9 +1,4 @@
-export {
-  useActions,
-  useArtifacts,
-  useCreateExecution,
-  useExecutions,
-} from './client'
+export { useActions, useArtifacts, useCreateExecution, useExecutions } from "./client";
 
 /* legacy content kept for reference
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'

@@ -1,32 +1,27 @@
-import { useEffect } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { Card } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { cn } from '@/lib/utils'
-import { Route } from '@/routes/settings'
-import {
-  settingsConfig,
-  getTabById,
-} from '@/components/settings/settingsConfig'
+import { useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Button, Card, ScrollArea } from "@embeddr/react-ui/ui";
+import { cn } from "@/lib/utils";
+import { Route } from "@/routes/settings";
+import { getTabById, settingsConfig } from "@/components/settings/settingsConfig";
 
 const SettingsPage = () => {
-  const { tab: activeTab } = Route.useSearch()
-  const navigate = useNavigate({ from: Route.fullPath })
+  const { tab: activeTab } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
 
   const setActiveTab = (tab: string) => {
-    navigate({ search: { tab } })
-  }
+    navigate({ search: { tab } });
+  };
 
   // Ensure activeTab is valid or default
   useEffect(() => {
     if (activeTab && !getTabById(activeTab)) {
       // Fallback to profile if invalid
-      navigate({ search: { tab: 'profile' }, replace: true })
+      navigate({ search: { tab: "profile" }, replace: true });
     }
-  }, [activeTab, navigate])
+  }, [activeTab, navigate]);
 
-  const currentConfig = getTabById(activeTab) || getTabById('profile')
+  const currentConfig = getTabById(activeTab) || getTabById("profile");
 
   return (
     <div className="p-1 w-full grid grid-cols-12 grid-rows-[auto_1fr] md:grid-rows-[1fr] gap-1 h-full overflow-hidden">
@@ -50,12 +45,11 @@ const SettingsPage = () => {
                   {section.items.map((item) => (
                     <Button
                       key={item.id}
-                      variant={activeTab === item.id ? 'secondary' : 'ghost'}
+                      variant={activeTab === item.id ? "secondary" : "ghost"}
                       size="sm"
                       className={cn(
-                        'w-full justify-start h-8 px-2',
-                        activeTab === item.id &&
-                          'bg-primary/10 text-primary hover:bg-primary/15',
+                        "w-full justify-start h-8 px-2",
+                        activeTab === item.id && "bg-primary/10 text-primary hover:bg-primary/15",
                       )}
                       onClick={() => setActiveTab(item.id)}
                     >
@@ -73,9 +67,7 @@ const SettingsPage = () => {
           {/* Mobile view active indicator */}
           <div className="md:hidden flex items-center justify-between p-2 border-t border-border/40 bg-card/50">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">
-                Current: {currentConfig?.label}
-              </span>
+              <span className="text-sm font-medium">Current: {currentConfig?.label}</span>
             </div>
           </div>
         </Card>
@@ -95,15 +87,13 @@ const SettingsPage = () => {
           {/* Content */}
           <div className="flex-1 overflow-hidden relative">
             <div className="absolute inset-0 overflow-y-auto">
-              <div className="min-h-full w-full">
-                {currentConfig?.component}
-              </div>
+              <div className="min-h-full w-full">{currentConfig?.component}</div>
             </div>
           </div>
         </div>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default SettingsPage
+export default SettingsPage;

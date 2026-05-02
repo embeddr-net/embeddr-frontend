@@ -1,6 +1,6 @@
-import { useSettingsStore } from "@/store/settingsStore";
 import { useShallow } from "zustand/react/shallow";
 import { useEffect, useMemo, useState } from "react";
+import { useSettingsStore } from "@/store/settingsStore";
 
 export interface SafeArea {
   top: number;
@@ -19,10 +19,7 @@ interface ViewportSize {
 const OVERLAY_COLLAPSED_THRESHOLD_PX = 10;
 const COMMAND_BAR_LOOKUP_RETRIES = 20;
 
-function measureCommandBarInset(
-  commandBarPosition: "top" | "bottom",
-  isOverlay: boolean,
-): number {
+function measureCommandBarInset(commandBarPosition: "top" | "bottom", isOverlay: boolean): number {
   if (typeof window === "undefined") return 0;
 
   const commandBar = document.getElementById("embeddr-command-bar");
@@ -53,21 +50,18 @@ function measureViewportSize(): ViewportSize {
 }
 
 export function useSafeArea(): SafeArea {
-  const { commandBarPosition, commandBarHoverParams, commandBarCompact } =
-    useSettingsStore(
-      useShallow((s) => ({
-        commandBarPosition: s.commandBarPosition,
-        commandBarHoverParams: s.commandBarHoverParams,
-        commandBarCompact: s.commandBarCompact,
-      })),
-    );
+  const { commandBarPosition, commandBarHoverParams, commandBarCompact } = useSettingsStore(
+    useShallow((s) => ({
+      commandBarPosition: s.commandBarPosition,
+      commandBarHoverParams: s.commandBarHoverParams,
+      commandBarCompact: s.commandBarCompact,
+    })),
+  );
   const isOverlay = commandBarHoverParams?.enabled ?? false;
   const [commandBarInset, setCommandBarInset] = useState(() =>
     measureCommandBarInset(commandBarPosition, isOverlay),
   );
-  const [viewportSize, setViewportSize] = useState<ViewportSize>(() =>
-    measureViewportSize(),
-  );
+  const [viewportSize, setViewportSize] = useState<ViewportSize>(() => measureViewportSize());
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -78,14 +72,11 @@ export function useSafeArea(): SafeArea {
 
     const updateMeasurements = () => {
       const nextInset = measureCommandBarInset(commandBarPosition, isOverlay);
-      setCommandBarInset((current) =>
-        current === nextInset ? current : nextInset,
-      );
+      setCommandBarInset((current) => (current === nextInset ? current : nextInset));
 
       const nextViewportSize = measureViewportSize();
       setViewportSize((current) =>
-        current.width === nextViewportSize.width &&
-        current.height === nextViewportSize.height
+        current.width === nextViewportSize.width && current.height === nextViewportSize.height
           ? current
           : nextViewportSize,
       );
@@ -154,10 +145,5 @@ export function useSafeArea(): SafeArea {
       width: Math.max(0, viewportSize.width - safeArea.left - safeArea.right),
       height: Math.max(0, viewportSize.height - safeArea.top - safeArea.bottom),
     };
-  }, [
-    commandBarInset,
-    commandBarPosition,
-    viewportSize.height,
-    viewportSize.width,
-  ]);
+  }, [commandBarInset, commandBarPosition, viewportSize.height, viewportSize.width]);
 }

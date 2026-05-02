@@ -1,7 +1,7 @@
-import { useWebSocketStream } from '@embeddr/react-ui'
+import { useWebSocketStream } from "@embeddr/react-ui";
 
 export interface PluginEventPayload {
-  [key: string]: any
+  [key: string]: any;
 }
 
 /**
@@ -11,14 +11,11 @@ export interface PluginEventPayload {
  *                  The hook automatically prefixes "plugin:"
  * @param callback  Function to call when event is received
  */
-export function usePluginEvent(
-  eventType: string,
-  callback: (payload: PluginEventPayload) => void,
-) {
+export function usePluginEvent(eventType: string, callback: (payload: PluginEventPayload) => void) {
   useWebSocketStream((message: any) => {
-    const targetType = `plugin:${eventType}`
+    const targetType = `plugin:${eventType}`;
     if (message.type === targetType) {
-      callback(message.data)
+      callback(message.data);
     }
-  })
+  });
 }

@@ -1,5 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Card } from '@embeddr/react-ui/ui'
+import { createFileRoute } from "@tanstack/react-router";
+import { Card } from "@embeddr/react-ui/ui";
 
 function DatasetsPlaceholder() {
   return (
@@ -8,9 +8,9 @@ function DatasetsPlaceholder() {
         Datasets view is under construction.
       </Card>
     </div>
-  )
+  );
 }
 
-export const Route = createFileRoute('/datasets')({
+export const Route = createFileRoute("/datasets")({
   component: DatasetsPlaceholder,
-})
+});

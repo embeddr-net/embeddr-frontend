@@ -1,65 +1,56 @@
-import React from 'react'
-import type { Workflow } from '@/lib/api/endpoints/workflows'
-import type { LotusResultItem } from '../types'
-import { Card, CardContent } from '@embeddr/react-ui/ui'
-import { WorkflowSidebar } from './WorkflowSidebar'
-import { WorkflowEditorHeader } from './WorkflowEditorHeader'
-import { WorkflowEditorContent } from './WorkflowEditorContent'
-import type { PrimitiveDefinition } from './PrimitiveCard'
+import React from "react";
+import { Card, CardContent } from "@embeddr/react-ui/ui";
+import { WorkflowSidebar } from "./WorkflowSidebar";
+import { WorkflowEditorHeader } from "./WorkflowEditorHeader";
+import { WorkflowEditorContent } from "./WorkflowEditorContent";
+import type { LotusResultItem } from "../types";
+import type { Workflow } from "@/lib/api/endpoints/workflows";
+import type { PrimitiveDefinition } from "./PrimitiveCard";
 
 type WorkflowEditorLayoutProps = {
-  workflows?: Workflow[]
-  isLoading: boolean
-  selectedId: string | null
-  selectedIds: Set<string>
-  searchValue: string
-  templates?: Record<string, any> | null
-  onSearchChange: (value: string) => void
-  onSelect: (id: string) => void
-  onToggleSelection: (id: string) => void
-  onCompose: () => void
-  onCreate: (template?: string) => void
-  onImport: () => void
-  selectedWorkflow: Workflow | null
-  onDuplicate: () => void
-  onDelete: () => void
-  onSave: () => void
-  onRun: () => void
-  draftMeta: any | null
-  setDraftMeta: (next: any) => void
-  primitiveLibrary: PrimitiveDefinition[]
-  capsById: Map<string, LotusResultItem>
-  actionCaps: LotusResultItem[]
-  actionSearchValue: string
-  setActionSearchValue: (value: string) => void
-  artifactTypeOptions: string[]
-  stepOutputs: Record<number, any>
-  onRunComfy: () => void
-  onAddStep: (capabilityId: string) => void
-  onAddPort: (kind: 'inputs' | 'outputs') => void
-  onRemovePort: (kind: 'inputs' | 'outputs', key: string) => void
-  onUpdatePort: (
-    kind: 'inputs' | 'outputs',
-    key: string,
-    updates: Record<string, any>,
-  ) => void
-  onUpdateOutputBinding: (key: string, value: string) => void
-  onPromoteToInput: (index: number, key: string) => void
-  onMoveStep: (index: number, direction: 'up' | 'down') => void
-  onRemoveStep: (index: number) => void
-  onStepInputChange: (index: number, key: string, value: string) => void
-  onAddStepInput: (index: number) => void
-  onRemoveStepInput: (index: number, key: string) => void
-  onTestStep: (index: number) => void
-  onInvokeCapability: (
-    capId: string,
-    inputs: Record<string, any>,
-  ) => Promise<any>
-  getActionInputOptions: (
-    capId: string,
-  ) => Array<{ key: string; label: string; type: string }>
-  ensureFlowDraft: (meta: any) => any
-}
+  workflows?: Array<Workflow>;
+  isLoading: boolean;
+  selectedId: string | null;
+  selectedIds: Set<string>;
+  searchValue: string;
+  templates?: Record<string, any> | null;
+  onSearchChange: (value: string) => void;
+  onSelect: (id: string) => void;
+  onToggleSelection: (id: string) => void;
+  onCompose: () => void;
+  onCreate: (template?: string) => void;
+  onImport: () => void;
+  selectedWorkflow: Workflow | null;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onSave: () => void;
+  onRun: () => void;
+  draftMeta: any | null;
+  setDraftMeta: (next: any) => void;
+  primitiveLibrary: Array<PrimitiveDefinition>;
+  capsById: Map<string, LotusResultItem>;
+  actionCaps: Array<LotusResultItem>;
+  actionSearchValue: string;
+  setActionSearchValue: (value: string) => void;
+  artifactTypeOptions: Array<string>;
+  stepOutputs: Record<number, any>;
+  onRunComfy: () => void;
+  onAddStep: (capabilityId: string) => void;
+  onAddPort: (kind: "inputs" | "outputs") => void;
+  onRemovePort: (kind: "inputs" | "outputs", key: string) => void;
+  onUpdatePort: (kind: "inputs" | "outputs", key: string, updates: Record<string, any>) => void;
+  onUpdateOutputBinding: (key: string, value: string) => void;
+  onPromoteToInput: (index: number, key: string) => void;
+  onMoveStep: (index: number, direction: "up" | "down") => void;
+  onRemoveStep: (index: number) => void;
+  onStepInputChange: (index: number, key: string, value: string) => void;
+  onAddStepInput: (index: number) => void;
+  onRemoveStepInput: (index: number, key: string) => void;
+  onTestStep: (index: number) => void;
+  onInvokeCapability: (capId: string, inputs: Record<string, any>) => Promise<any>;
+  getActionInputOptions: (capId: string) => Array<{ key: string; label: string; type: string }>;
+  ensureFlowDraft: (meta: any) => any;
+};
 
 export function WorkflowEditorLayout({
   workflows,
@@ -163,5 +154,5 @@ export function WorkflowEditorLayout({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

@@ -1,42 +1,33 @@
-import React from 'react'
-import { Button } from '@embeddr/react-ui/ui'
+import React from "react";
 import {
-  ArrowDownToLine,
-  ArrowUp01,
-  Dices,
-  Image as ImageIcon,
-  Lock,
-  X,
-} from 'lucide-react'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/ui'
-import { ZenInput } from '../ZenInput'
-import { cn } from '@/lib/utils'
-import { DraggablePanel } from '@/components/ui/DraggablePanel'
-import { useWindowStore } from '@/store/windowStore'
+  ScrollArea,
+} from "@embeddr/react-ui/ui";
+import { ArrowDownToLine, ArrowUp01, Dices, Image as ImageIcon, Lock, X } from "lucide-react";
+import { ZenInput } from "../ZenInput";
+import { cn } from "@/lib/utils";
+import { DraggablePanel } from "@/components/ui/DraggablePanel";
+import { useWindowStore } from "@/store/windowStore";
 
 interface ZenSettingsProps {
-  isOpen?: boolean
-  onClose?: () => void
-  selectedImage: any
-  handleUseGlobalImage: () => void
-  selectImage: (image: any) => void
-  zenInputs: Array<any>
-  workflowInputs: any
-  activeImageInput: { nodeId: string; field: string } | null
-  setActiveImageInput: (input: { nodeId: string; field: string } | null) => void
-  togglePanel: (key: string) => void
-  setPanel: (key: string, value: boolean) => void
-  seedModes: Record<string, 'fixed' | 'increment' | 'randomize'>
-  setSeedModes: (
-    modes: Record<string, 'fixed' | 'increment' | 'randomize'>,
-  ) => void
-  setWorkflowInput: (nodeId: string, field: string, value: any) => void
+  isOpen?: boolean;
+  onClose?: () => void;
+  selectedImage: any;
+  handleUseGlobalImage: () => void;
+  selectImage: (image: any) => void;
+  zenInputs: Array<any>;
+  workflowInputs: any;
+  activeImageInput: { nodeId: string; field: string } | null;
+  setActiveImageInput: (input: { nodeId: string; field: string } | null) => void;
+  togglePanel: (key: string) => void;
+  setPanel: (key: string, value: boolean) => void;
+  seedModes: Record<string, "fixed" | "increment" | "randomize">;
+  setSeedModes: (modes: Record<string, "fixed" | "increment" | "randomize">) => void;
+  setWorkflowInput: (nodeId: string, field: string, value: any) => void;
 }
 
 export function ZenSettings({
@@ -54,14 +45,12 @@ export function ZenSettings({
   setSeedModes,
   setWorkflowInput,
 }: ZenSettingsProps) {
-  const minimizeWindow = useWindowStore((s) => s.minimizeWindow)
+  const minimizeWindow = useWindowStore((s) => s.minimizeWindow);
   // Only subscribe to the minimized state of this window
-  const isMinimized = useWindowStore(
-    (s) => s.windows['zen-settings']?.isMinimized,
-  )
+  const isMinimized = useWindowStore((s) => s.windows["zen-settings"]?.isMinimized);
 
-  const isOpen = propIsOpen ?? isMinimized === false
-  const onClose = propOnClose ?? (() => minimizeWindow('zen-settings'))
+  const isOpen = propIsOpen ?? isMinimized === false;
+  const onClose = propOnClose ?? (() => minimizeWindow("zen-settings"));
 
   return (
     <DraggablePanel
@@ -112,74 +101,63 @@ export function ZenSettings({
           )}
 
           {zenInputs?.map((input: any) => {
-            const value = workflowInputs[input.node_id]?.[input.field] || ''
+            const value = workflowInputs[input.node_id]?.[input.field] || "";
 
             if (
-              input.type === 'image_id' ||
-              input.type === 'image' ||
-              input.field === 'image_url' ||
-              input.field === 'image_id'
+              input.type === "image_id" ||
+              input.type === "image" ||
+              input.field === "image_url" ||
+              input.field === "image_id"
             ) {
               const preview =
                 workflowInputs[input.node_id]?._preview ||
-                workflowInputs[input.node_id]?.[input.field + '_preview'] ||
-                (input.field === 'image_url' ? value : undefined)
+                workflowInputs[input.node_id]?.[input.field + "_preview"] ||
+                (input.field === "image_url" ? value : undefined);
               return (
-                <div
-                  key={`${input.node_id}-${input.field}`}
-                  className="flex items-center gap-3"
-                >
+                <div key={`${input.node_id}-${input.field}`} className="flex items-center gap-3">
                   <div
                     className={cn(
-                      'h-12 w-12 border bg-muted flex items-center justify-center overflow-hidden cursor-pointer hover:ring-2 ring-primary transition-all shrink-0',
+                      "h-12 w-12 border bg-muted flex items-center justify-center overflow-hidden cursor-pointer hover:ring-2 ring-primary transition-all shrink-0",
                       activeImageInput?.nodeId === input.node_id &&
                         activeImageInput?.field === input.field &&
-                        'ring-2 ring-primary',
+                        "ring-2 ring-primary",
                     )}
                     onClick={() => {
                       setActiveImageInput({
                         nodeId: input.node_id,
                         field: input.field,
-                      })
-                      setPanel('images', true)
+                      });
+                      setPanel("images", true);
                     }}
                   >
                     {preview ? (
-                      <img
-                        src={preview}
-                        className="h-full w-full object-cover"
-                      />
+                      <img src={preview} className="h-full w-full object-cover" />
                     ) : (
                       <ImageIcon className="h-5 w-5 text-muted-foreground" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium truncate">
-                      {input.label}
-                    </div>
+                    <div className="text-xs font-medium truncate">{input.label}</div>
                     <div className="text-[10px] text-muted-foreground truncate">
                       {activeImageInput?.nodeId === input.node_id &&
                       activeImageInput?.field === input.field
-                        ? 'Select image from browser...'
-                        : 'Click to select image'}
+                        ? "Select image from browser..."
+                        : "Click to select image"}
                     </div>
                   </div>
                 </div>
-              )
+              );
             }
 
             return (
-              <div
-                key={`${input.node_id}-${input.field}`}
-                className="space-y-1"
-              >
+              <div key={`${input.node_id}-${input.field}`} className="space-y-1">
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-medium text-muted-foreground ml-1">
                     {input.label}
                   </div>
-                  {(input.label.toLowerCase().includes('seed') ||
-                    input.field === 'seed' ||
-                    input.field === 'noise_seed') && (
+                  {(input.label.toLowerCase().includes("seed") ||
+                    input.field === "seed" ||
+                    input.field === "noise_seed") && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -188,11 +166,9 @@ export function ZenSettings({
                           className="h-5 w-5"
                           title="Seed Mode"
                         >
-                          {seedModes[`${input.node_id}-${input.field}`] ===
-                          'fixed' ? (
+                          {seedModes[`${input.node_id}-${input.field}`] === "fixed" ? (
                             <Lock className="h-3 w-3" />
-                          ) : seedModes[`${input.node_id}-${input.field}`] ===
-                            'increment' ? (
+                          ) : seedModes[`${input.node_id}-${input.field}`] === "increment" ? (
                             <ArrowUp01 className="h-3 w-3" />
                           ) : (
                             <Dices className="h-3 w-3" />
@@ -204,7 +180,7 @@ export function ZenSettings({
                           onClick={() =>
                             setSeedModes({
                               ...seedModes,
-                              [`${input.node_id}-${input.field}`]: 'randomize',
+                              [`${input.node_id}-${input.field}`]: "randomize",
                             })
                           }
                         >
@@ -214,7 +190,7 @@ export function ZenSettings({
                           onClick={() =>
                             setSeedModes({
                               ...seedModes,
-                              [`${input.node_id}-${input.field}`]: 'increment',
+                              [`${input.node_id}-${input.field}`]: "increment",
                             })
                           }
                         >
@@ -224,7 +200,7 @@ export function ZenSettings({
                           onClick={() =>
                             setSeedModes({
                               ...seedModes,
-                              [`${input.node_id}-${input.field}`]: 'fixed',
+                              [`${input.node_id}-${input.field}`]: "fixed",
                             })
                           }
                         >
@@ -237,15 +213,13 @@ export function ZenSettings({
                 <ZenInput
                   input={input}
                   value={value}
-                  onChange={(val) =>
-                    setWorkflowInput(input.node_id, input.field, val)
-                  }
+                  onChange={(val) => setWorkflowInput(input.node_id, input.field, val)}
                 />
               </div>
-            )
+            );
           })}
         </div>
       </ScrollArea>
     </DraggablePanel>
-  )
+  );
 }

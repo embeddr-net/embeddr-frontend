@@ -1,24 +1,22 @@
-import React from 'react'
-import { Button } from '@embeddr/react-ui/ui'
-import { Link } from '@tanstack/react-router'
-import { Settings, CircleHelp, Sun, Moon, Laptop } from 'lucide-react'
+import React from "react";
 import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/ui'
-import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@embeddr/react-ui/ui'
-import { useLotus } from '@/providers/LotusProvider'
-import { useTheme } from '@/hooks/useTheme'
+} from "@embeddr/react-ui/ui";
+import { Link } from "@tanstack/react-router";
+import { CircleHelp, Laptop, Moon, Settings, Sun } from "lucide-react";
+import { useLotus } from "@/providers/LotusProvider";
+import { useTheme } from "@/hooks/useTheme";
 
 export function SettingsWidget() {
-  const { setSettingsOpen } = useLotus()
-  const { setTheme } = useTheme()
+  const { setSettingsOpen } = useLotus();
+  const { setTheme } = useTheme();
 
   return (
     <div className="flex items-center gap-1">
@@ -80,5 +78,5 @@ export function SettingsWidget() {
         <TooltipContent>Settings</TooltipContent>
       </Tooltip> */}
     </div>
-  )
+  );
 }

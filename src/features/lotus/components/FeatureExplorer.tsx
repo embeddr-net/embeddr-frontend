@@ -1,30 +1,22 @@
-import React from 'react'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@embeddr/react-ui/ui'
+import React from "react";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { ApiExplorer } from '@/components/debug/ApiExplorer'
-import { ArtifactFileManager } from '@/components/debug/ArtifactFileManager'
-import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@embeddr/react-ui/ui'
-import { HardDrive, Search } from 'lucide-react'
+} from "@embeddr/react-ui/ui";
+import { HardDrive, Search } from "lucide-react";
+import { ApiExplorer } from "@/components/debug/ApiExplorer";
+import { ArtifactFileManager } from "@/components/debug/ArtifactFileManager";
 
-export const FeatureExplorer = ({
-  showHeader = true,
-}: {
-  showHeader?: boolean
-}) => {
+export const FeatureExplorer = ({ showHeader = true }: { showHeader?: boolean }) => {
   return (
     <Card className="border-muted/60 bg-transparent h-full min-h-0 flex flex-col">
       <Tabs defaultValue="explorer" className="h-full flex flex-col">
@@ -92,5 +84,5 @@ export const FeatureExplorer = ({
         </CardContent>
       </Tabs>
     </Card>
-  )
-}
+  );
+};

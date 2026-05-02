@@ -1,20 +1,15 @@
-import React, { useEffect, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { Dialog, DialogContent } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { ArrowUpRight, Settings, X as XIcon } from 'lucide-react'
-import { ImageSelectorDialog } from '@/components/dialogs/ImageSelectorDialog'
-import {
-  settingsConfig,
-  getTabById,
-} from '@/components/settings/settingsConfig'
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Button, Dialog, DialogContent, ScrollArea } from "@embeddr/react-ui/ui";
+import { ArrowUpRight, Settings, X as XIcon } from "lucide-react";
+import { ImageSelectorDialog } from "@/components/dialogs/ImageSelectorDialog";
+import { getTabById, settingsConfig } from "@/components/settings/settingsConfig";
 
 interface ZenSettingsDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  activeTab?: string
-  onActiveTabChange?: (tab: string) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  activeTab?: string;
+  onActiveTabChange?: (tab: string) => void;
 }
 
 export function ZenSettingsDialog({
@@ -23,26 +18,26 @@ export function ZenSettingsDialog({
   activeTab: controlledTab,
   onActiveTabChange,
 }: ZenSettingsDialogProps) {
-  const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState(controlledTab || 'profile')
-  const currentTab = controlledTab ?? activeTab
-  const setCurrentTab = onActiveTabChange ?? setActiveTab
-  const [isImageSelectorOpen, setIsImageSelectorOpen] = useState(false)
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState(controlledTab || "profile");
+  const currentTab = controlledTab ?? activeTab;
+  const setCurrentTab = onActiveTabChange ?? setActiveTab;
+  const [isImageSelectorOpen, setIsImageSelectorOpen] = useState(false);
 
   // Sync internal state if controlled prop changes
   useEffect(() => {
     if (controlledTab) {
-      setActiveTab(controlledTab)
+      setActiveTab(controlledTab);
     }
-  }, [controlledTab])
+  }, [controlledTab]);
 
   useEffect(() => {
-    if (!open) return
-    if (getTabById(currentTab)) return
-    setCurrentTab('profile')
-  }, [open, currentTab, setCurrentTab])
+    if (!open) return;
+    if (getTabById(currentTab)) return;
+    setCurrentTab("profile");
+  }, [open, currentTab, setCurrentTab]);
 
-  const activeTabConfig = getTabById(currentTab) ?? getTabById('profile')
+  const activeTabConfig = getTabById(currentTab) ?? getTabById("profile");
 
   return (
     <>
@@ -67,7 +62,7 @@ export function ZenSettingsDialog({
                     {section.items.map((item) => (
                       <Button
                         key={item.id}
-                        variant={currentTab === item.id ? 'secondary' : 'ghost'}
+                        variant={currentTab === item.id ? "secondary" : "ghost"}
                         size="sm"
                         className="w-full justify-start h-9"
                         onClick={() => setCurrentTab(item.id)}
@@ -94,19 +89,15 @@ export function ZenSettingsDialog({
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const tab = activeTabConfig?.id ?? 'profile'
-                      onOpenChange(false)
-                      navigate({ to: '/settings', search: { tab } })
+                      const tab = activeTabConfig?.id ?? "profile";
+                      onOpenChange(false);
+                      navigate({ to: "/settings", search: { tab } });
                     }}
                   >
                     <ArrowUpRight className="h-4 w-4 mr-1" />
                     Open full settings
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onOpenChange(false)}
-                  >
+                  <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
                     <XIcon className="h-4 w-4" />
                   </Button>
                 </div>
@@ -130,5 +121,5 @@ export function ZenSettingsDialog({
         }}
       />
     </>
-  )
+  );
 }

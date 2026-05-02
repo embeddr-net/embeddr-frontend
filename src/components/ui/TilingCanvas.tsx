@@ -19,34 +19,26 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import {
-  TilingLayout,
   TILE_DND_MIME,
+  TilingLayout,
+  createLeaf,
+  createNodeId,
   getDropZoneFromPointer,
   getTileDragData,
   isTileDrag,
   setTileDragData,
-  createLeaf,
-  createNodeId,
 } from "@embeddr/zen-shell";
-import type {
-  TileDragPayload,
-  TileDropZone,
-  TileNode,
-} from "@embeddr/zen-shell";
+import { GripHorizontal, Maximize2, X } from "lucide-react";
+import { PanelContext } from "@embeddr/react-ui/components/embeddr";
+import type { TileDragPayload, TileDropZone, TileNode } from "@embeddr/zen-shell";
+import type { PanelState } from "@embeddr/react-ui/components/embeddr";
 import { useTilingStore } from "@/store/tilingStore";
 import { useWindowStore } from "@/store/windowStore";
 import { windowRegistry } from "@/components/ui/windowRegistry";
-import {
-  usePluginStore,
-  extendApiForPlugin,
-  useEmbeddrAPI,
-} from "@/plugins/store";
+import { extendApiForPlugin, useEmbeddrAPI, usePluginStore } from "@/plugins/store";
 import { DynamicPluginComponent } from "@/plugins/DynamicLoader";
 import { PluginErrorBoundary } from "@/plugins/PluginErrorBoundary";
 import { cn } from "@/lib/utils";
-import { X, Maximize2, GripHorizontal } from "lucide-react";
-import { PanelContext } from "@embeddr/react-ui/components/embeddr";
-import type { PanelState } from "@embeddr/react-ui/components/embeddr";
 
 // ---------------------------------------------------------------------------
 // Component resolution — same logic as PanelManager
@@ -67,7 +59,7 @@ function resolveFromComponentId(
   if (!bestPid) return null;
   const defId = componentId.slice(bestPid.length + 1);
   const components = plugins?.[bestPid]?.components || [];
-  const norm = (s: string) => (s || '').replace(/[-_]/g, '').toLowerCase();
+  const norm = (s: string) => (s || "").replace(/[-_]/g, "").toLowerCase();
   const defNorm = norm(defId);
   // Try exact match first, then normalized (strips hyphens, lowercases)
   const def =
@@ -97,7 +89,7 @@ type LeafInfo = {
 
 const PORTAL_PERSIST_MS = 400;
 
-function collectLeaves(node: TileNode | null): LeafInfo[] {
+function collectLeaves(node: TileNode | null): Array<LeafInfo> {
   if (!node) return [];
   if (!node.split || !node.children) {
     if (!node.entryKey) return [];
@@ -110,10 +102,7 @@ function collectLeaves(node: TileNode | null): LeafInfo[] {
       },
     ];
   }
-  return [
-    ...collectLeaves(node.children[0]),
-    ...collectLeaves(node.children[1]),
-  ];
+  return [...collectLeaves(node.children[0]), ...collectLeaves(node.children[1])];
 }
 
 function leavesEqual(a: LeafInfo, b: LeafInfo) {
@@ -125,7 +114,7 @@ function leavesEqual(a: LeafInfo, b: LeafInfo) {
   );
 }
 
-function usePersistentLeaves(leaves: LeafInfo[]): LeafInfo[] {
+function usePersistentLeaves(leaves: Array<LeafInfo>): Array<LeafInfo> {
   const [persistentLeaves, setPersistentLeaves] = React.useState(leaves);
   const removalTimersRef = React.useRef(new Map<string, number>());
 
@@ -141,9 +130,7 @@ function usePersistentLeaves(leaves: LeafInfo[]): LeafInfo[] {
     }
 
     setPersistentLeaves((current) => {
-      const retainedLeaves = current.filter(
-        (leaf) => !presentIds.has(leaf.instanceId),
-      );
+      const retainedLeaves = current.filter((leaf) => !presentIds.has(leaf.instanceId));
       const nextLeaves = [...leaves, ...retainedLeaves];
 
       if (
@@ -161,10 +148,7 @@ function usePersistentLeaves(leaves: LeafInfo[]): LeafInfo[] {
     const presentIds = new Set(leaves.map((leaf) => leaf.instanceId));
 
     for (const leaf of persistentLeaves) {
-      if (
-        presentIds.has(leaf.instanceId) ||
-        removalTimersRef.current.has(leaf.instanceId)
-      ) {
+      if (presentIds.has(leaf.instanceId) || removalTimersRef.current.has(leaf.instanceId)) {
         continue;
       }
 
@@ -209,8 +193,7 @@ function useSplitModeTracker(): boolean {
       const el = document.activeElement;
       if (!el) return false;
       const tag = el.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT")
-        return true;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
       if ((el as HTMLElement).isContentEditable) return true;
       return false;
     };
@@ -330,13 +313,10 @@ function useSlotRegistry(): SlotRegistryCtx {
   const slotsRef = React.useRef(new Map<string, HTMLElement>());
   const [version, setVersion] = React.useState(0);
 
-  const register = React.useCallback(
-    (instanceId: string, slotEl: HTMLElement) => {
-      slotsRef.current.set(instanceId, slotEl);
-      setVersion((v) => v + 1);
-    },
-    [],
-  );
+  const register = React.useCallback((instanceId: string, slotEl: HTMLElement) => {
+    slotsRef.current.set(instanceId, slotEl);
+    setVersion((v) => v + 1);
+  }, []);
 
   const unregister = React.useCallback((instanceId: string) => {
     slotsRef.current.delete(instanceId);
@@ -477,17 +457,13 @@ const PortaledTileContent = React.memo<{
 
     if (slotEl) {
       return ReactDOM.createPortal(
-        <div className="flex h-full w-full min-h-0 min-w-0 flex-1 overflow-hidden">
-          {content}
-        </div>,
+        <div className="flex h-full w-full min-h-0 min-w-0 flex-1 overflow-hidden">{content}</div>,
         slotEl,
       );
     }
 
     return (
-      <div className="flex h-full w-full min-h-0 min-w-0 flex-1 overflow-hidden">
-        {content}
-      </div>
+      <div className="flex h-full w-full min-h-0 min-w-0 flex-1 overflow-hidden">{content}</div>
     );
   },
   (prev, next) =>
@@ -616,25 +592,23 @@ const SplitModeOverlay = React.memo<{
 // DropZoneOverlay – simpler version for non-split-mode drag
 // ---------------------------------------------------------------------------
 
-const DropZoneOverlay = React.memo<{ activeZone: TileDropZone }>(
-  ({ activeZone }) => (
-    <div className="pointer-events-none absolute inset-0 z-20">
-      <div className={splitPreviewClass(activeZone)} />
-      {ZONE_INDICATORS.map(({ zone, label, pos }) => (
-        <div
-          key={zone}
-          className={`absolute ${pos} flex h-7 w-7 items-center justify-center rounded-md text-[11px] font-medium shadow-sm transition-all duration-100 ${
-            zone === activeZone
-              ? "scale-110 bg-primary text-primary-foreground shadow-md"
-              : "bg-background/80 text-muted-foreground border border-border/60"
-          }`}
-        >
-          {label}
-        </div>
-      ))}
-    </div>
-  ),
-);
+const DropZoneOverlay = React.memo<{ activeZone: TileDropZone }>(({ activeZone }) => (
+  <div className="pointer-events-none absolute inset-0 z-20">
+    <div className={splitPreviewClass(activeZone)} />
+    {ZONE_INDICATORS.map(({ zone, label, pos }) => (
+      <div
+        key={zone}
+        className={`absolute ${pos} flex h-7 w-7 items-center justify-center rounded-md text-[11px] font-medium shadow-sm transition-all duration-100 ${
+          zone === activeZone
+            ? "scale-110 bg-primary text-primary-foreground shadow-md"
+            : "bg-background/80 text-muted-foreground border border-border/60"
+        }`}
+      >
+        {label}
+      </div>
+    ))}
+  </div>
+));
 
 // ---------------------------------------------------------------------------
 // TileContextMenu – portaled right-click context menu
@@ -688,9 +662,7 @@ interface TilingLeafPanelProps {
   onAssignTileRef: React.RefObject<
     (nodeId: string, payload: TileDragPayload, zone: TileDropZone) => void
   >;
-  onPopOutRef: React.RefObject<
-    (nodeId: string, entryKey: string, instanceId: string) => void
-  >;
+  onPopOutRef: React.RefObject<(nodeId: string, entryKey: string, instanceId: string) => void>;
   onCloseTileRef: React.RefObject<(nodeId: string) => void>;
   onToggleHeaderRef: React.RefObject<(nodeId: string) => void>;
 }
@@ -723,9 +695,7 @@ const TilingLeafPanel = React.memo<TilingLeafPanelProps>(
           .replace(/\b\w/g, (l) => l.toUpperCase());
       }
       const parts = entryKey.split("-");
-      return (
-        parts.slice(-1)[0]?.replace(/\b\w/g, (l) => l.toUpperCase()) || entryKey
-      );
+      return parts.slice(-1)[0]?.replace(/\b\w/g, (l) => l.toUpperCase()) || entryKey;
     }, [entryKey]);
 
     const handleDrop = React.useCallback(
@@ -806,9 +776,7 @@ const TilingLeafPanel = React.memo<TilingLeafPanelProps>(
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
       >
-        {activeZone && !splitMode ? (
-          <DropZoneOverlay activeZone={activeZone} />
-        ) : null}
+        {activeZone && !splitMode ? <DropZoneOverlay activeZone={activeZone} /> : null}
         <SplitModeOverlay nodeId={nodeId} onAssignTileRef={onAssignTileRef} />
 
         {entryKey ? (
@@ -866,8 +834,7 @@ const TilingLeafPanel = React.memo<TilingLeafPanelProps>(
           </>
         ) : (
           <div className="text-xs text-muted-foreground">
-            Empty tile —{" "}
-            <kbd className="rounded border px-1 py-0.5 text-[10px]">Shift</kbd>
+            Empty tile — <kbd className="rounded border px-1 py-0.5 text-[10px]">Shift</kbd>
             +click a panel to fill it.
           </div>
         )}
@@ -923,10 +890,7 @@ export const TilingCanvas: React.FC = () => {
   const tileDragActive = useTileDragActiveTracker();
   const slotRegistry = useSlotRegistry();
 
-  const previewCtx = React.useMemo<PreviewCtx>(
-    () => ({ preview, setPreview }),
-    [preview],
-  );
+  const previewCtx = React.useMemo<PreviewCtx>(() => ({ preview, setPreview }), [preview]);
 
   const plugins = usePluginStore((s) => s.plugins);
   const pruneTiles = useTilingStore((s) => s.pruneTiles);
@@ -967,22 +931,16 @@ export const TilingCanvas: React.FC = () => {
   const onAssignTileRef = React.useRef(assignTile);
   onAssignTileRef.current = assignTile;
 
-  const onPopOutRef = React.useRef(
-    (nodeId: string, entryKey: string, instanceId: string) => {
-      openWindow({
-        id: instanceId,
-        title: entryKey.replace(/^core-/, "").replace(/-/g, " "),
-        componentId: entryKey,
-      });
-      closeTile(nodeId);
-    },
-  );
+  const onPopOutRef = React.useRef((nodeId: string, entryKey: string, instanceId: string) => {
+    openWindow({
+      id: instanceId,
+      title: entryKey.replace(/^core-/, "").replace(/-/g, " "),
+      componentId: entryKey,
+    });
+    closeTile(nodeId);
+  });
   React.useEffect(() => {
-    onPopOutRef.current = (
-      nodeId: string,
-      entryKey: string,
-      instanceId: string,
-    ) => {
+    onPopOutRef.current = (nodeId: string, entryKey: string, instanceId: string) => {
       openWindow({
         id: instanceId,
         title: entryKey.replace(/^core-/, "").replace(/-/g, " "),
@@ -1039,11 +997,7 @@ export const TilingCanvas: React.FC = () => {
                 <div className="h-full min-h-0 min-w-0 relative">
                   <SplitModeBadge />
                   {tileTree ? (
-                    <TilingLayout
-                      tree={tileTree}
-                      renderLeaf={renderLeaf}
-                      className="h-full"
-                    />
+                    <TilingLayout tree={tileTree} renderLeaf={renderLeaf} className="h-full" />
                   ) : (
                     <div
                       className="relative flex h-full items-center justify-center rounded-xl border border-dashed border-border/70"
@@ -1055,8 +1009,7 @@ export const TilingCanvas: React.FC = () => {
                       }}
                       onDragLeave={(event) => {
                         const related = event.relatedTarget as Node | null;
-                        if (related && event.currentTarget.contains(related))
-                          return;
+                        if (related && event.currentTarget.contains(related)) return;
                         setCanvasPreview(false);
                       }}
                       onDrop={(event) => {
@@ -1080,15 +1033,11 @@ export const TilingCanvas: React.FC = () => {
                       <div className="text-center text-xs text-muted-foreground">
                         <p className="mb-1 font-medium">Tiling Layout</p>
                         <p>
-                          Hold{" "}
-                          <kbd className="rounded border px-1 py-0.5 text-[10px]">
-                            Shift
-                          </kbd>{" "}
-                          + click a panel to tile it,
+                          Hold <kbd className="rounded border px-1 py-0.5 text-[10px]">Shift</kbd> +
+                          click a panel to tile it,
                         </p>
                         <p>
-                          or use a panel's{" "}
-                          <span className="font-medium">⋮</span> menu →{" "}
+                          or use a panel's <span className="font-medium">⋮</span> menu →{" "}
                           <span className="font-medium">Send to Tile</span>.
                         </p>
                       </div>

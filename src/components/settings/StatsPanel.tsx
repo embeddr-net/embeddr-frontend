@@ -1,88 +1,84 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Card } from '@embeddr/react-ui/ui'
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Button,
+  Card,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Activity, HardDrive, Play, Power } from 'lucide-react'
-import { toast } from 'sonner'
-import { JobStatus } from './JobStatus'
-import { useSettings } from '@/hooks/useSettings'
-import { BACKEND_URL } from '@/lib/api'
-import { cn } from '@/lib/utils'
+} from "@embeddr/react-ui/ui";
+import { Activity, HardDrive, Play, Power } from "lucide-react";
+import { toast } from "sonner";
+import { JobStatus } from "./JobStatus";
+import { useSettings } from "@/hooks/useSettings";
+import { BACKEND_URL } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 export function StatsPanel() {
-  const { selectedModel, setSelectedModel } = useSettings()
-  const queryClient = useQueryClient()
+  const { selectedModel, setSelectedModel } = useSettings();
+  const queryClient = useQueryClient();
 
   const { data: stats } = useQuery({
-    queryKey: ['system-stats'],
+    queryKey: ["system-stats"],
     queryFn: async () => {
-      const res = await fetch(`${BACKEND_URL}/jobs/stats`)
-      return res.json()
+      const res = await fetch(`${BACKEND_URL}/jobs/stats`);
+      return res.json();
     },
     refetchInterval: 5000,
-  })
+  });
 
   const { data: modelsData, isError: isModelError } = useQuery({
-    queryKey: ['available-models'],
+    queryKey: ["available-models"],
     queryFn: async () => {
-      const res = await fetch(`${BACKEND_URL}/system/models`)
+      const res = await fetch(`${BACKEND_URL}/system/models`);
       // Handle non-200 responses gracefully so we don't crash
       if (!res.ok) {
-        return []
+        return [];
       }
-      return res.json()
+      return res.json();
     },
     refetchInterval: 5000, // Poll to check loaded status
-  })
+  });
 
   // Safe access to models array
-  const models = Array.isArray(modelsData) ? modelsData : []
+  const models = Array.isArray(modelsData) ? modelsData : [];
 
   const loadModelMutation = useMutation({
     mutationFn: async (modelId: string) => {
-      const res = await fetch(
-        `${BACKEND_URL}/system/models/${encodeURIComponent(modelId)}/load`,
-        {
-          method: 'POST',
-        },
-      )
-      if (!res.ok) throw new Error('Failed to load model')
-      return res.json()
+      const res = await fetch(`${BACKEND_URL}/system/models/${encodeURIComponent(modelId)}/load`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to load model");
+      return res.json();
     },
     onSuccess: () => {
-      toast.success('Model loaded successfully')
-      queryClient.invalidateQueries({ queryKey: ['available-models'] })
+      toast.success("Model loaded successfully");
+      queryClient.invalidateQueries({ queryKey: ["available-models"] });
     },
     onError: (err) => toast.error(err.message),
-  })
+  });
 
   const unloadModelMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch(`${BACKEND_URL}/system/models/unload`, {
-        method: 'POST',
-      })
-      if (!res.ok) throw new Error('Failed to unload model')
-      return res.json()
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to unload model");
+      return res.json();
     },
     onSuccess: () => {
-      toast.success('Model unloaded')
-      queryClient.invalidateQueries({ queryKey: ['available-models'] })
+      toast.success("Model unloaded");
+      queryClient.invalidateQueries({ queryKey: ["available-models"] });
     },
     onError: (err) => toast.error(err.message),
-  })
+  });
 
   // Defensive check: find can only be called on an array
-  const activeModel = models.find((m: any) => m.loaded)
-  const isModelLoading =
-    loadModelMutation.isPending || unloadModelMutation.isPending
+  const activeModel = models.find((m: any) => m.loaded);
+  const isModelLoading = loadModelMutation.isPending || unloadModelMutation.isPending;
 
-  const isLocked = activeModel?.id === selectedModel || isModelLoading
+  const isLocked = activeModel?.id === selectedModel || isModelLoading;
   return (
     <div className="space-y-1">
       <div className="grid gap-1 md:grid-cols-3">
@@ -98,13 +94,12 @@ export function StatsPanel() {
                 {stats.gpu.name}
               </div>
               <div className="text-xs text-muted-foreground">
-                Mem: {stats.gpu.memory_allocated_mb}MB /{' '}
-                {stats.gpu.memory_reserved_mb}MB
+                Mem: {stats.gpu.memory_allocated_mb}MB / {stats.gpu.memory_reserved_mb}MB
               </div>
             </div>
           ) : (
             <div className="text-sm text-muted-foreground italic">
-              {stats?.gpu_error ? 'GPU Error' : 'No GPU Detected'}
+              {stats?.gpu_error ? "GPU Error" : "No GPU Detected"}
             </div>
           )}
         </Card>
@@ -115,14 +110,10 @@ export function StatsPanel() {
             <div className="flex items-center gap-2 w-full">
               {/* <Cpu className="h-4 w-4" /> */}
               <div
-                className={`h-2 w-2 rounded-full ${
-                  activeModel ? 'bg-green-500' : 'bg-red-500'
-                }`}
-                title={activeModel ? 'Model Loaded' : 'No Model Loaded'}
+                className={`h-2 w-2 rounded-full ${activeModel ? "bg-green-500" : "bg-red-500"}`}
+                title={activeModel ? "Model Loaded" : "No Model Loaded"}
               />
-              <span className="text-xs font-medium uppercase">
-                Active Model
-              </span>
+              <span className="text-xs font-medium uppercase">Active Model</span>
               {activeModel?.id === selectedModel ? (
                 <Button
                   size="sm"
@@ -156,15 +147,12 @@ export function StatsPanel() {
                 disabled={activeModel?.id === selectedModel || isModelLoading}
               >
                 <SelectTrigger
-                  className={cn(
-                    'h-8 text-xs flex-1',
-                    isLocked && 'opacity-50 cursor-not-allowed',
-                  )}
+                  className={cn("h-8 text-xs flex-1", isLocked && "opacity-50 cursor-not-allowed")}
                   onPointerDown={(e) => {
                     if (isLocked) {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      toast.warning('Please unload current model.')
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toast.warning("Please unload current model.");
                     }
                   }}
                 >
@@ -202,5 +190,5 @@ export function StatsPanel() {
       {/* Active Job Status */}
       <JobStatus />
     </div>
-  )
+  );
 }

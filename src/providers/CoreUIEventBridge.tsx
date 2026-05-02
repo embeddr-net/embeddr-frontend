@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useEmbeddrAPI } from "@/plugins/store";
 import { toast } from "sonner";
+import { useEmbeddrAPI } from "@/plugins/store";
 
 // If you already have toast helpers, use those instead.
 type AnyEvent = { detail?: any } | any;
@@ -14,16 +14,10 @@ export function CoreUIEventBridge() {
     console.log("[CoreUIEventBridge] Setting up event bridge");
     const openArtifact = (artifactId: string) => {
       // You can decide a stable “core” window id, not tied to plugin.
-      console.log(
-        `[CoreUIEventBridge] Opening artifact viewer for ${artifactId}`,
-      );
-      api.windows.spawn(
-        `embeddr-llm-llm-artifact`,
-        `Artifact ${artifactId.slice(0, 8)}`,
-        {
-          artifactId,
-        },
-      );
+      console.log(`[CoreUIEventBridge] Opening artifact viewer for ${artifactId}`);
+      api.windows.spawn(`embeddr-llm-llm-artifact`, `Artifact ${artifactId.slice(0, 8)}`, {
+        artifactId,
+      });
     };
 
     const handleOpenPanel = (event: AnyEvent) => {
@@ -47,24 +41,13 @@ export function CoreUIEventBridge() {
 
       const nextProps = {
         ...(p?.props ?? {}),
-        ...(p?.resetUiOnOpen !== undefined
-          ? { resetUiOnOpen: p.resetUiOnOpen }
-          : {}),
+        ...(p?.resetUiOnOpen !== undefined ? { resetUiOnOpen: p.resetUiOnOpen } : {}),
       };
 
       if (panelId) {
-        api.windows.open(
-          panelId,
-          p?.title ?? resolvedComponentId,
-          resolvedComponentId,
-          nextProps,
-        );
+        api.windows.open(panelId, p?.title ?? resolvedComponentId, resolvedComponentId, nextProps);
       } else {
-        api.windows.spawn(
-          resolvedComponentId,
-          p?.title ?? resolvedComponentId,
-          nextProps,
-        );
+        api.windows.spawn(resolvedComponentId, p?.title ?? resolvedComponentId, nextProps);
       }
     };
 
@@ -97,8 +80,7 @@ export function CoreUIEventBridge() {
       //   - Everything else (including no panelId) → new panel
       // Default-to-spawn matches user mental model: "show me this" shouldn't
       // clobber the previous display.
-      const explicitReuse = p.spawn === false && typeof panelId === "string"
-        && panelId.length > 0;
+      const explicitReuse = p.spawn === false && typeof panelId === "string" && panelId.length > 0;
       const shouldSpawn = !explicitReuse;
 
       // CRITICAL: only propagate panelId when the caller explicitly set
@@ -124,7 +106,7 @@ export function CoreUIEventBridge() {
       if (shouldSpawn) {
         api.windows.spawn(componentId, title, props);
       } else {
-        api.windows.open(panelId as string, title, componentId, props);
+        api.windows.open(panelId, title, componentId, props);
       }
     };
 
@@ -135,9 +117,7 @@ export function CoreUIEventBridge() {
       const focus = p.focus ?? true;
       const panelId = p.panelId;
       const shouldSpawn =
-        p.spawn === true ||
-        p.windowStrategy === "spawn" ||
-        p.instanceMode === "multiple";
+        p.spawn === true || p.windowStrategy === "spawn" || p.instanceMode === "multiple";
 
       const items =
         Array.isArray(p.items) && p.items.length
@@ -153,9 +133,7 @@ export function CoreUIEventBridge() {
         return;
       }
 
-      const windowId = shouldSpawn
-        ? undefined
-        : (p.targetWindowId ?? panelId ?? "core-lightbox");
+      const windowId = shouldSpawn ? undefined : (p.targetWindowId ?? panelId ?? "core-lightbox");
       // embeddr-core exposes the canonical lightbox panel. The old
       // `embeddr-media-tools-lightbox-panel` id pointed at a plugin that
       // isn't part of the standard install — new users would hit a
@@ -208,10 +186,7 @@ export function CoreUIEventBridge() {
       // "compare these two" call shouldn't clobber an existing comparison
       // unless the caller explicitly opts into reuse via `spawn:false` +
       // a panelId.
-      const explicitReuse =
-        p.spawn === false &&
-        typeof panelId === "string" &&
-        panelId.length > 0;
+      const explicitReuse = p.spawn === false && typeof panelId === "string" && panelId.length > 0;
 
       const props: Record<string, any> = {
         initialItems: items,
@@ -222,7 +197,7 @@ export function CoreUIEventBridge() {
       }
 
       if (explicitReuse) {
-        api.windows.open(panelId as string, title, componentId, props);
+        api.windows.open(panelId, title, componentId, props);
       } else {
         api.windows.spawn(componentId, title, props);
       }
@@ -264,25 +239,18 @@ export function CoreUIEventBridge() {
       else toast.info(msg);
     };
 
-    const openGallery = (items: string[]) => {
-      console.log(
-        `[CoreUIEventBridge] Opening gallery with ${items.length} items`,
-      );
-      api.windows.spawn(
-        `embeddr-llm-llm-gallery`,
-        `Gallery (${items.length} items)`,
-        {
-          items,
-        },
-      );
+    const openGallery = (items: Array<string>) => {
+      console.log(`[CoreUIEventBridge] Opening gallery with ${items.length} items`);
+      api.windows.spawn(`embeddr-llm-llm-gallery`, `Gallery (${items.length} items)`, {
+        items,
+      });
     };
 
     const handleOpenArtifact = (event: AnyEvent) => {
       const d = event?.detail ?? event;
       const p = d?.payload ?? d;
       const artifactId = p?.artifact_id ?? p?.artifactId;
-      if (typeof artifactId === "string" && artifactId.length > 0)
-        openArtifact(artifactId);
+      if (typeof artifactId === "string" && artifactId.length > 0) openArtifact(artifactId);
     };
 
     const handleOpenGallery = (event: AnyEvent) => {

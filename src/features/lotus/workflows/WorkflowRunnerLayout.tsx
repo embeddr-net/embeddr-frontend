@@ -1,24 +1,22 @@
-import React from 'react'
-import type { Workflow } from '@/lib/api/endpoints/workflows'
-import { WorkflowRunnerSidebar } from './WorkflowRunnerSidebar'
-import {
-  WorkflowRunnerDetails,
-  type WorkflowPort,
-} from './WorkflowRunnerDetails'
+import React from "react";
+import { WorkflowRunnerSidebar } from "./WorkflowRunnerSidebar";
+import { WorkflowRunnerDetails } from "./WorkflowRunnerDetails";
+import type { WorkflowPort } from "./WorkflowRunnerDetails";
+import type { Workflow } from "@/lib/api/endpoints/workflows";
 
 type WorkflowRunnerLayoutProps = {
-  workflows?: Workflow[]
-  isLoading: boolean
-  selectedId: string | null
-  searchValue: string
-  onSearchChange: (value: string) => void
-  onSelect: (id: string) => void
-  selectedWorkflow: Workflow | null
-  workflowInputs: Record<string, WorkflowPort>
-  workflowOutputs: Record<string, WorkflowPort>
-  normalizeType: (type?: string) => string
-  onRun: () => void
-}
+  workflows?: Array<Workflow>;
+  isLoading: boolean;
+  selectedId: string | null;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  onSelect: (id: string) => void;
+  selectedWorkflow: Workflow | null;
+  workflowInputs: Record<string, WorkflowPort>;
+  workflowOutputs: Record<string, WorkflowPort>;
+  normalizeType: (type?: string) => string;
+  onRun: () => void;
+};
 
 export function WorkflowRunnerLayout({
   workflows,
@@ -53,5 +51,5 @@ export function WorkflowRunnerLayout({
         onRun={onRun}
       />
     </div>
-  )
+  );
 }

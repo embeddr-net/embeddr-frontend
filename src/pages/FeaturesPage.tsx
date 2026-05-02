@@ -1,6 +1,6 @@
-import React from 'react'
-import { Badge } from '@embeddr/react-ui/ui'
-import { FeatureExplorer } from '@/features/lotus/components/FeatureExplorer'
+import React from "react";
+import { Badge } from "@embeddr/react-ui/ui";
+import { FeatureExplorer } from "@/features/lotus/components/FeatureExplorer";
 
 const FeaturesPage = () => {
   return (
@@ -20,7 +20,7 @@ const FeaturesPage = () => {
         <FeatureExplorer showHeader={false} />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default FeaturesPage
+export default FeaturesPage;

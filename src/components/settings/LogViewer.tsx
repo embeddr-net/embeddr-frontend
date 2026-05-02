@@ -1,31 +1,32 @@
-import { useQuery } from '@tanstack/react-query'
-import { Card, CardContent } from '@embeddr/react-ui/ui'
-import { useEffect, useRef, useState } from 'react'
-import { ScrollArea } from '@embeddr/react-ui/ui'
+import { useQuery } from "@tanstack/react-query";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/ui'
-import { fetchSystemLogs } from '@/lib/api'
+  Card,
+  CardContent,
+  ScrollArea,
+} from "@embeddr/react-ui/ui";
+import { useEffect, useRef, useState } from "react";
+import { fetchSystemLogs } from "@/lib/api";
 
 export function LogViewer() {
-  const [isOpen, setIsOpen] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const [isOpen, setIsOpen] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const { data: logs } = useQuery({
-    queryKey: ['system-logs-viewer'],
+    queryKey: ["system-logs-viewer"],
     queryFn: () => fetchSystemLogs(50),
     refetchInterval: isOpen ? 2000 : false,
-  })
+  });
 
   // Auto-scroll to bottom using scrollIntoView
   useEffect(() => {
     if (isOpen) {
-      bottomRef.current?.scrollIntoView({ behavior: 'auto' })
+      bottomRef.current?.scrollIntoView({ behavior: "auto" });
     }
-  }, [logs, isOpen])
+  }, [logs, isOpen]);
 
   return (
     <Card className="p-0! gap-0!">
@@ -33,7 +34,7 @@ export function LogViewer() {
         type="single"
         collapsible
         className="w-full"
-        onValueChange={(value) => setIsOpen(value === 'logs')}
+        onValueChange={(value) => setIsOpen(value === "logs")}
       >
         <AccordionItem value="logs" className="border-none">
           <AccordionTrigger className="py-3 px-4 hover:no-underline bg-muted/20">
@@ -55,9 +56,7 @@ export function LogViewer() {
                   </div>
                 ))}
                 {(!logs || logs.length === 0) && (
-                  <div className="text-muted-foreground italic py-2">
-                    No logs available...
-                  </div>
+                  <div className="text-muted-foreground italic py-2">No logs available...</div>
                 )}
                 {/* Anchor for auto-scrolling */}
                 <div ref={bottomRef} />
@@ -67,5 +66,5 @@ export function LogViewer() {
         </AccordionItem>
       </Accordion>
     </Card>
-  )
+  );
 }

@@ -1,71 +1,62 @@
-import React from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { Button } from '@embeddr/react-ui/ui'
+import React from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
-  HomeIcon,
-  SearchIcon,
-  FlowerIcon,
-  Plug,
-  BookOpenIcon,
-  Globe,
-} from 'lucide-react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@embeddr/react-ui/ui'
-import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/ui'
-import { usePluginStore } from '@/plugins/store'
-import { useSystemStatus } from '@/hooks/useSystemStatus'
-import { BASE_URL } from '@/lib/api/config'
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@embeddr/react-ui/ui";
+import { BookOpenIcon, FlowerIcon, Globe, HomeIcon, Plug, SearchIcon } from "lucide-react";
+import { usePluginStore } from "@/plugins/store";
+import { useSystemStatus } from "@/hooks/useSystemStatus";
+import { BASE_URL } from "@/lib/api/config";
 
 interface NavLink {
-  to: string
-  label: string
-  icon: any
-  target?: string
+  to: string;
+  label: string;
+  icon: any;
+  target?: string;
 }
 
 export function NavWidget() {
-  const { getComponents } = usePluginStore()
-  const { status } = useSystemStatus()
-  const navigate = useNavigate()
+  const { getComponents } = usePluginStore();
+  const { status } = useSystemStatus();
+  const navigate = useNavigate();
 
   const links: Array<NavLink> = [
-    { to: '/', label: 'Home', icon: HomeIcon },
-    { to: '/search', label: 'Search', icon: SearchIcon },
-    { to: '/lotus', label: 'Lotus', icon: FlowerIcon },
-  ]
+    { to: "/", label: "Home", icon: HomeIcon },
+    { to: "/search", label: "Search", icon: SearchIcon },
+    { to: "/lotus", label: "Lotus", icon: FlowerIcon },
+  ];
 
   // Add Plugin Links (Top Level)
-  const pluginLinks = getComponents('header-nav')
+  const pluginLinks = getComponents("header-nav");
   pluginLinks.forEach(({ pluginId, def }) => {
     links.push({
       to: `/plugins/${pluginId}`,
       label: def.label,
       icon: def.icon || Plug,
-    })
-  })
+    });
+  });
 
   // Plugin Pages (Dropdown)
-  const pluginPages = getComponents('page')
+  const pluginPages = getComponents("page");
 
   // API Docs
   if (status?.docs) {
-    const apiDocsUrl = BASE_URL ? `${BASE_URL}/docs` : '/docs'
+    const apiDocsUrl = BASE_URL ? `${BASE_URL}/docs` : "/docs";
     links.push({
       to: apiDocsUrl,
-      label: 'API Docs',
+      label: "API Docs",
       icon: BookOpenIcon,
-      target: '_blank',
-    })
+      target: "_blank",
+    });
   }
 
   return (
@@ -77,12 +68,12 @@ export function NavWidget() {
               to={to}
               target={target}
               activeProps={{
-                'data-active': 'true',
+                "data-active": "true",
               }}
             >
               {(props: { isActive: boolean }) => (
                 <Button
-                  variant={props.isActive ? 'secondary' : 'ghost'}
+                  variant={props.isActive ? "secondary" : "ghost"}
                   size="icon"
                   className="h-6 w-6"
                   title={label}
@@ -112,9 +103,9 @@ export function NavWidget() {
             <DropdownMenuLabel>Plugin Pages</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {pluginPages.map(({ pluginId, def }) => {
-              const pageId = def.id || def.name || def.exportName
-              if (!pageId) return null
-              const label = def.label || pageId || pluginId
+              const pageId = def.id || def.name || def.exportName;
+              if (!pageId) return null;
+              const label = def.label || pageId || pluginId;
               return (
                 <DropdownMenuItem
                   key={`${pluginId}:${pageId}`}
@@ -126,11 +117,11 @@ export function NavWidget() {
                 >
                   {label}
                 </DropdownMenuItem>
-              )
+              );
             })}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
     </div>
-  )
+  );
 }

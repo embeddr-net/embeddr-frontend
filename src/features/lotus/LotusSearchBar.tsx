@@ -1,27 +1,21 @@
-import React from 'react'
-import { Input } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
+import React from "react";
+import { Button, Input, Popover, PopoverContent, PopoverTrigger } from "@embeddr/react-ui/ui";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@embeddr/react-ui/ui'
-import {
-  Search,
-  Loader2,
-  CornerDownLeft,
-  Sparkles,
-  SlidersHorizontal,
-  Cpu,
-  Zap,
   Compass,
+  CornerDownLeft,
+  Cpu,
   Globe,
   Image as ImageIcon,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import type { FinderMode, FinderKind } from './types'
-import { FINDER_KIND_OPTIONS } from './types'
-import type { TypeTreeEntry } from '@/hooks/useArtifactTypeCounts'
+  Loader2,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Zap,
+} from "lucide-react";
+import { FINDER_KIND_OPTIONS } from "./types";
+import type { FinderKind, FinderMode } from "./types";
+import type { TypeTreeEntry } from "@/hooks/useArtifactTypeCounts";
+import { cn } from "@/lib/utils";
 
 const kindIcons: Record<string, React.ElementType> = {
   panel: Cpu,
@@ -30,27 +24,27 @@ const kindIcons: Record<string, React.ElementType> = {
   artifact: ImageIcon,
   resource: Globe,
   feature: Sparkles,
-}
+};
 
 interface LotusSearchBarProps {
-  value: string
-  onChange: (val: string) => void
-  onSubmit: () => void
-  loading?: boolean
-  placeholder?: string
-  autoFocus?: boolean
-  className?: string
-  inputRef?: React.RefObject<HTMLInputElement | null>
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
-  mode?: FinderMode
-  onModeChange?: (mode: FinderMode) => void
-  lotusAvailable?: boolean
-  hiddenKinds?: Set<FinderKind>
-  onToggleKind?: (kind: FinderKind) => void
-  typeTree?: TypeTreeEntry[]
-  selectedFinderType?: string | null
-  onSelectFinderType?: (type: string | null) => void
-  searchProvider?: string | null
+  value: string;
+  onChange: (val: string) => void;
+  onSubmit: () => void;
+  loading?: boolean;
+  placeholder?: string;
+  autoFocus?: boolean;
+  className?: string;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  mode?: FinderMode;
+  onModeChange?: (mode: FinderMode) => void;
+  lotusAvailable?: boolean;
+  hiddenKinds?: Set<FinderKind>;
+  onToggleKind?: (kind: FinderKind) => void;
+  typeTree?: Array<TypeTreeEntry>;
+  selectedFinderType?: string | null;
+  onSelectFinderType?: (type: string | null) => void;
+  searchProvider?: string | null;
 }
 
 export function LotusSearchBar({
@@ -63,7 +57,7 @@ export function LotusSearchBar({
   className,
   inputRef,
   onKeyDown,
-  mode = 'search',
+  mode = "search",
   onModeChange,
   lotusAvailable = false,
   hiddenKinds,
@@ -73,69 +67,62 @@ export function LotusSearchBar({
   onSelectFinderType,
   searchProvider,
 }: LotusSearchBarProps) {
-  const isLotus = mode === 'lotus'
-  const hasFilters = hiddenKinds && hiddenKinds.size > 0
+  const isLotus = mode === "lotus";
+  const hasFilters = hiddenKinds && hiddenKinds.size > 0;
 
   const providerLabel = searchProvider
-    ? searchProvider.replace(/^search\./, '').replace(/^embeddr-/, '').replace(/^nynxz-/, '')
-    : null
+    ? searchProvider
+        .replace(/^search\./, "")
+        .replace(/^embeddr-/, "")
+        .replace(/^nynxz-/, "")
+    : null;
   const defaultPlaceholder = isLotus
-    ? 'Ask Lotus anything...'
+    ? "Ask Lotus anything..."
     : providerLabel
       ? `Search via ${providerLabel}... (!stash, !llm for others)`
-      : 'Search actions, panels, artifacts...'
+      : "Search actions, panels, artifacts...";
 
   const toggleMode = () => {
-    if (!lotusAvailable) return
-    onModeChange?.(isLotus ? 'search' : 'lotus')
-  }
+    if (!lotusAvailable) return;
+    onModeChange?.(isLotus ? "search" : "lotus");
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    onKeyDown?.(e)
-    if (e.defaultPrevented) return
+    onKeyDown?.(e);
+    if (e.defaultPrevented) return;
 
-    if (e.key === 'Tab' && lotusAvailable) {
-      const input = e.currentTarget
+    if (e.key === "Tab" && lotusAvailable) {
+      const input = e.currentTarget;
       if (!value || input.selectionStart === 0) {
-        e.preventDefault()
-        toggleMode()
-        return
+        e.preventDefault();
+        toggleMode();
+        return;
       }
     }
 
-    if (e.key === 'Enter') onSubmit()
-  }
+    if (e.key === "Enter") onSubmit();
+  };
 
   return (
-    <div className={cn('flex items-center gap-2', className)}>
+    <div className={cn("flex items-center gap-2", className)}>
       <div className="relative flex-1">
         {/* Mode indicator */}
         <button
           type="button"
           onClick={toggleMode}
           className={cn(
-            'absolute left-2 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium transition-colors',
-            lotusAvailable
-              ? 'cursor-pointer hover:bg-muted'
-              : 'cursor-default',
-            isLotus
-              ? 'text-primary bg-primary/10'
-              : 'text-muted-foreground',
+            "absolute left-2 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+            lotusAvailable ? "cursor-pointer hover:bg-muted" : "cursor-default",
+            isLotus ? "text-primary bg-primary/10" : "text-muted-foreground",
           )}
           title={
             lotusAvailable
-              ? 'Switch to ' + (isLotus ? 'Search' : 'Lotus') + ' mode (Tab)'
-              : 'Search mode'
+              ? "Switch to " + (isLotus ? "Search" : "Lotus") + " mode (Tab)"
+              : "Search mode"
           }
         >
-          {isLotus ? (
-            <Sparkles className="h-3.5 w-3.5" />
-          ) : (
-            <Search className="h-3.5 w-3.5" />
-          )}
-          <span className="hidden sm:inline">
-            {isLotus ? 'Lotus' : 'Search'}
-          </span>
+          {isLotus ? <Sparkles className="h-3.5 w-3.5" /> : <Search className="h-3.5 w-3.5" />}
+          <span className="hidden sm:inline">{isLotus ? "Lotus" : "Search"}</span>
         </button>
 
         <Input
@@ -163,7 +150,7 @@ export function LotusSearchBar({
                 </>
               )}
               <CornerDownLeft className="h-3 w-3" />
-              <span>{isLotus ? 'Send' : 'Go'}</span>
+              <span>{isLotus ? "Send" : "Go"}</span>
             </div>
           )}
         </div>
@@ -176,7 +163,7 @@ export function LotusSearchBar({
             <Button
               variant="ghost"
               size="icon"
-              className={cn('h-10 w-10 shrink-0', hasFilters && 'text-primary')}
+              className={cn("h-10 w-10 shrink-0", hasFilters && "text-primary")}
               title="Filter result types"
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -190,14 +177,14 @@ export function LotusSearchBar({
               Show in results
             </div>
             {FINDER_KIND_OPTIONS.map((opt) => {
-              const Icon = kindIcons[opt.value] || Sparkles
-              const hidden = hiddenKinds?.has(opt.value)
+              const Icon = kindIcons[opt.value] || Sparkles;
+              const hidden = hiddenKinds?.has(opt.value);
               return (
                 <button
                   key={opt.value}
                   className={cn(
-                    'w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-muted',
-                    hidden && 'opacity-40',
+                    "w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-muted",
+                    hidden && "opacity-40",
                   )}
                   onClick={() => onToggleKind(opt.value)}
                 >
@@ -205,20 +192,26 @@ export function LotusSearchBar({
                   <span className="flex-1 text-left">{opt.label}</span>
                   <div
                     className={cn(
-                      'h-3.5 w-3.5 rounded border flex items-center justify-center transition-colors',
+                      "h-3.5 w-3.5 rounded border flex items-center justify-center transition-colors",
                       !hidden
-                        ? 'bg-primary border-primary text-primary-foreground'
-                        : 'border-muted-foreground/30',
+                        ? "bg-primary border-primary text-primary-foreground"
+                        : "border-muted-foreground/30",
                     )}
                   >
                     {!hidden && (
-                      <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        viewBox="0 0 12 12"
+                        className="h-2.5 w-2.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <path d="M2 6l3 3 5-5" />
                       </svg>
                     )}
                   </div>
                 </button>
-              )
+              );
             })}
             {typeTree && typeTree.length > 0 && onSelectFinderType && (
               <>
@@ -228,8 +221,8 @@ export function LotusSearchBar({
                   </div>
                   <button
                     className={cn(
-                      'w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-muted',
-                      !selectedFinderType && 'bg-primary/10 text-primary',
+                      "w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-muted",
+                      !selectedFinderType && "bg-primary/10 text-primary",
                     )}
                     onClick={() => onSelectFinderType(null)}
                   >
@@ -239,16 +232,13 @@ export function LotusSearchBar({
                     <button
                       key={baseType}
                       className={cn(
-                        'w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-muted',
-                        selectedFinderType === baseType &&
-                          'bg-primary/10 text-primary',
+                        "w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-muted",
+                        selectedFinderType === baseType && "bg-primary/10 text-primary",
                       )}
                       onClick={() => onSelectFinderType(baseType)}
                     >
                       <span className="flex-1 text-left">{baseType}</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {count}
-                      </span>
+                      <span className="text-[10px] text-muted-foreground">{count}</span>
                     </button>
                   ))}
                 </div>
@@ -261,17 +251,11 @@ export function LotusSearchBar({
       <Button
         onClick={onSubmit}
         disabled={loading}
-        variant={isLotus ? 'default' : 'secondary'}
+        variant={isLotus ? "default" : "secondary"}
         className="h-10 px-4"
       >
-        {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : isLotus ? (
-          'Send'
-        ) : (
-          'Go'
-        )}
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isLotus ? "Send" : "Go"}
       </Button>
     </div>
-  )
+  );
 }

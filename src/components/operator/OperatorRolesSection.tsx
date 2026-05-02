@@ -1,38 +1,34 @@
-import React, { useState } from 'react'
-import { useMutation, type UseQueryResult } from '@tanstack/react-query'
+import React, { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
+  Badge,
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import {
+  Input,
+  ScrollArea,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { cn } from '@/lib/utils'
-import { toast } from 'sonner'
-import {
-  createSecurityRole,
-  updateSecurityRole,
-  fetchSecurityRoles,
-} from '@/lib/api'
-import { areArraysEqual, scopeGroups } from './operator-utils'
-import type { SecurityRole } from './operator-types'
+} from "@embeddr/react-ui/ui";
+import { toast } from "sonner";
+import { areArraysEqual, scopeGroups } from "./operator-utils";
+import type { fetchSecurityRoles } from "@/lib/api";
+import type { UseQueryResult } from "@tanstack/react-query";
+import type { SecurityRole } from "./operator-types";
+import { createSecurityRole, updateSecurityRole } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 interface OperatorRolesSectionProps {
-  roles: SecurityRole[]
-  rolesQuery: UseQueryResult<Awaited<ReturnType<typeof fetchSecurityRoles>>>
-  capabilityScopes: string[]
-  isForbidden: boolean
+  roles: Array<SecurityRole>;
+  rolesQuery: UseQueryResult<Awaited<ReturnType<typeof fetchSecurityRoles>>>;
+  capabilityScopes: Array<string>;
+  isForbidden: boolean;
 }
 
 export const OperatorRolesSection = ({
@@ -41,84 +37,82 @@ export const OperatorRolesSection = ({
   capabilityScopes,
   isForbidden,
 }: OperatorRolesSectionProps) => {
-  const [newRoleName, setNewRoleName] = useState('')
-  const [newRoleDescription, setNewRoleDescription] = useState('')
-  const [newRolePermissions, setNewRolePermissions] = useState<string[]>([])
-  const [roleSearch, setRoleSearch] = useState('')
-  const [editRoleId, setEditRoleId] = useState<string>('')
-  const [editRoleDescription, setEditRoleDescription] = useState('')
-  const [editRolePermissions, setEditRolePermissions] = useState<string[]>([])
+  const [newRoleName, setNewRoleName] = useState("");
+  const [newRoleDescription, setNewRoleDescription] = useState("");
+  const [newRolePermissions, setNewRolePermissions] = useState<Array<string>>([]);
+  const [roleSearch, setRoleSearch] = useState("");
+  const [editRoleId, setEditRoleId] = useState<string>("");
+  const [editRoleDescription, setEditRoleDescription] = useState("");
+  const [editRolePermissions, setEditRolePermissions] = useState<Array<string>>([]);
 
   const createRoleMutation = useMutation({
     mutationFn: createSecurityRole,
     onSuccess: () => {
-      setNewRoleName('')
-      setNewRoleDescription('')
-      setNewRolePermissions([])
-      rolesQuery.refetch()
-      toast.success('Scope preset created')
+      setNewRoleName("");
+      setNewRoleDescription("");
+      setNewRolePermissions([]);
+      rolesQuery.refetch();
+      toast.success("Scope preset created");
     },
-    onError: () => toast.error('Failed to create scope preset'),
-  })
+    onError: () => toast.error("Failed to create scope preset"),
+  });
 
   const updateRoleMutation = useMutation({
     mutationFn: updateSecurityRole,
     onSuccess: () => {
-      rolesQuery.refetch()
-      toast.success('Scope preset updated')
+      rolesQuery.refetch();
+      toast.success("Scope preset updated");
     },
-    onError: () => toast.error('Failed to update scope preset'),
-  })
+    onError: () => toast.error("Failed to update scope preset"),
+  });
 
   const togglePermission = (
     permission: string,
-    selected: string[],
-    setter: (next: string[]) => void,
+    selected: Array<string>,
+    setter: (next: Array<string>) => void,
   ) => {
     if (selected.includes(permission)) {
-      setter(selected.filter((item) => item !== permission))
+      setter(selected.filter((item) => item !== permission));
     } else {
-      setter([...selected, permission])
+      setter([...selected, permission]);
     }
-  }
+  };
 
   const handleCreateRole = () => {
     if (!newRoleName.trim()) {
-      toast.error('Scope preset name is required')
-      return
+      toast.error("Scope preset name is required");
+      return;
     }
     createRoleMutation.mutate({
       name: newRoleName.trim(),
       description: newRoleDescription.trim() || null,
       permissions: newRolePermissions,
-    })
-  }
+    });
+  };
 
   const handleUpdateRole = () => {
     if (!editRoleId) {
-      toast.error('Select a scope preset')
-      return
+      toast.error("Select a scope preset");
+      return;
     }
     updateRoleMutation.mutate({
       role_id: editRoleId,
       description: editRoleDescription.trim() || null,
       permissions: editRolePermissions,
-    })
-  }
+    });
+  };
 
   React.useEffect(() => {
-    if (!editRoleId) return
-    const role = roles.find((item) => item.id === editRoleId)
-    if (!role) return
-    const nextDescription = role.description || ''
-    const nextPermissions = role.permissions || []
-    setEditRoleDescription((prev) =>
-      prev === nextDescription ? prev : nextDescription,
-    )
+    if (!editRoleId) return;
+    const role = roles.find((item) => item.id === editRoleId);
+    if (!role) return;
+    const nextDescription = role.description || "";
+    const nextPermissions = role.permissions || [];
+    setEditRoleDescription((prev) => (prev === nextDescription ? prev : nextDescription));
     setEditRolePermissions((prev) =>
       areArraysEqual(prev, nextPermissions) ? prev : nextPermissions,
-    )
-  }, [editRoleId, roles])
+    );
+  }, [editRoleId, roles]);
 
   return (
     <>
@@ -126,9 +120,7 @@ export const OperatorRolesSection = ({
         <Card className="border-destructive/40">
           <CardHeader>
             <CardTitle>Operator access required</CardTitle>
-            <CardDescription>
-              You do not have permission to manage scope presets.
-            </CardDescription>
+            <CardDescription>You do not have permission to manage scope presets.</CardDescription>
           </CardHeader>
         </Card>
       ) : (
@@ -157,28 +149,20 @@ export const OperatorRolesSection = ({
                   </label>
                   <Input
                     value={newRoleDescription}
-                    onChange={(event) =>
-                      setNewRoleDescription(event.target.value)
-                    }
+                    onChange={(event) => setNewRoleDescription(event.target.value)}
                     placeholder="ComfyUI access"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-wide">
-                  Permissions
-                </label>
+                <label className="text-xs font-semibold uppercase tracking-wide">Permissions</label>
                 <ScrollArea className="h-56 rounded border">
                   <div className="grid gap-3 p-3">
                     {scopeGroups.map((group) => (
                       <div key={group.label} className="space-y-2">
                         <div>
-                          <div className="text-sm font-medium">
-                            {group.label}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {group.description}
-                          </div>
+                          <div className="text-sm font-medium">{group.label}</div>
+                          <div className="text-xs text-muted-foreground">{group.description}</div>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {group.scopes.map((scope) => (
@@ -186,17 +170,13 @@ export const OperatorRolesSection = ({
                               key={scope}
                               type="button"
                               className={cn(
-                                'rounded border px-2 py-1 text-xs transition-colors',
+                                "rounded border px-2 py-1 text-xs transition-colors",
                                 newRolePermissions.includes(scope)
-                                  ? 'border-primary bg-primary/10 text-primary'
-                                  : 'hover:bg-muted',
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "hover:bg-muted",
                               )}
                               onClick={() =>
-                                togglePermission(
-                                  scope,
-                                  newRolePermissions,
-                                  setNewRolePermissions,
-                                )
+                                togglePermission(scope, newRolePermissions, setNewRolePermissions)
                               }
                             >
                               {scope}
@@ -207,9 +187,7 @@ export const OperatorRolesSection = ({
                     ))}
                     <div className="space-y-2">
                       <div>
-                        <div className="text-sm font-medium">
-                          Lotus capabilities
-                        </div>
+                        <div className="text-sm font-medium">Lotus capabilities</div>
                         <div className="text-xs text-muted-foreground">
                           Scope specific Lotus actions by capability id.
                         </div>
@@ -220,17 +198,13 @@ export const OperatorRolesSection = ({
                             key={scope}
                             type="button"
                             className={cn(
-                              'rounded border px-2 py-1 text-xs transition-colors',
+                              "rounded border px-2 py-1 text-xs transition-colors",
                               newRolePermissions.includes(scope)
-                                ? 'border-primary bg-primary/10 text-primary'
-                                : 'hover:bg-muted',
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "hover:bg-muted",
                             )}
                             onClick={() =>
-                              togglePermission(
-                                scope,
-                                newRolePermissions,
-                                setNewRolePermissions,
-                              )
+                              togglePermission(scope, newRolePermissions, setNewRolePermissions)
                             }
                           >
                             {scope}
@@ -242,13 +216,8 @@ export const OperatorRolesSection = ({
                 </ScrollArea>
               </div>
               <div className="flex justify-end">
-                <Button
-                  onClick={handleCreateRole}
-                  disabled={createRoleMutation.isPending}
-                >
-                  {createRoleMutation.isPending
-                    ? 'Creating…'
-                    : 'Create scope preset'}
+                <Button onClick={handleCreateRole} disabled={createRoleMutation.isPending}>
+                  {createRoleMutation.isPending ? "Creating…" : "Create scope preset"}
                 </Button>
               </div>
             </div>
@@ -279,17 +248,13 @@ export const OperatorRolesSection = ({
                   </label>
                   <Input
                     value={editRoleDescription}
-                    onChange={(event) =>
-                      setEditRoleDescription(event.target.value)
-                    }
+                    onChange={(event) => setEditRoleDescription(event.target.value)}
                     placeholder="Role description"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-wide">
-                  Permissions
-                </label>
+                <label className="text-xs font-semibold uppercase tracking-wide">Permissions</label>
                 <Input
                   value={roleSearch}
                   onChange={(event) => setRoleSearch(event.target.value)}
@@ -300,22 +265,15 @@ export const OperatorRolesSection = ({
                     {scopeGroups.map((group) => {
                       const filtered = group.scopes.filter((scope) =>
                         roleSearch.trim()
-                          ? scope
-                              .toLowerCase()
-                              .includes(roleSearch.trim().toLowerCase())
+                          ? scope.toLowerCase().includes(roleSearch.trim().toLowerCase())
                           : true,
-                      )
-                      if (roleSearch.trim() && filtered.length === 0)
-                        return null
+                      );
+                      if (roleSearch.trim() && filtered.length === 0) return null;
                       return (
                         <div key={group.label} className="space-y-2">
                           <div>
-                            <div className="text-sm font-medium">
-                              {group.label}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {group.description}
-                            </div>
+                            <div className="text-sm font-medium">{group.label}</div>
+                            <div className="text-xs text-muted-foreground">{group.description}</div>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {filtered.map((scope) => (
@@ -323,10 +281,10 @@ export const OperatorRolesSection = ({
                                 key={scope}
                                 type="button"
                                 className={cn(
-                                  'rounded border px-2 py-1 text-xs transition-colors',
+                                  "rounded border px-2 py-1 text-xs transition-colors",
                                   editRolePermissions.includes(scope)
-                                    ? 'border-primary bg-primary/10 text-primary'
-                                    : 'hover:bg-muted',
+                                    ? "border-primary bg-primary/10 text-primary"
+                                    : "hover:bg-muted",
                                 )}
                                 onClick={() =>
                                   togglePermission(
@@ -341,13 +299,11 @@ export const OperatorRolesSection = ({
                             ))}
                           </div>
                         </div>
-                      )
+                      );
                     })}
                     <div className="space-y-2">
                       <div>
-                        <div className="text-sm font-medium">
-                          Lotus capabilities
-                        </div>
+                        <div className="text-sm font-medium">Lotus capabilities</div>
                         <div className="text-xs text-muted-foreground">
                           Scope specific Lotus actions by capability id.
                         </div>
@@ -356,9 +312,7 @@ export const OperatorRolesSection = ({
                         {capabilityScopes
                           .filter((scope) =>
                             roleSearch.trim()
-                              ? scope
-                                  .toLowerCase()
-                                  .includes(roleSearch.trim().toLowerCase())
+                              ? scope.toLowerCase().includes(roleSearch.trim().toLowerCase())
                               : true,
                           )
                           .slice(0, 120)
@@ -367,17 +321,13 @@ export const OperatorRolesSection = ({
                               key={scope}
                               type="button"
                               className={cn(
-                                'rounded border px-2 py-1 text-xs transition-colors',
+                                "rounded border px-2 py-1 text-xs transition-colors",
                                 editRolePermissions.includes(scope)
-                                  ? 'border-primary bg-primary/10 text-primary'
-                                  : 'hover:bg-muted',
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "hover:bg-muted",
                               )}
                               onClick={() =>
-                                togglePermission(
-                                  scope,
-                                  editRolePermissions,
-                                  setEditRolePermissions,
-                                )
+                                togglePermission(scope, editRolePermissions, setEditRolePermissions)
                               }
                             >
                               {scope}
@@ -389,36 +339,25 @@ export const OperatorRolesSection = ({
                 </ScrollArea>
               </div>
               <div className="flex justify-end">
-                <Button
-                  onClick={handleUpdateRole}
-                  disabled={updateRoleMutation.isPending}
-                >
-                  {updateRoleMutation.isPending
-                    ? 'Updating…'
-                    : 'Update scope preset'}
+                <Button onClick={handleUpdateRole} disabled={updateRoleMutation.isPending}>
+                  {updateRoleMutation.isPending ? "Updating…" : "Update scope preset"}
                 </Button>
               </div>
             </div>
 
             {rolesQuery.isLoading ? (
-              <div className="text-sm text-muted-foreground">
-                Loading scope presets…
-              </div>
+              <div className="text-sm text-muted-foreground">Loading scope presets…</div>
             ) : roles.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                No scope presets configured.
-              </div>
+              <div className="text-sm text-muted-foreground">No scope presets configured.</div>
             ) : (
               roles.map((role) => (
                 <div key={role.id} className="rounded border p-3">
                   <div className="flex items-center justify-between">
                     <div className="font-medium">{role.name}</div>
-                    {role.is_system && (
-                      <Badge variant="secondary">System</Badge>
-                    )}
+                    {role.is_system && <Badge variant="secondary">System</Badge>}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {role.description || 'No description'}
+                    {role.description || "No description"}
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {role.permissions.length ? (
@@ -428,9 +367,7 @@ export const OperatorRolesSection = ({
                         </Badge>
                       ))
                     ) : (
-                      <span className="text-xs text-muted-foreground">
-                        No permissions
-                      </span>
+                      <span className="text-xs text-muted-foreground">No permissions</span>
                     )}
                   </div>
                 </div>
@@ -440,5 +377,5 @@ export const OperatorRolesSection = ({
         </Card>
       )}
     </>
-  )
-}
+  );
+};

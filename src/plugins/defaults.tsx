@@ -1,20 +1,15 @@
-import React from 'react'
-import { Button } from '@embeddr/react-ui/ui'
-import { Card } from '@embeddr/react-ui/ui'
-import { Dice5, Info, Terminal } from 'lucide-react'
-import type { EmbeddrAPI, PluginDefinition } from '@embeddr/react-ui/types'
+import React from "react";
+import { Button, Card } from "@embeddr/react-ui/ui";
+import { Dice5, Info, Terminal } from "lucide-react";
+import type { EmbeddrAPI, PluginDefinition } from "@embeddr/react-ui/types";
 
 // --- Plugin 1: Workflow Metadata Viewer (UI) ---
 const WorkflowInfoComponent: React.FC<{ api: EmbeddrAPI }> = ({ api }) => {
   // @ts-expect-error Legacy API — execution store removed in 0.2.0
-  const { selectedPipeline } = api.stores?.execution || {}
+  const { selectedPipeline } = api.stores?.execution || {};
 
   if (!selectedPipeline) {
-    return (
-      <div className="text-sm text-muted-foreground p-4">
-        No workflow selected
-      </div>
-    )
+    return <div className="text-sm text-muted-foreground p-4">No workflow selected</div>;
   }
 
   return (
@@ -28,31 +23,30 @@ const WorkflowInfoComponent: React.FC<{ api: EmbeddrAPI }> = ({ api }) => {
           <span className="font-semibold">Name:</span> {selectedPipeline.name}
         </p>
         <p>
-          <span className="font-semibold">Nodes:</span>{' '}
-          {Object.keys(selectedPipeline.data).length}
+          <span className="font-semibold">Nodes:</span> {Object.keys(selectedPipeline.data).length}
         </p>
         {selectedPipeline.description && (
           <p className="italic mt-2">{selectedPipeline.description}</p>
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
 export const WorkflowInfoPlugin: PluginDefinition = {
-  id: 'core.workflow-info',
-  name: 'Workflow Info',
-  description: 'Displays details about the current workflow',
-  version: '1.0.0',
+  id: "core.workflow-info",
+  name: "Workflow Info",
+  description: "Displays details about the current workflow",
+  version: "1.0.0",
   components: [
     {
-      id: 'info-panel',
-      location: 'zen-toolbox-tab',
-      label: 'Info',
+      id: "info-panel",
+      location: "zen-toolbox-tab",
+      label: "Info",
       component: WorkflowInfoComponent,
     },
   ],
-}
+};
 
 // --- Plugin 2: Random Seed Action (Action) ---
 // export const RandomSeedPlugin: PluginDefinition = {
@@ -147,4 +141,4 @@ export const DEFAULT_PLUGINS = [
   // RandomSeedPlugin,
   //   ZenModeCorePlugin,
   // MdxPlugin,
-]
+];

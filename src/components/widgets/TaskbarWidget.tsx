@@ -1,32 +1,27 @@
-import React from 'react'
-import { useWindowStore } from '@/store/windowStore'
-import { Button } from '@embeddr/react-ui/ui'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@embeddr/react-ui/ui'
-import { Maximize2, Layout, X } from 'lucide-react'
-import { useShallow } from 'zustand/react/shallow'
-import { cn } from '@/lib/utils'
+import React from "react";
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@embeddr/react-ui/ui";
+import { Layout, Maximize2, X } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
+import { useWindowStore } from "@/store/windowStore";
+import { cn } from "@/lib/utils";
 
 export function TaskbarWidget() {
-  const setBackdrop = useWindowStore((s) => s.setBackdrop)
-  const restoreWindow = useWindowStore((s) => s.restoreWindow)
-  const closeAll = useWindowStore((s) => s.closeAll)
+  const setBackdrop = useWindowStore((s) => s.setBackdrop);
+  const restoreWindow = useWindowStore((s) => s.restoreWindow);
+  const closeAll = useWindowStore((s) => s.closeAll);
 
   const minimizedWindows = useWindowStore(
     useShallow((s) => Object.values(s.windows).filter((w) => w.isMinimized)),
-  )
+  );
   const backdropWindow = useWindowStore((s) =>
     s.backdropWindowId ? s.windows[s.backdropWindowId] : null,
-  )
+  );
   const hasOpenWindows = useWindowStore(
     useShallow((s) => Object.values(s.windows).some((w) => !w.isMinimized)),
-  )
+  );
 
   if (!backdropWindow && minimizedWindows.length === 0 && !hasOpenWindows) {
-    return null
+    return null;
   }
 
   return (
@@ -35,9 +30,7 @@ export function TaskbarWidget() {
       {backdropWindow && (
         <div className="flex items-center bg-primary/10 text-primary border border-primary/20 rounded-md px-2 py-0.5 h-6 select-none animate-in fade-in slide-in-from-left-2 duration-300">
           <Layout className="h-3 w-3 mr-1.5 opacity-70" />
-          <span className="text-[10px] font-medium max-w-25 truncate">
-            {backdropWindow.title}
-          </span>
+          <span className="text-[10px] font-medium max-w-25 truncate">{backdropWindow.title}</span>
           <Button
             variant="ghost"
             size="icon"
@@ -93,5 +86,5 @@ export function TaskbarWidget() {
         </>
       )}
     </div>
-  )
+  );
 }

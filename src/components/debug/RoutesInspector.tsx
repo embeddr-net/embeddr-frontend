@@ -1,28 +1,22 @@
-import { useQuery } from '@tanstack/react-query'
-import { embeddrApi } from '@/lib/api/client'
-import type { RoutesResponse } from '@/lib/api/types'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { Skeleton } from '@embeddr/react-ui/ui'
-import { Search } from 'lucide-react'
-import { useState } from 'react'
+import { useQuery } from "@tanstack/react-query";
+import { Badge, Input, ScrollArea, Skeleton } from "@embeddr/react-ui/ui";
+import { Search } from "lucide-react";
+import { useState } from "react";
+import type { RoutesResponse } from "@/lib/api/types";
+import { embeddrApi } from "@/lib/api/client";
 
 export const RoutesInspector = () => {
-  const [filter, setFilter] = useState('')
+  const [filter, setFilter] = useState("");
   const { data, isLoading, error } = useQuery<RoutesResponse>({
-    queryKey: ['system', 'routes'],
+    queryKey: ["system", "routes"],
     queryFn: () => embeddrApi.system.getRoutes(),
-  })
+  });
 
-  if (isLoading) return <Skeleton className="h-64 w-full" />
-  if (error)
-    return <div className="text-red-500">Error: {(error as Error).message}</div>
+  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  if (error) return <div className="text-red-500">Error: {error.message}</div>;
 
-  const routes = data?.routes || []
-  const filtered = routes.filter(
-    (r: any) => r.path.includes(filter) || r.name?.includes(filter),
-  )
+  const routes = data?.routes || [];
+  const filtered = routes.filter((r: any) => r.path.includes(filter) || r.name?.includes(filter));
 
   return (
     <div className="flex flex-col h-full">
@@ -56,13 +50,7 @@ export const RoutesInspector = () => {
                       {route.methods.map((m: string) => (
                         <Badge
                           key={m}
-                          variant={
-                            m === 'GET'
-                              ? 'default'
-                              : m === 'POST'
-                                ? 'secondary'
-                                : 'outline'
-                          }
+                          variant={m === "GET" ? "default" : m === "POST" ? "secondary" : "outline"}
                           className="mr-1 text-[10px]"
                         >
                           {m}
@@ -73,11 +61,7 @@ export const RoutesInspector = () => {
                     <td className="p-2 text-muted-foreground">{route.name}</td>
                     <td className="p-2">
                       {route.tags.map((t: string) => (
-                        <Badge
-                          key={t}
-                          variant="outline"
-                          className="mr-1 text-[10px]"
-                        >
+                        <Badge key={t} variant="outline" className="mr-1 text-[10px]">
                           {t}
                         </Badge>
                       ))}
@@ -90,5 +74,5 @@ export const RoutesInspector = () => {
         </ScrollArea>
       </div>
     </div>
-  )
-}
+  );
+};

@@ -1,71 +1,67 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Label } from '@embeddr/react-ui/ui'
-import {
+  Input,
+  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { fetchLibraries } from '@/lib/api/endpoints/library'
-import { fetchCollections } from '@/lib/api/endpoints/collections'
-import { useSettings } from '@/hooks/useSettings'
+} from "@embeddr/react-ui/ui";
+import { fetchLibraries } from "@/lib/api/endpoints/library";
+import { fetchCollections } from "@/lib/api/endpoints/collections";
+import { useSettings } from "@/hooks/useSettings";
 
 export function UploadSettings() {
-  const { uploadConfig, setUploadConfig } = useSettings()
+  const { uploadConfig, setUploadConfig } = useSettings();
 
   const { data: libraries } = useQuery({
-    queryKey: ['libraries'],
+    queryKey: ["libraries"],
     queryFn: fetchLibraries,
-  })
+  });
 
   const { data: collections } = useQuery({
-    queryKey: ['collections'],
+    queryKey: ["collections"],
     queryFn: fetchCollections,
-  })
+  });
 
   const handleLibraryChange = (value: string) => {
     setUploadConfig({
       ...uploadConfig,
-      default_library_id: value === 'none' ? null : parseInt(value),
-    })
-  }
+      default_library_id: value === "none" ? null : parseInt(value),
+    });
+  };
 
   const handleCollectionChange = (value: string) => {
     setUploadConfig({
       ...uploadConfig,
-      default_collection_id: value === 'none' ? null : parseInt(value),
-    })
-  }
+      default_collection_id: value === "none" ? null : parseInt(value),
+    });
+  };
 
   const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUploadConfig({
       ...uploadConfig,
       default_tags: e.target.value,
-    })
-  }
+    });
+  };
 
   return (
     <Card className="my-1">
       <CardHeader>
         <CardTitle>Upload Settings</CardTitle>
-        <CardDescription>
-          Configure default settings for drag-and-drop uploads.
-        </CardDescription>
+        <CardDescription>Configure default settings for drag-and-drop uploads.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label>Default Library</Label>
           <Select
-            value={uploadConfig.default_library_id?.toString() || 'none'}
+            value={uploadConfig.default_library_id?.toString() || "none"}
             onValueChange={handleLibraryChange}
           >
             <SelectTrigger>
@@ -85,7 +81,7 @@ export function UploadSettings() {
         <div className="space-y-2">
           <Label>Default Collection</Label>
           <Select
-            value={uploadConfig.default_collection_id?.toString() || 'none'}
+            value={uploadConfig.default_collection_id?.toString() || "none"}
             onValueChange={handleCollectionChange}
           >
             <SelectTrigger>
@@ -112,5 +108,5 @@ export function UploadSettings() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

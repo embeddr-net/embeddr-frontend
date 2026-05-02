@@ -1,202 +1,189 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { Button } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { toast } from 'sonner'
-import { useEmbeddrAPI } from '@/plugins/store'
-import { embeddrApi } from '@/lib/api/client'
-import { cn } from '@/lib/utils'
-import { listLotusClients } from '@/lib/api/endpoints/lotus'
-import { LotusStoragePanel } from './components/LotusStoragePanel'
-import { LotusOverviewPanel } from './components/LotusOverviewPanel'
-import { LotusConfigsTab } from './components/tabs/LotusConfigsTab'
-import { LotusDefaultsTab } from './components/tabs/LotusDefaultsTab'
-import { LotusFinderTab } from './components/tabs/LotusFinderTab'
-import { LotusCapabilitiesTab } from './components/tabs/LotusCapabilitiesTab'
-import {
-  LayoutDashboard,
-  HardDrive,
-  Settings,
-  Search,
-  Cpu,
-} from 'lucide-react'
-import { useCommandBarStore } from '@/store/commandBarStore'
-import { globalEventBus } from '@/lib/eventBus'
-import { useWebSocket } from '@/providers/WebSocketProvider'
-import { fetchSecurityOverview } from '@/lib/api/endpoints/security'
+import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Button, ScrollArea } from "@embeddr/react-ui/ui";
+import { toast } from "sonner";
+import { Cpu, HardDrive, LayoutDashboard, Search, Settings } from "lucide-react";
+import { LotusStoragePanel } from "./components/LotusStoragePanel";
+import { LotusOverviewPanel } from "./components/LotusOverviewPanel";
+import { LotusConfigsTab } from "./components/tabs/LotusConfigsTab";
+import { LotusDefaultsTab } from "./components/tabs/LotusDefaultsTab";
+import { LotusFinderTab } from "./components/tabs/LotusFinderTab";
+import { LotusCapabilitiesTab } from "./components/tabs/LotusCapabilitiesTab";
+import { listLotusClients } from "@/lib/api/endpoints/lotus";
+import { cn } from "@/lib/utils";
+import { embeddrApi } from "@/lib/api/client";
+import { useEmbeddrAPI } from "@/plugins/store";
+import { useCommandBarStore } from "@/store/commandBarStore";
+import { globalEventBus } from "@/lib/eventBus";
+import { useWebSocket } from "@/providers/WebSocketProvider";
+import { fetchSecurityOverview } from "@/lib/api/endpoints/security";
 
 type ConfigGetResponse = {
-  ok: boolean
-  plugin_name: string
-  config_id?: string | null
-  scope: string
-  scope_id?: string | null
+  ok: boolean;
+  plugin_name: string;
+  config_id?: string | null;
+  scope: string;
+  scope_id?: string | null;
   value: {
-    text_provider?: string
-    similar_provider?: string
-    shebangs?: Record<string, any>
-  }
-}
+    text_provider?: string;
+    similar_provider?: string;
+    shebangs?: Record<string, any>;
+  };
+};
 
 type ConfigSetResponse = {
-  ok: boolean
+  ok: boolean;
   value: {
-    text_provider?: string
-    similar_provider?: string
-    shebangs?: Record<string, any>
-  }
-}
+    text_provider?: string;
+    similar_provider?: string;
+    shebangs?: Record<string, any>;
+  };
+};
 
 type FinderDefaultsConfig = {
-  enable_search?: boolean
-  shebangs?: Record<string, any>
-}
+  enable_search?: boolean;
+  shebangs?: Record<string, any>;
+};
 
 type BlobRegistryResponse = {
-  providers: string[]
-  resolvers: string[]
-  provider_resolvers: Record<string, string>
-  default_provider?: string | null
-  default_resolver?: string | null
-}
+  providers: Array<string>;
+  resolvers: Array<string>;
+  provider_resolvers: Record<string, string>;
+  default_provider?: string | null;
+  default_resolver?: string | null;
+};
 
 type AutomationsResponse = {
   items: Array<{
-    id: string
-    name: string
-    description?: string | null
-    is_active: boolean
-    trigger_event: string
-    trigger_conditions: Record<string, any>
-  }>
-  total: number
-}
+    id: string;
+    name: string;
+    description?: string | null;
+    is_active: boolean;
+    trigger_event: string;
+    trigger_conditions: Record<string, any>;
+  }>;
+  total: number;
+};
 
 export function LotusDashboard() {
-  const api = useEmbeddrAPI()
-  const { setPageControls } = useCommandBarStore()
-  const { lastMessage } = useWebSocket()
+  const api = useEmbeddrAPI();
+  const { setPageControls } = useCommandBarStore();
+  const { lastMessage } = useWebSocket();
 
   const capsQuery = useQuery({
-    queryKey: ['lotus', 'capabilities', 'dashboard'],
+    queryKey: ["lotus", "capabilities", "dashboard"],
     queryFn: () => api.lotus.list({ limit: 200 }),
-  })
+  });
 
-  const capabilities = capsQuery.data?.items || []
+  const capabilities = capsQuery.data?.items || [];
 
   const pluginsQuery = useQuery({
-    queryKey: ['plugins', 'loaded'],
+    queryKey: ["plugins", "loaded"],
     queryFn: () => embeddrApi.plugins.list(),
-  })
+  });
 
   const artifactsQuery = useQuery({
-    queryKey: ['artifacts', 'count'],
+    queryKey: ["artifacts", "count"],
     queryFn: () => embeddrApi.artifacts.list({ limit: 1, offset: 0 }),
-  })
+  });
 
   const automationStatus = useMemo(() => {
-    const data = lastMessage?.data as any
-    const automation = data?.automation_status
+    const data = lastMessage?.data as any;
+    const automation = data?.automation_status;
     return {
       total: automation?.total ?? 0,
       active: automation?.active ?? 0,
-    }
-  }, [lastMessage])
+    };
+  }, [lastMessage]);
 
   const blobRegistryQuery = useQuery({
-    queryKey: ['system', 'blob-registry'],
+    queryKey: ["system", "blob-registry"],
     queryFn: () => embeddrApi.system.getBlobRegistry(),
-  })
+  });
 
   const artifactRegistryQuery = useQuery({
-    queryKey: ['system', 'artifact-registry'],
+    queryKey: ["system", "artifact-registry"],
     queryFn: () => embeddrApi.system.getArtifactRegistry(),
-  })
+  });
 
   const artifactTypeCountsQuery = useQuery({
-    queryKey: ['system', 'artifact-type-counts'],
+    queryKey: ["system", "artifact-type-counts"],
     queryFn: () => embeddrApi.system.getArtifactTypeCounts(),
-  })
+  });
 
   const searchDefaultsQuery = useQuery({
-    queryKey: ['lotus', 'search-defaults'],
+    queryKey: ["lotus", "search-defaults"],
     queryFn: async () => {
-      const data = await api.lotus.invoke('embeddr-core.config.get', {
-        plugin_name: 'embeddr-core',
-        config_id: 'embeddr-core.search.config',
-        scope: 'global',
+      const data = await api.lotus.invoke("embeddr-core.config.get", {
+        plugin_name: "embeddr-core",
+        config_id: "embeddr-core.search.config",
+        scope: "global",
         include_capability: true,
-      })
-      return data as ConfigGetResponse
+      });
+      return data as ConfigGetResponse;
     },
-  })
+  });
 
   const finderDefaultsQuery = useQuery({
-    queryKey: ['lotus', 'finder-defaults'],
+    queryKey: ["lotus", "finder-defaults"],
     queryFn: async () => {
-      const data = await api.lotus.invoke('embeddr-core.config.get', {
-        plugin_name: 'embeddr-core',
-        config_id: 'embeddr-core.finder.config',
-        scope: 'global',
+      const data = await api.lotus.invoke("embeddr-core.config.get", {
+        plugin_name: "embeddr-core",
+        config_id: "embeddr-core.finder.config",
+        scope: "global",
         include_capability: true,
-      })
-      return data as ConfigGetResponse
+      });
+      return data as ConfigGetResponse;
     },
-  })
+  });
 
   const automationsQuery = useQuery({
-    queryKey: ['system', 'automation', 'list'],
+    queryKey: ["system", "automation", "list"],
     queryFn: () => embeddrApi.system.listAutomations(),
     staleTime: 15_000,
-  })
+  });
 
   const ingestionPipelineQuery = useQuery<{
-    pipeline_id?: string | null
+    pipeline_id?: string | null;
   }>({
-    queryKey: ['system', 'ingestion', 'pipeline'],
-    queryFn: async () =>
-      (await embeddrApi.system.getIngestionPipeline()) as {
-        pipeline_id?: string | null
-      },
+    queryKey: ["system", "ingestion", "pipeline"],
+    queryFn: async () => await embeddrApi.system.getIngestionPipeline(),
     staleTime: 15_000,
-  })
+  });
 
   const lotusClientsQuery = useQuery({
-    queryKey: ['lotus', 'clients'],
+    queryKey: ["lotus", "clients"],
     queryFn: () => listLotusClients(),
     refetchOnWindowFocus: false,
-  })
+  });
 
   const securityOverviewQuery = useQuery({
-    queryKey: ['security', 'overview'],
+    queryKey: ["security", "overview"],
     queryFn: () => fetchSecurityOverview(),
-  })
+  });
 
   useEffect(() => {
     const refreshClients = () => {
-      lotusClientsQuery.refetch()
-    }
-    const unsubConnect = globalEventBus.on('client_connected', refreshClients)
-    const unsubDisconnect = globalEventBus.on(
-      'client_disconnected',
-      refreshClients,
-    )
-    const unsubSocket = globalEventBus.on('websocket:connected', refreshClients)
+      lotusClientsQuery.refetch();
+    };
+    const unsubConnect = globalEventBus.on("client_connected", refreshClients);
+    const unsubDisconnect = globalEventBus.on("client_disconnected", refreshClients);
+    const unsubSocket = globalEventBus.on("websocket:connected", refreshClients);
     return () => {
-      unsubConnect()
-      unsubDisconnect()
-      unsubSocket()
-    }
-  }, [lotusClientsQuery])
+      unsubConnect();
+      unsubDisconnect();
+      unsubSocket();
+    };
+  }, [lotusClientsQuery]);
 
-  const [textProvider, setTextProvider] = useState('')
-  const [similarProvider, setSimilarProvider] = useState('')
-  const [activeTab, setActiveTab] = useState('overview')
-  const [ingestionPipelineId, setIngestionPipelineId] = useState('')
-  const [defaultBlobProvider, setDefaultBlobProvider] = useState('')
-  const [defaultBlobResolver, setDefaultBlobResolver] = useState('')
-  const [finderEnableSearch, setFinderEnableSearch] = useState(true)
-  const [finderShebangsText, setFinderShebangsText] = useState('{}')
+  const [textProvider, setTextProvider] = useState("");
+  const [similarProvider, setSimilarProvider] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
+  const [ingestionPipelineId, setIngestionPipelineId] = useState("");
+  const [defaultBlobProvider, setDefaultBlobProvider] = useState("");
+  const [defaultBlobResolver, setDefaultBlobResolver] = useState("");
+  const [finderEnableSearch, setFinderEnableSearch] = useState(true);
+  const [finderShebangsText, setFinderShebangsText] = useState("{}");
 
   // Register dashboard navigation with global command bar
   useEffect(() => {
@@ -205,11 +192,8 @@ export function LotusDashboard() {
         <Button
           variant="ghost"
           size="icon-sm"
-          className={cn(
-            'h-6 w-6',
-            activeTab === 'overview' && 'bg-accent text-accent-foreground',
-          )}
-          onClick={() => setActiveTab('overview')}
+          className={cn("h-6 w-6", activeTab === "overview" && "bg-accent text-accent-foreground")}
+          onClick={() => setActiveTab("overview")}
           title="Overview"
         >
           <LayoutDashboard className="w-3.5 h-3.5" />
@@ -218,11 +202,8 @@ export function LotusDashboard() {
         <Button
           variant="ghost"
           size="icon-sm"
-          className={cn(
-            'h-6 w-6',
-            activeTab === 'storage' && 'bg-accent text-accent-foreground',
-          )}
-          onClick={() => setActiveTab('storage')}
+          className={cn("h-6 w-6", activeTab === "storage" && "bg-accent text-accent-foreground")}
+          onClick={() => setActiveTab("storage")}
           title="Storage"
         >
           <HardDrive className="w-3.5 h-3.5" />
@@ -231,11 +212,8 @@ export function LotusDashboard() {
         <Button
           variant="ghost"
           size="icon-sm"
-          className={cn(
-            'h-6 w-6',
-            activeTab === 'configs' && 'bg-accent text-accent-foreground',
-          )}
-          onClick={() => setActiveTab('configs')}
+          className={cn("h-6 w-6", activeTab === "configs" && "bg-accent text-accent-foreground")}
+          onClick={() => setActiveTab("configs")}
           title="Configurations"
         >
           <Cpu className="w-3.5 h-3.5" />
@@ -243,11 +221,8 @@ export function LotusDashboard() {
         <Button
           variant="ghost"
           size="icon-sm"
-          className={cn(
-            'h-6 w-6',
-            activeTab === 'finder' && 'bg-accent text-accent-foreground',
-          )}
-          onClick={() => setActiveTab('finder')}
+          className={cn("h-6 w-6", activeTab === "finder" && "bg-accent text-accent-foreground")}
+          onClick={() => setActiveTab("finder")}
           title="Finder"
         >
           <Search className="w-3.5 h-3.5" />
@@ -255,215 +230,207 @@ export function LotusDashboard() {
         <Button
           variant="ghost"
           size="icon-sm"
-          className={cn(
-            'h-6 w-6',
-            activeTab === 'defaults' && 'bg-accent text-accent-foreground',
-          )}
-          onClick={() => setActiveTab('defaults')}
+          className={cn("h-6 w-6", activeTab === "defaults" && "bg-accent text-accent-foreground")}
+          onClick={() => setActiveTab("defaults")}
           title="Defaults"
         >
           <Settings className="w-3.5 h-3.5" />
         </Button>
       </>,
-    )
-    return () => setPageControls(null)
-  }, [activeTab, setPageControls])
+    );
+    return () => setPageControls(null);
+  }, [activeTab, setPageControls]);
 
   useEffect(() => {
-    const value = searchDefaultsQuery.data?.value
-    if (!value) return
-    setTextProvider(value.text_provider || '')
-    setSimilarProvider(value.similar_provider || '')
-  }, [searchDefaultsQuery.data])
+    const value = searchDefaultsQuery.data?.value;
+    if (!value) return;
+    setTextProvider(value.text_provider || "");
+    setSimilarProvider(value.similar_provider || "");
+  }, [searchDefaultsQuery.data]);
 
   useEffect(() => {
-    const pipelineId = ingestionPipelineQuery.data?.pipeline_id ?? ''
-    setIngestionPipelineId(pipelineId)
-  }, [ingestionPipelineQuery.data])
+    const pipelineId = ingestionPipelineQuery.data?.pipeline_id ?? "";
+    setIngestionPipelineId(pipelineId);
+  }, [ingestionPipelineQuery.data]);
 
   useEffect(() => {
-    const value = finderDefaultsQuery.data?.value as
-      | FinderDefaultsConfig
-      | undefined
-    if (!value) return
-    setFinderEnableSearch(value.enable_search ?? true)
-    setFinderShebangsText(JSON.stringify(value.shebangs || {}, null, 2))
-  }, [finderDefaultsQuery.data])
+    const value = finderDefaultsQuery.data?.value;
+    if (!value) return;
+    setFinderEnableSearch(value.enable_search ?? true);
+    setFinderShebangsText(JSON.stringify(value.shebangs || {}, null, 2));
+  }, [finderDefaultsQuery.data]);
 
   useEffect(() => {
-    const data = blobRegistryQuery.data as BlobRegistryResponse | undefined
-    if (!data) return
-    setDefaultBlobProvider(data.default_provider || '')
-    setDefaultBlobResolver(data.default_resolver || '')
-  }, [blobRegistryQuery.data])
+    const data = blobRegistryQuery.data;
+    if (!data) return;
+    setDefaultBlobProvider(data.default_provider || "");
+    setDefaultBlobResolver(data.default_resolver || "");
+  }, [blobRegistryQuery.data]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const data = await api.lotus.invoke('embeddr-core.config.set', {
-        plugin_name: 'embeddr-core',
-        config_id: 'embeddr-core.search.config',
-        scope: 'global',
+      const data = await api.lotus.invoke("embeddr-core.config.set", {
+        plugin_name: "embeddr-core",
+        config_id: "embeddr-core.search.config",
+        scope: "global",
         value: {
           text_provider: textProvider,
           similar_provider: similarProvider,
         },
-      })
-      return data as ConfigSetResponse
+      });
+      return data as ConfigSetResponse;
     },
     onSuccess: () => {
-      toast.success('Routing defaults saved')
-      searchDefaultsQuery.refetch()
+      toast.success("Routing defaults saved");
+      searchDefaultsQuery.refetch();
     },
     onError: (err: any) => {
-      toast.error(err?.message || 'Failed to save routing defaults')
+      toast.error(err?.message || "Failed to save routing defaults");
     },
-  })
+  });
 
   const saveIngestionPipeline = useMutation({
     mutationFn: async () => {
-      return embeddrApi.system.setIngestionPipeline(ingestionPipelineId || null)
+      return embeddrApi.system.setIngestionPipeline(ingestionPipelineId || null);
     },
     onSuccess: () => {
-      toast.success('Ingestion pipeline saved')
-      ingestionPipelineQuery.refetch()
+      toast.success("Ingestion pipeline saved");
+      ingestionPipelineQuery.refetch();
     },
     onError: (err: any) => {
-      toast.error(err?.message || 'Failed to save ingestion pipeline')
+      toast.error(err?.message || "Failed to save ingestion pipeline");
     },
-  })
+  });
 
   const saveFinderDefaults = useMutation({
     mutationFn: async () => {
-      let shebangs: Record<string, any> = {}
+      let shebangs: Record<string, any> = {};
       if (finderShebangsText.trim()) {
         try {
-          shebangs = JSON.parse(finderShebangsText)
+          shebangs = JSON.parse(finderShebangsText);
         } catch (err) {
-          throw new Error('Finder shebangs must be valid JSON')
+          throw new Error("Finder shebangs must be valid JSON");
         }
       }
 
-      const data = await api.lotus.invoke('embeddr-core.config.set', {
-        plugin_name: 'embeddr-core',
-        config_id: 'embeddr-core.finder.config',
-        scope: 'global',
+      const data = await api.lotus.invoke("embeddr-core.config.set", {
+        plugin_name: "embeddr-core",
+        config_id: "embeddr-core.finder.config",
+        scope: "global",
         value: {
           enable_search: finderEnableSearch,
           shebangs,
         },
-      })
-      return data as ConfigSetResponse
+      });
+      return data as ConfigSetResponse;
     },
     onSuccess: () => {
-      toast.success('Finder defaults saved')
-      finderDefaultsQuery.refetch()
+      toast.success("Finder defaults saved");
+      finderDefaultsQuery.refetch();
     },
     onError: (err: any) => {
-      toast.error(err?.message || 'Failed to save finder defaults')
+      toast.error(err?.message || "Failed to save finder defaults");
     },
-  })
+  });
 
   const saveBlobDefaults = useMutation({
     mutationFn: async () => {
       return embeddrApi.system.setBlobDefaults({
         default_provider: defaultBlobProvider || null,
         default_resolver: defaultBlobResolver || null,
-      })
+      });
     },
     onSuccess: () => {
-      toast.success('Blob routing defaults saved')
-      blobRegistryQuery.refetch()
+      toast.success("Blob routing defaults saved");
+      blobRegistryQuery.refetch();
     },
     onError: (err: any) => {
-      toast.error(err?.message || 'Failed to save blob routing defaults')
+      toast.error(err?.message || "Failed to save blob routing defaults");
     },
-  })
+  });
 
   const counts = useMemo(() => {
-    const byKind: Record<string, number> = {}
+    const byKind: Record<string, number> = {};
     for (const cap of capabilities) {
-      byKind[cap.kind] = (byKind[cap.kind] || 0) + 1
+      byKind[cap.kind] = (byKind[cap.kind] || 0) + 1;
     }
-    return byKind
-  }, [capabilities])
+    return byKind;
+  }, [capabilities]);
 
   const providerCount = useMemo(() => {
-    return capabilities.filter((cap) => cap.kind === 'provider' || cap.slot)
-      .length
-  }, [capabilities])
+    return capabilities.filter((cap) => cap.kind === "provider" || cap.slot).length;
+  }, [capabilities]);
 
   const searchProviders = useMemo(() => {
     return capabilities.filter(
-      (cap) => cap.kind === 'action' && String(cap.id).includes('search.'),
-    )
-  }, [capabilities])
+      (cap) => cap.kind === "action" && String(cap.id).includes("search."),
+    );
+  }, [capabilities]);
 
   const tabs = [
-    { value: 'overview', label: 'Overview' },
-    { value: 'storage', label: 'Storage' },
-    { value: 'configs', label: 'Configs' },
-    { value: 'defaults', label: 'Defaults' },
-    { value: 'finder', label: 'Finder' },
-    { value: 'capabilities', label: 'Capabilities' },
-  ]
+    { value: "overview", label: "Overview" },
+    { value: "storage", label: "Storage" },
+    { value: "configs", label: "Configs" },
+    { value: "defaults", label: "Defaults" },
+    { value: "finder", label: "Finder" },
+    { value: "capabilities", label: "Capabilities" },
+  ];
 
   const overviewStats = [
-    { label: 'Artifacts', value: artifactsQuery.data?.total ?? 0 },
-    { label: 'Plugins Loaded', value: pluginsQuery.data?.length ?? 0 },
-    { label: 'Capabilities', value: capabilities.length },
-    { label: 'Providers', value: providerCount },
-  ]
+    { label: "Artifacts", value: artifactsQuery.data?.total ?? 0 },
+    { label: "Plugins Loaded", value: pluginsQuery.data?.length ?? 0 },
+    { label: "Capabilities", value: capabilities.length },
+    { label: "Providers", value: providerCount },
+  ];
 
   const blobProviders = useMemo(() => {
-    const data = blobRegistryQuery.data as BlobRegistryResponse | undefined
-    return data?.providers || []
-  }, [blobRegistryQuery.data])
+    const data = blobRegistryQuery.data;
+    return data?.providers || [];
+  }, [blobRegistryQuery.data]);
 
   const blobResolvers = useMemo(() => {
-    const data = blobRegistryQuery.data as BlobRegistryResponse | undefined
-    return data?.resolvers || []
-  }, [blobRegistryQuery.data])
+    const data = blobRegistryQuery.data;
+    return data?.resolvers || [];
+  }, [blobRegistryQuery.data]);
 
   const providerResolvers = useMemo(() => {
-    const data = blobRegistryQuery.data as BlobRegistryResponse | undefined
-    return data?.provider_resolvers || {}
-  }, [blobRegistryQuery.data])
+    const data = blobRegistryQuery.data;
+    return data?.provider_resolvers || {};
+  }, [blobRegistryQuery.data]);
 
   const storageCapabilities = useMemo(() => {
     return capabilities.filter((cap) => {
-      if (cap.kind === 'storage') return true
-      const id = String(cap.id || '')
-      if (id.includes('blob_storage') || id.includes('storage')) return true
-      return false
-    })
-  }, [capabilities])
+      if (cap.kind === "storage") return true;
+      const id = String(cap.id || "");
+      if (id.includes("blob_storage") || id.includes("storage")) return true;
+      return false;
+    });
+  }, [capabilities]);
 
   const configCapabilities = useMemo(() => {
     return capabilities
-      .filter((cap) => cap.kind === 'config')
-      .sort((a, b) =>
-        String(a.title || a.id).localeCompare(String(b.title || b.id)),
-      )
-  }, [capabilities])
+      .filter((cap) => cap.kind === "config")
+      .sort((a, b) => String(a.title || a.id).localeCompare(String(b.title || b.id)));
+  }, [capabilities]);
 
   const pipelineOptions = useMemo(() => {
-    const data = automationsQuery.data as AutomationsResponse | undefined
-    const items = data?.items || []
-    return items.map((item) => ({ id: item.id, name: item.name }))
-  }, [automationsQuery.data])
+    const data = automationsQuery.data as AutomationsResponse | undefined;
+    const items = data?.items || [];
+    return items.map((item) => ({ id: item.id, name: item.name }));
+  }, [automationsQuery.data]);
 
-  const tabLabel = tabs.find((t) => t.value === activeTab)?.label || 'Dashboard'
+  const tabLabel = tabs.find((t) => t.value === activeTab)?.label || "Dashboard";
 
   return (
     <div className="w-full h-full overflow-hidden flex flex-col">
       {/* Top Navigation Bar (Only show when NOT on overview) */}
-      {activeTab !== 'overview' && (
+      {activeTab !== "overview" && (
         <div className="shrink-0 rounded-md p-2 border m-1 flex items-center px-4 gap-4 bg-muted/20">
           <Button
             variant="ghost"
             size="sm"
             className="gap-2 text-muted-foreground hover:text-foreground -ml-2"
-            onClick={() => setActiveTab('overview')}
+            onClick={() => setActiveTab("overview")}
           >
             <div className="flex items-center gap-1">
               <svg
@@ -491,7 +458,7 @@ export function LotusDashboard() {
 
       {/* Main Content Area */}
       <div className="flex-1 min-h-0 relative p-1">
-        {activeTab === 'overview' && (
+        {activeTab === "overview" && (
           <div className="h-full min-h-0">
             <LotusOverviewPanel
               capabilities={capabilities}
@@ -508,26 +475,26 @@ export function LotusDashboard() {
               clientCount={lotusClientsQuery.data?.count}
               clientDetails={lotusClientsQuery.data?.details}
               onManage={(section) => {
-                if (section === 'storage') {
-                  setActiveTab('storage')
-                } else if (section === 'defaults') {
-                  setActiveTab('defaults')
-                } else if (section === 'compute') {
-                  setActiveTab('configs')
-                } else if (section === 'llm' || section === 'embedding') {
-                  setActiveTab('configs')
+                if (section === "storage") {
+                  setActiveTab("storage");
+                } else if (section === "defaults") {
+                  setActiveTab("defaults");
+                } else if (section === "compute") {
+                  setActiveTab("configs");
+                } else if (section === "llm" || section === "embedding") {
+                  setActiveTab("configs");
                 } else {
-                  setActiveTab('capabilities')
+                  setActiveTab("capabilities");
                 }
               }}
             />
           </div>
         )}
 
-        {activeTab !== 'overview' && (
+        {activeTab !== "overview" && (
           <ScrollArea className="h-full pr-3" type="always">
             <div className="mx-auto w-full">
-              {activeTab === 'storage' && (
+              {activeTab === "storage" && (
                 <LotusStoragePanel
                   blobProviders={blobProviders}
                   blobResolvers={blobResolvers}
@@ -538,11 +505,11 @@ export function LotusDashboard() {
                 />
               )}
 
-              {activeTab === 'configs' && (
+              {activeTab === "configs" && (
                 <LotusConfigsTab configCapabilities={configCapabilities} />
               )}
 
-              {activeTab === 'defaults' && (
+              {activeTab === "defaults" && (
                 <LotusDefaultsTab
                   blobProviders={blobProviders}
                   providerResolvers={providerResolvers}
@@ -569,7 +536,7 @@ export function LotusDashboard() {
                 />
               )}
 
-              {activeTab === 'finder' && (
+              {activeTab === "finder" && (
                 <LotusFinderTab
                   finderEnableSearch={finderEnableSearch}
                   setFinderEnableSearch={setFinderEnableSearch}
@@ -580,13 +547,11 @@ export function LotusDashboard() {
                 />
               )}
 
-              {activeTab === 'capabilities' && (
-                <LotusCapabilitiesTab capabilities={capabilities} />
-              )}
+              {activeTab === "capabilities" && <LotusCapabilitiesTab capabilities={capabilities} />}
             </div>
           </ScrollArea>
         )}
       </div>
     </div>
-  )
+  );
 }

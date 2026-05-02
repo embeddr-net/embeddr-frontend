@@ -1,1 +1,1 @@
-export { globalEventBus, EventBus } from '@embeddr/zen-shell'
+export { globalEventBus, EventBus } from "@embeddr/zen-shell";

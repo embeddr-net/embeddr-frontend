@@ -4,14 +4,14 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/ui'
-import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
+} from "@embeddr/react-ui/ui";
+import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 
 interface OnboardingDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onComplete: () => void
-  onOpenSettingsTab: (tab: string) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onComplete: () => void;
+  onOpenSettingsTab: (tab: string) => void;
 }
 
 export function OnboardingDialog({
@@ -31,12 +31,12 @@ export function OnboardingDialog({
         </DialogHeader>
         <OnboardingWizard
           onComplete={() => {
-            onComplete()
-            onOpenChange(false)
+            onComplete();
+            onOpenChange(false);
           }}
           onOpenSettingsTab={onOpenSettingsTab}
         />
       </DialogContent>
     </Dialog>
-  )
+  );
 }

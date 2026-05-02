@@ -1,6 +1,6 @@
-import React from 'react'
-import { VisualCommandBarEditor } from '@/components/settings/VisualCommandBarEditor'
-import { Badge } from '@embeddr/react-ui/ui'
+import React from "react";
+import { Badge } from "@embeddr/react-ui/ui";
+import { VisualCommandBarEditor } from "@/components/settings/VisualCommandBarEditor";
 
 export function CommandBarCustomizer() {
   return (
@@ -18,10 +18,8 @@ export function CommandBarCustomizer() {
           </Badge>
         </div>
       </div>
-      <p className="text-[11px] text-muted-foreground">
-        Drag handles to move. Hover for controls.
-      </p>
+      <p className="text-[11px] text-muted-foreground">Drag handles to move. Hover for controls.</p>
       <VisualCommandBarEditor />
     </div>
-  )
+  );
 }

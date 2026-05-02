@@ -1,59 +1,57 @@
-import React, { useMemo } from 'react'
-import { Card } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
+import React, { useMemo } from "react";
 import {
+  Badge,
+  Button,
+  Card,
+  ScrollArea,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/ui'
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@embeddr/react-ui/ui'
-import { AlertTriangle, Boxes, Layers, Zap } from 'lucide-react'
+} from "@embeddr/react-ui/ui";
+import { AlertTriangle, Boxes, Layers, Zap } from "lucide-react";
 import type {
   ArtifactRegistryResponse,
   ArtifactTypeCountsResponse,
   LotusCapability,
-} from '@/lib/api/types'
-import { useWebSocket } from '@/providers/WebSocketProvider'
-import { BACKEND_URL, BASE_URL } from '@/lib/api/config'
-import { usePluginLogos } from '@/hooks/usePluginLogos'
+} from "@/lib/api/types";
+import { useWebSocket } from "@/providers/WebSocketProvider";
+import { BACKEND_URL, BASE_URL } from "@/lib/api/config";
+import { usePluginLogos } from "@/hooks/usePluginLogos";
 
 type LotusOverviewPanelProps = {
-  capabilities: LotusCapability[]
-  plugins?: Array<Record<string, any>>
+  capabilities: Array<LotusCapability>;
+  plugins?: Array<Record<string, any>>;
   stats: {
-    artifacts: number
-    plugins: number
-    automations: number
-    providers: number
-  }
+    artifacts: number;
+    plugins: number;
+    automations: number;
+    providers: number;
+  };
   operator?: {
-    id: string
-    username: string
-    display_name: string
-    avatar_url?: string | null
-    is_admin?: boolean
-  } | null
-  artifactRegistry?: ArtifactRegistryResponse
-  artifactTypeCounts?: ArtifactTypeCountsResponse
-  clientCount?: number
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_url?: string | null;
+    is_admin?: boolean;
+  } | null;
+  artifactRegistry?: ArtifactRegistryResponse;
+  artifactTypeCounts?: ArtifactTypeCountsResponse;
+  clientCount?: number;
   clientDetails?: Array<{
-    client_id: string
-    address?: string | null
-    user_agent?: string | null
-    origin?: string | null
-    forwarded_for?: string | null
-    path?: string | null
-  }>
-  onManage?: (section: string) => void
-}
+    client_id: string;
+    address?: string | null;
+    user_agent?: string | null;
+    origin?: string | null;
+    forwarded_for?: string | null;
+    path?: string | null;
+  }>;
+  onManage?: (section: string) => void;
+};
 
 export function LotusOverviewPanel({
   capabilities,
@@ -66,94 +64,91 @@ export function LotusOverviewPanel({
   clientDetails: _clientDetails,
   onManage,
 }: LotusOverviewPanelProps) {
-  const { isConnected, lastMessage } = useWebSocket()
-  const { logos } = usePluginLogos()
+  const { isConnected, lastMessage } = useWebSocket();
+  const { logos } = usePluginLogos();
 
   const kindCounts = useMemo(() => {
-    const map = new Map<string, number>()
+    const map = new Map<string, number>();
     capabilities.forEach((cap) => {
-      const kind = cap.kind || 'other'
-      map.set(kind, (map.get(kind) || 0) + 1)
-    })
-    return map
-  }, [capabilities])
+      const kind = cap.kind || "other";
+      map.set(kind, (map.get(kind) || 0) + 1);
+    });
+    return map;
+  }, [capabilities]);
 
   const pluginsMap = useMemo(() => {
-    const map = new Map<string, { total: number; versions: Set<string> }>()
+    const map = new Map<string, { total: number; versions: Set<string> }>();
     capabilities.forEach((cap) => {
-      const plugin = cap.plugin || 'core'
-      const entry = map.get(plugin) || { total: 0, versions: new Set() }
-      entry.total += 1
+      const plugin = cap.plugin || "core";
+      const entry = map.get(plugin) || { total: 0, versions: new Set() };
+      entry.total += 1;
       if (cap.version) {
-        entry.versions.add(cap.version)
+        entry.versions.add(cap.version);
       }
-      map.set(plugin, entry)
-    })
+      map.set(plugin, entry);
+    });
 
     _plugins.forEach((plugin) => {
-      const name = String(plugin.name || plugin.id || '')
-      if (!name) return
+      const name = String(plugin.name || plugin.id || "");
+      if (!name) return;
       if (!map.has(name)) {
-        map.set(name, { total: 0, versions: new Set() })
+        map.set(name, { total: 0, versions: new Set() });
       }
-      const entry = map.get(name)
-      const version = plugin.version ? String(plugin.version) : null
+      const entry = map.get(name);
+      const version = plugin.version ? String(plugin.version) : null;
       if (entry && version) {
-        entry.versions.add(version)
+        entry.versions.add(version);
       }
-    })
+    });
 
-    return map
-  }, [capabilities, _plugins])
+    return map;
+  }, [capabilities, _plugins]);
 
   const pluginOrder = useMemo(() => {
-    return Array.from(pluginsMap.keys()).sort((a, b) => a.localeCompare(b))
-  }, [pluginsMap])
+    return Array.from(pluginsMap.keys()).sort((a, b) => a.localeCompare(b));
+  }, [pluginsMap]);
 
   const statusMeta = useMemo(() => {
-    const data = lastMessage?.data as any
+    const data = lastMessage?.data as any;
     const queueRemaining =
       data?.queue_remaining ??
       data?.exec_info?.queue_remaining ??
       data?.exec_info?.queueRemaining ??
-      null
+      null;
     const socketClients =
-      data?.client_count ??
-      data?.clients?.length ??
-      data?.connected_clients ??
-      null
-    return { queueRemaining, clientCount: socketClients }
-  }, [lastMessage])
+      data?.client_count ?? data?.clients?.length ?? data?.connected_clients ?? null;
+    return { queueRemaining, clientCount: socketClients };
+  }, [lastMessage]);
 
   const renderIcon = (cap: LotusCapability) => {
-    const ui = (cap.data as any)?.ui || {}
-    const color = ui?.color as string | undefined
+    const ui = (cap.data as any)?.ui || {};
+    const color = ui?.color as string | undefined;
 
-    const svg = ui?.iconSvg as string | undefined
-    if (svg && typeof svg === 'string') {
+    const svg = ui?.iconSvg as string | undefined;
+    if (svg && typeof svg === "string") {
       return (
         <span
           className="w-3.5 h-3.5 inline-flex items-center justify-center"
           style={color ? { color } : undefined}
           dangerouslySetInnerHTML={{ __html: svg }}
         />
-      )
+      );
     }
 
-    const iconUrl = ui?.iconUrl as string | undefined
+    const iconUrl = ui?.iconUrl as string | undefined;
     if (iconUrl) {
-      let normalized = iconUrl
-      if (normalized.startsWith('/') && !normalized.startsWith('/api/')) {
-        const pluginName = cap.plugin || 'core'
+      let normalized = iconUrl;
+      if (normalized.startsWith("/") && !normalized.startsWith("/api/")) {
+        const pluginName = cap.plugin || "core";
         if (normalized.startsWith(`/${pluginName}/static/`)) {
-          normalized = `/api/plugins${normalized}`
+          normalized = `/api/plugins${normalized}`;
         }
       }
-      const resolvedUrl = normalized.startsWith('http')
+      const resolvedUrl = normalized.startsWith("http")
         ? normalized
         : `${
-            normalized.startsWith('/api/') ? BASE_URL : BACKEND_URL
-          }${normalized.startsWith('/') ? '' : '/'}${normalized}`
+            normalized.startsWith("/api/") ? BASE_URL : BACKEND_URL
+          }${normalized.startsWith("/") ? "" : "/"}${normalized}`;
       return (
         <img
           src={resolvedUrl}
@@ -161,92 +156,91 @@ export function LotusOverviewPanel({
           className="w-3.5 h-3.5 object-contain rounded-sm"
           style={color ? { color } : undefined}
         />
-      )
+      );
     }
 
-    return null
-  }
+    return null;
+  };
 
   const pluginIconCaps = useMemo(() => {
-    const map = new Map<string, LotusCapability | null>()
+    const map = new Map<string, LotusCapability | null>();
     for (const cap of capabilities) {
-      const plugin = cap.plugin || 'core'
-      if (map.has(plugin)) continue
-      const ui = (cap.data as any)?.ui || {}
+      const plugin = cap.plugin || "core";
+      if (map.has(plugin)) continue;
+      const ui = (cap.data as any)?.ui || {};
       if (ui?.iconSvg || ui?.iconUrl) {
-        map.set(plugin, cap)
+        map.set(plugin, cap);
       }
     }
-    return map
-  }, [capabilities])
+    return map;
+  }, [capabilities]);
 
   const typeCounts = useMemo(() => {
-    const counts = artifactTypeCounts?.type_counts || {}
-    return Object.entries(counts).sort((a, b) => b[1] - a[1])
-  }, [artifactTypeCounts])
+    const counts = artifactTypeCounts?.type_counts || {};
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [artifactTypeCounts]);
 
   const baseTypeCounts = useMemo(() => {
-    const counts = artifactTypeCounts?.base_type_counts || {}
-    return Object.entries(counts).sort((a, b) => b[1] - a[1])
-  }, [artifactTypeCounts])
+    const counts = artifactTypeCounts?.base_type_counts || {};
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [artifactTypeCounts]);
 
   const artifactTypeCaps = useMemo(() => {
-    return capabilities.filter((cap) => cap.kind === 'artifact_type')
-  }, [capabilities])
+    return capabilities.filter((cap) => cap.kind === "artifact_type");
+  }, [capabilities]);
 
   const registeredTypesByPlugin = useMemo(() => {
-    const map = new Map<string, Array<Record<string, any>>>()
+    const map = new Map<string, Array<Record<string, any>>>();
     artifactTypeCaps.forEach((cap) => {
-      const plugin = cap.plugin || 'core'
-      const data = (cap.data as any) || {}
-      const types = Array.isArray(data.types) ? data.types : []
+      const plugin = cap.plugin || "core";
+      const data = (cap.data as any) || {};
+      const types = Array.isArray(data.types) ? data.types : [];
       if (!map.has(plugin)) {
-        map.set(plugin, [])
+        map.set(plugin, []);
       }
-      map.get(plugin)?.push(...types)
-    })
+      map.get(plugin)?.push(...types);
+    });
 
     for (const [plugin, types] of map.entries()) {
-      const deduped = new Map<string, Record<string, any>>()
+      const deduped = new Map<string, Record<string, any>>();
       types.forEach((t) => {
-        if (t?.name) deduped.set(String(t.name), t)
-      })
-      map.set(plugin, Array.from(deduped.values()))
+        if (t?.name) deduped.set(String(t.name), t);
+      });
+      map.set(plugin, Array.from(deduped.values()));
     }
 
-    return map
-  }, [artifactTypeCaps])
+    return map;
+  }, [artifactTypeCaps]);
 
   const unknownTypeCounts = useMemo(() => {
-    const known = new Set<string>()
+    const known = new Set<string>();
     for (const types of registeredTypesByPlugin.values()) {
       types.forEach((t) => {
-        if (t?.name) known.add(String(t.name))
-      })
+        if (t?.name) known.add(String(t.name));
+      });
     }
 
-    return typeCounts.filter(([type]) => !known.has(type))
-  }, [registeredTypesByPlugin, typeCounts])
+    return typeCounts.filter(([type]) => !known.has(type));
+  }, [registeredTypesByPlugin, typeCounts]);
 
-  const operatorName =
-    operator?.display_name || operator?.username || 'Operator'
+  const operatorName = operator?.display_name || operator?.username || "Operator";
   const operatorInitials = operatorName
-    .split(' ')
+    .split(" ")
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
-    .join('')
+    .join("");
 
   const pulseItems = [
-    { label: 'Artifacts', value: stats.artifacts },
-    { label: 'Providers', value: stats.providers },
-    { label: 'Automations', value: stats.automations },
-    { label: 'Kinds', value: kindCounts.size },
-    { label: 'Plugins', value: pluginOrder.length },
-    { label: 'Capabilities', value: capabilities.length },
-    { label: 'Queue', value: statusMeta.queueRemaining ?? '—' },
-    { label: 'Clients', value: statusMeta.clientCount ?? clientCount ?? '—' },
-  ]
+    { label: "Artifacts", value: stats.artifacts },
+    { label: "Providers", value: stats.providers },
+    { label: "Automations", value: stats.automations },
+    { label: "Kinds", value: kindCounts.size },
+    { label: "Plugins", value: pluginOrder.length },
+    { label: "Capabilities", value: capabilities.length },
+    { label: "Queue", value: statusMeta.queueRemaining ?? "—" },
+    { label: "Clients", value: statusMeta.clientCount ?? clientCount ?? "—" },
+  ];
 
   return (
     <div className="flex flex-col h-full min-h-0 gap-3">
@@ -255,14 +249,10 @@ export function LotusOverviewPanel({
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-xl bg-background/70 border flex items-center justify-center overflow-hidden">
               {operator?.avatar_url ? (
-                <img
-                  src={operator.avatar_url}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
+                <img src={operator.avatar_url} alt="" className="h-full w-full object-cover" />
               ) : (
                 <span className="text-sm font-semibold text-muted-foreground">
-                  {operatorInitials || 'OP'}
+                  {operatorInitials || "OP"}
                 </span>
               )}
             </div>
@@ -272,57 +262,37 @@ export function LotusOverviewPanel({
               </div>
               <div className="text-base font-semibold">{operatorName}</div>
               <div className="text-[11px] text-muted-foreground">
-                {operator?.is_admin ? 'Admin session' : 'Standard session'}
+                {operator?.is_admin ? "Admin session" : "Standard session"}
               </div>
             </div>
           </div>
           <div className="mt-4 space-y-2">
             <div className="flex items-center justify-between text-[11px]">
               <span className="text-muted-foreground">Status</span>
-              <Badge variant={isConnected ? 'secondary' : 'destructive'}>
-                {isConnected ? 'Online' : 'Offline'}
+              <Badge variant={isConnected ? "secondary" : "destructive"}>
+                {isConnected ? "Online" : "Offline"}
               </Badge>
             </div>
             <div className="flex items-center justify-between text-[11px]">
               <span className="text-muted-foreground">Clients</span>
-              <span className="font-semibold">
-                {statusMeta.clientCount ?? clientCount ?? '—'}
-              </span>
+              <span className="font-semibold">{statusMeta.clientCount ?? clientCount ?? "—"}</span>
             </div>
             <div className="flex items-center justify-between text-[11px]">
               <span className="text-muted-foreground">Queue</span>
-              <span className="font-semibold">
-                {statusMeta.queueRemaining ?? '—'}
-              </span>
+              <span className="font-semibold">{statusMeta.queueRemaining ?? "—"}</span>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onManage?.('storage')}
-            >
+            <Button size="sm" variant="outline" onClick={() => onManage?.("storage")}>
               Storage
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onManage?.('defaults')}
-            >
+            <Button size="sm" variant="outline" onClick={() => onManage?.("defaults")}>
               Defaults
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onManage?.('configs')}
-            >
+            <Button size="sm" variant="outline" onClick={() => onManage?.("configs")}>
               Configs
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onManage?.('capabilities')}
-            >
+            <Button size="sm" variant="outline" onClick={() => onManage?.("capabilities")}>
               Capabilities
             </Button>
           </div>
@@ -347,13 +317,8 @@ export function LotusOverviewPanel({
           </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {pulseItems.map((item) => (
-              <div
-                key={item.label}
-                className="rounded-lg border bg-background/70 p-3"
-              >
-                <div className="text-[10px] text-muted-foreground">
-                  {item.label}
-                </div>
+              <div key={item.label} className="rounded-lg border bg-background/70 p-3">
+                <div className="text-[10px] text-muted-foreground">{item.label}</div>
                 <div className="text-lg font-semibold">{item.value}</div>
               </div>
             ))}
@@ -380,67 +345,55 @@ export function LotusOverviewPanel({
               <ScrollArea className="h-80 pr-2" type="always">
                 <TooltipProvider>
                   <div className="space-y-3">
-                    {Array.from(registeredTypesByPlugin.entries()).map(
-                      ([plugin, types]) => {
-                        const iconCap = pluginIconCaps.get(plugin)
-                        const pluginLogo = logos?.[plugin] || null
-                        return (
-                          <div key={plugin} className="space-y-1">
-                            <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground">
-                              <span>{plugin}</span>
-                              <span>{types.length} types</span>
-                            </div>
-                            <div className="grid gap-1 sm:grid-cols-2">
-                              {types.map((type) => {
-                                const name = String(type?.name || 'unknown')
-                                const count =
-                                  artifactTypeCounts?.type_counts?.[name] || 0
-                                return (
-                                  <div
-                                    key={`${plugin}-${name}`}
-                                    className="flex items-center justify-between rounded border px-2 py-1 text-[11px]"
-                                  >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <Tooltip>
-                                        <TooltipTrigger className="flex items-center">
-                                          {iconCap ? (
-                                            renderIcon(iconCap)
-                                          ) : pluginLogo ? (
-                                            <img
-                                              src={pluginLogo}
-                                              alt=""
-                                              className="w-3.5 h-3.5 object-contain rounded-sm"
-                                            />
-                                          ) : (
-                                            <Boxes className="w-3.5 h-3.5 text-muted-foreground" />
-                                          )}
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          {plugin}
-                                        </TooltipContent>
-                                      </Tooltip>
-                                      <span className="text-foreground/90 truncate">
-                                        {name}
-                                      </span>
-                                    </div>
-                                    <Badge
-                                      variant="secondary"
-                                      className="text-[10px]"
-                                    >
-                                      {count}
-                                    </Badge>
-                                  </div>
-                                )
-                              })}
-                            </div>
+                    {Array.from(registeredTypesByPlugin.entries()).map(([plugin, types]) => {
+                      const iconCap = pluginIconCaps.get(plugin);
+                      const pluginLogo = logos?.[plugin] || null;
+                      return (
+                        <div key={plugin} className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground">
+                            <span>{plugin}</span>
+                            <span>{types.length} types</span>
                           </div>
-                        )
-                      },
-                    )}
+                          <div className="grid gap-1 sm:grid-cols-2">
+                            {types.map((type) => {
+                              const name = String(type?.name || "unknown");
+                              const count = artifactTypeCounts?.type_counts?.[name] || 0;
+                              return (
+                                <div
+                                  key={`${plugin}-${name}`}
+                                  className="flex items-center justify-between rounded border px-2 py-1 text-[11px]"
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Tooltip>
+                                      <TooltipTrigger className="flex items-center">
+                                        {iconCap ? (
+                                          renderIcon(iconCap)
+                                        ) : pluginLogo ? (
+                                          <img
+                                            src={pluginLogo}
+                                            alt=""
+                                            className="w-3.5 h-3.5 object-contain rounded-sm"
+                                          />
+                                        ) : (
+                                          <Boxes className="w-3.5 h-3.5 text-muted-foreground" />
+                                        )}
+                                      </TooltipTrigger>
+                                      <TooltipContent>{plugin}</TooltipContent>
+                                    </Tooltip>
+                                    <span className="text-foreground/90 truncate">{name}</span>
+                                  </div>
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    {count}
+                                  </Badge>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                     {registeredTypesByPlugin.size === 0 && (
-                      <div className="text-xs text-muted-foreground">
-                        No registry types found.
-                      </div>
+                      <div className="text-xs text-muted-foreground">No registry types found.</div>
                     )}
                     {unknownTypeCounts.length > 0 && (
                       <div className="rounded border border-dashed p-2">
@@ -454,10 +407,7 @@ export function LotusOverviewPanel({
                               className="flex items-center justify-between rounded border px-2 py-1 text-[11px]"
                             >
                               <span className="text-foreground/90">{type}</span>
-                              <Badge
-                                variant="secondary"
-                                className="text-[10px]"
-                              >
+                              <Badge variant="secondary" className="text-[10px]">
                                 {count}
                               </Badge>
                             </div>
@@ -474,26 +424,24 @@ export function LotusOverviewPanel({
               <ScrollArea className="h-80 pr-2" type="always">
                 <div className="flex flex-col gap-2">
                   {pluginOrder.map((plugin) => {
-                    const entry = pluginsMap.get(plugin)
-                    if (!entry) return null
-                    const iconCap = pluginIconCaps.get(plugin)
-                    const pluginLogo = logos?.[plugin] || null
+                    const entry = pluginsMap.get(plugin);
+                    if (!entry) return null;
+                    const iconCap = pluginIconCaps.get(plugin);
+                    const pluginLogo = logos?.[plugin] || null;
                     const pluginMeta = _plugins.find(
-                      (item) => String(item.name || item.id || '') === plugin,
-                    )
+                      (item) => String(item.name || item.id || "") === plugin,
+                    );
                     const panels = Array.isArray(pluginMeta?.panels)
                       ? pluginMeta?.panels.length
-                      : 0
-                    const pages = Array.isArray(pluginMeta?.pages)
-                      ? pluginMeta?.pages.length
-                      : 0
+                      : 0;
+                    const pages = Array.isArray(pluginMeta?.pages) ? pluginMeta?.pages.length : 0;
                     const widgets = Array.isArray(pluginMeta?.widgets)
                       ? pluginMeta?.widgets.length
-                      : 0
+                      : 0;
                     const actions = Array.isArray(pluginMeta?.actions)
                       ? pluginMeta?.actions.length
-                      : 0
-                    const frontendCount = panels + pages + widgets
+                      : 0;
+                    const frontendCount = panels + pages + widgets;
 
                     return (
                       <div
@@ -531,7 +479,7 @@ export function LotusOverviewPanel({
                           </span>
                         </div>
                       </div>
-                    )
+                    );
                   })}
                   {pluginOrder.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-24 text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-muted">
@@ -553,9 +501,7 @@ export function LotusOverviewPanel({
                     </Badge>
                   ))}
                 {kindCounts.size === 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    No capabilities detected.
-                  </span>
+                  <span className="text-xs text-muted-foreground">No capabilities detected.</span>
                 )}
               </div>
             </TabsContent>
@@ -566,51 +512,36 @@ export function LotusOverviewPanel({
           <div className="text-xs font-semibold">Registry Signals</div>
           <div className="mt-3 grid gap-2">
             <div className="rounded-lg border bg-background/70 p-3">
-              <div className="text-[10px] text-muted-foreground">
-                Registered types
-              </div>
+              <div className="text-[10px] text-muted-foreground">Registered types</div>
               <div className="text-lg font-semibold">
                 {artifactRegistry?.type_names?.length || 0}
               </div>
             </div>
             <div className="rounded-lg border bg-background/70 p-3">
-              <div className="text-[10px] text-muted-foreground">
-                Base types
-              </div>
+              <div className="text-[10px] text-muted-foreground">Base types</div>
               <div className="text-lg font-semibold">
                 {artifactRegistry?.base_type_names?.length || 0}
               </div>
             </div>
             <div className="rounded-lg border bg-background/70 p-3">
-              <div className="text-[10px] text-muted-foreground">
-                Import sources
-              </div>
+              <div className="text-[10px] text-muted-foreground">Import sources</div>
               <div className="text-lg font-semibold">
                 {artifactRegistry?.import_sources?.length || 0}
               </div>
             </div>
             <div className="rounded-lg border bg-background/70 p-3">
               <div className="text-[10px] text-muted-foreground">Origins</div>
-              <div className="text-lg font-semibold">
-                {artifactRegistry?.origins?.length || 0}
-              </div>
+              <div className="text-lg font-semibold">{artifactRegistry?.origins?.length || 0}</div>
             </div>
             <div className="rounded-lg border bg-background/70 p-3">
-              <div className="text-[10px] text-muted-foreground">
-                Base types
-              </div>
+              <div className="text-[10px] text-muted-foreground">Base types</div>
               <ScrollArea className="mt-2 h-28 pr-2" type="always">
                 <div className="space-y-2">
                   {baseTypeCounts.length === 0 && (
-                    <div className="text-xs text-muted-foreground">
-                      No base types found.
-                    </div>
+                    <div className="text-xs text-muted-foreground">No base types found.</div>
                   )}
                   {baseTypeCounts.map(([type, count]) => (
-                    <div
-                      key={type}
-                      className="flex items-center justify-between text-xs"
-                    >
+                    <div key={type} className="flex items-center justify-between text-xs">
                       <span className="text-foreground/90">{type}</span>
                       <Badge variant="secondary" className="text-[10px]">
                         {count}
@@ -624,5 +555,5 @@ export function LotusOverviewPanel({
         </Card>
       </div>
     </div>
-  )
+  );
 }

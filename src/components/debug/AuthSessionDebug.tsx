@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState } from "react";
 import {
   Badge,
   Button,
@@ -7,26 +7,26 @@ import {
   CardHeader,
   CardTitle,
   Separator,
-} from '@embeddr/react-ui'
-import { useQuery } from '@tanstack/react-query'
-import { ChevronDown, ChevronUp, KeyRound, RefreshCcw, User2 } from 'lucide-react'
-import { embeddrApi } from '@/lib/api/client'
+} from "@embeddr/react-ui";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronDown, ChevronUp, KeyRound, RefreshCcw, User2 } from "lucide-react";
+import { embeddrApi } from "@/lib/api/client";
 
 const FieldRow = ({ label, value }: { label: string; value?: string }) => (
   <div className="flex items-center justify-between gap-3">
     <span className="text-xs text-muted-foreground">{label}</span>
-    <span className="text-xs font-mono text-foreground truncate">{value || '-'}</span>
+    <span className="text-xs font-mono text-foreground truncate">{value || "-"}</span>
   </div>
-)
+);
 
 export const AuthSessionDebug = () => {
-  const [showRaw, setShowRaw] = useState(false)
+  const [showRaw, setShowRaw] = useState(false);
   const sessionQuery = useQuery({
-    queryKey: ['debug', 'auth-session'],
+    queryKey: ["debug", "auth-session"],
     queryFn: () => embeddrApi.security.whoami(),
-  })
+  });
 
-  const data = sessionQuery.data
+  const data = sessionQuery.data;
 
   return (
     <Card className="flex-1 w-full flex flex-col h-full">
@@ -40,12 +40,7 @@ export const AuthSessionDebug = () => {
             </Badge>
           )}
         </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => sessionQuery.refetch()}
-          title="Refresh"
-        >
+        <Button size="sm" variant="ghost" onClick={() => sessionQuery.refetch()} title="Refresh">
           <RefreshCcw className="w-4 h-4" />
         </Button>
       </CardHeader>
@@ -67,37 +62,37 @@ export const AuthSessionDebug = () => {
                   Auth Chain
                 </div>
                 <Badge variant="outline" className="text-[10px] font-mono">
-                  {data.auth_enabled ? 'enabled' : 'open'}
+                  {data.auth_enabled ? "enabled" : "open"}
                 </Badge>
               </div>
               <div className="grid gap-2 md:grid-cols-[1fr_auto_1fr_auto_1fr] items-center">
                 <div className="rounded border bg-card p-2">
                   <div className="text-[10px] uppercase text-muted-foreground">Operator</div>
                   <div className="text-sm font-medium truncate">
-                    {data.operator?.name || 'unknown'}
+                    {data.operator?.name || "unknown"}
                   </div>
                   <div className="text-[10px] text-muted-foreground truncate">
-                    {data.operator?.id || '-'}
+                    {data.operator?.id || "-"}
                   </div>
                 </div>
                 <div className="text-muted-foreground text-xs">→</div>
                 <div className="rounded border bg-card p-2">
                   <div className="text-[10px] uppercase text-muted-foreground">Client</div>
                   <div className="text-sm font-medium truncate">
-                    {data.user?.username || 'unknown'}
+                    {data.user?.username || "unknown"}
                   </div>
                   <div className="text-[10px] text-muted-foreground truncate">
-                    {data.user?.id || '-'}
+                    {data.user?.id || "-"}
                   </div>
                 </div>
                 <div className="text-muted-foreground text-xs">→</div>
                 <div className="rounded border bg-card p-2">
                   <div className="text-[10px] uppercase text-muted-foreground">Credential</div>
                   <div className="text-sm font-medium truncate">
-                    {data.client_key?.name || 'unknown'}
+                    {data.client_key?.name || "unknown"}
                   </div>
                   <div className="text-[10px] text-muted-foreground truncate">
-                    {data.client_key?.id || '-'}
+                    {data.client_key?.id || "-"}
                   </div>
                 </div>
               </div>
@@ -109,14 +104,8 @@ export const AuthSessionDebug = () => {
                 </div>
                 <FieldRow label="id" value={data.operator?.id} />
                 <FieldRow label="name" value={data.operator?.name} />
-                <FieldRow
-                  label="display"
-                  value={data.operator?.display_name || undefined}
-                />
-                <FieldRow
-                  label="root"
-                  value={data.operator?.is_root ? 'true' : 'false'}
-                />
+                <FieldRow label="display" value={data.operator?.display_name || undefined} />
+                <FieldRow label="root" value={data.operator?.is_root ? "true" : "false"} />
               </div>
               <div className="rounded-md border bg-muted/20 p-3 flex flex-col gap-2">
                 <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -124,14 +113,8 @@ export const AuthSessionDebug = () => {
                 </div>
                 <FieldRow label="id" value={data.user?.id} />
                 <FieldRow label="username" value={data.user?.username} />
-                <FieldRow
-                  label="display"
-                  value={data.user?.display_name || undefined}
-                />
-                <FieldRow
-                  label="admin"
-                  value={data.user?.is_admin ? 'true' : 'false'}
-                />
+                <FieldRow label="display" value={data.user?.display_name || undefined} />
+                <FieldRow label="admin" value={data.user?.is_admin ? "true" : "false"} />
               </div>
               <div className="rounded-md border bg-muted/20 p-3 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -142,22 +125,10 @@ export const AuthSessionDebug = () => {
                 </div>
                 <FieldRow label="id" value={data.client_key?.id} />
                 <FieldRow label="name" value={data.client_key?.name} />
-                <FieldRow
-                  label="prefix"
-                  value={data.client_key?.key_prefix || undefined}
-                />
-                <FieldRow
-                  label="active"
-                  value={data.client_key?.is_active ? 'true' : 'false'}
-                />
-                <FieldRow
-                  label="last_used"
-                  value={data.client_key?.last_used_at || undefined}
-                />
-                <FieldRow
-                  label="expires"
-                  value={data.client_key?.expires_at || undefined}
-                />
+                <FieldRow label="prefix" value={data.client_key?.key_prefix || undefined} />
+                <FieldRow label="active" value={data.client_key?.is_active ? "true" : "false"} />
+                <FieldRow label="last_used" value={data.client_key?.last_used_at || undefined} />
+                <FieldRow label="expires" value={data.client_key?.expires_at || undefined} />
               </div>
             </div>
             <Separator />
@@ -168,11 +139,7 @@ export const AuthSessionDebug = () => {
               {data.permissions.length ? (
                 <div className="flex flex-wrap gap-2">
                   {data.permissions.map((perm) => (
-                    <Badge
-                      key={perm}
-                      variant="secondary"
-                      className="text-[10px] font-mono"
-                    >
+                    <Badge key={perm} variant="secondary" className="text-[10px] font-mono">
                       {perm}
                     </Badge>
                   ))}
@@ -186,11 +153,7 @@ export const AuthSessionDebug = () => {
                 <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Raw Session
                 </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setShowRaw((prev) => !prev)}
-                >
+                <Button size="sm" variant="ghost" onClick={() => setShowRaw((prev) => !prev)}>
                   {showRaw ? (
                     <ChevronUp className="w-4 h-4" />
                   ) : (
@@ -208,5 +171,5 @@ export const AuthSessionDebug = () => {
         )}
       </CardContent>
     </Card>
-  )
-}
+  );
+};

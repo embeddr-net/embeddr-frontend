@@ -1,6 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
-import LineagePage from '@/pages/LineagePage'
+import { createFileRoute } from "@tanstack/react-router";
+import LineagePage from "@/pages/LineagePage";
 
-export const Route = createFileRoute('/lineage')({
+export const Route = createFileRoute("/lineage")({
   component: LineagePage,
-})
+});

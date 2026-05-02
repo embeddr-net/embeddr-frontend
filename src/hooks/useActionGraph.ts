@@ -1,10 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchArtifact, runActionArtifact, updateArtifact } from '@/lib/api'
-import { toast } from 'sonner'
-import { useState, useEffect } from 'react'
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useEffect, useState } from "react";
+import { fetchArtifact, runActionArtifact, updateArtifact } from "@/lib/api";
 
 export function useActionGraph(artifactId: string) {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   // Fetch the ActionArtifact
   const {
@@ -12,46 +12,46 @@ export function useActionGraph(artifactId: string) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['artifact', artifactId],
+    queryKey: ["artifact", artifactId],
     queryFn: () => fetchArtifact(artifactId),
     enabled: !!artifactId,
-  })
+  });
 
   // Graph Data Accessor
-  const graph = artifact?.metadata_json?.graph || { nodes: [], edges: [] }
+  const graph = artifact?.metadata_json?.graph || { nodes: [], edges: [] };
 
   // Run Mutation
   const runMutation = useMutation({
     mutationFn: async (inputs: Record<string, any>) => {
-      return runActionArtifact(artifactId, inputs)
+      return runActionArtifact(artifactId, inputs);
     },
     onSuccess: (data) => {
-      toast.success(`Execution started: ${data.execution_id}`)
+      toast.success(`Execution started: ${data.execution_id}`);
       // We might want to track this execution ID
     },
     onError: (err: any) => {
-      toast.error(`Failed to start execution: ${err.message}`)
+      toast.error(`Failed to start execution: ${err.message}`);
     },
-  })
+  });
 
   // Save Mutation
   const saveMutation = useMutation({
     mutationFn: async (newGraph: any) => {
-      if (!artifact) throw new Error('Artifact not loaded')
+      if (!artifact) throw new Error("Artifact not loaded");
       const updatedMetadata = {
         ...artifact.metadata_json,
         graph: newGraph,
-      }
-      return updateArtifact(artifactId, { metadata_json: updatedMetadata })
+      };
+      return updateArtifact(artifactId, { metadata_json: updatedMetadata });
     },
     onSuccess: () => {
-      toast.success('Graph saved successfully')
-      queryClient.invalidateQueries({ queryKey: ['artifact', artifactId] })
+      toast.success("Graph saved successfully");
+      queryClient.invalidateQueries({ queryKey: ["artifact", artifactId] });
     },
     onError: (err: any) => {
-      toast.error(`Failed to save graph: ${err.message}`)
+      toast.error(`Failed to save graph: ${err.message}`);
     },
-  })
+  });
 
   return {
     artifact,
@@ -62,5 +62,5 @@ export function useActionGraph(artifactId: string) {
     isRunning: runMutation.isPending,
     saveGraph: saveMutation.mutateAsync,
     isSaving: saveMutation.isPending,
-  }
+  };
 }

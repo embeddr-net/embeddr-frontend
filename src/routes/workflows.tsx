@@ -1,6 +1,6 @@
-import WorkflowArtifactsPage from '@/pages/WorkflowArtifactsPage'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router";
+import WorkflowArtifactsPage from "@/pages/WorkflowArtifactsPage";
 
-export const Route = createFileRoute('/workflows')({
+export const Route = createFileRoute("/workflows")({
   component: WorkflowArtifactsPage,
-})
+});

@@ -1,123 +1,110 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button } from '@embeddr/react-ui/ui'
-import { Card } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Separator } from '@embeddr/react-ui/ui'
-import { embeddrApi } from '@/lib/api/client'
+import { useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Badge, Button, Card, Separator } from "@embeddr/react-ui/ui";
 import type {
   AutomationListResponse,
   IngestionPipelineConfig,
   LotusCapability,
-} from '@/lib/api/types'
+} from "@/lib/api/types";
+import { embeddrApi } from "@/lib/api/client";
 
 interface OnboardingWizardProps {
-  onComplete?: () => void
-  onOpenSettingsTab: (tab: string) => void
+  onComplete?: () => void;
+  onOpenSettingsTab: (tab: string) => void;
 }
 
 const REQUIRED_CAPS = [
   {
-    key: 'preview.thumbnail',
-    label: 'Thumbnail generator',
-    match: (cap: LotusCapability) => cap.slot === 'preview.thumbnail',
+    key: "preview.thumbnail",
+    label: "Thumbnail generator",
+    match: (cap: LotusCapability) => cap.slot === "preview.thumbnail",
   },
   {
-    key: 'feature.generator',
-    label: 'Embedding generator',
-    match: (cap: LotusCapability) => cap.slot === 'feature.generator',
+    key: "feature.generator",
+    label: "Embedding generator",
+    match: (cap: LotusCapability) => cap.slot === "feature.generator",
   },
-]
+];
 
-export function OnboardingWizard({
-  onComplete,
-  onOpenSettingsTab,
-}: OnboardingWizardProps) {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const [defaultsResult, setDefaultsResult] = useState<
-    'idle' | 'success' | 'error'
-  >('idle')
+export function OnboardingWizard({ onComplete, onOpenSettingsTab }: OnboardingWizardProps) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [defaultsResult, setDefaultsResult] = useState<"idle" | "success" | "error">("idle");
 
   const { data: capsData } = useQuery({
-    queryKey: ['lotus', 'capabilities', 'onboarding'],
+    queryKey: ["lotus", "capabilities", "onboarding"],
     queryFn: () => embeddrApi.lotus.list({ limit: 500 }),
     staleTime: 30_000,
-  })
+  });
 
   const { data: pipelineConfig } = useQuery<IngestionPipelineConfig>({
-    queryKey: ['system', 'ingestion', 'pipeline'],
+    queryKey: ["system", "ingestion", "pipeline"],
     queryFn: () => embeddrApi.system.getIngestionPipeline(),
     staleTime: 30_000,
-  })
+  });
 
   const { data: automationsData } = useQuery<AutomationListResponse>({
-    queryKey: ['system', 'automation', 'list'],
+    queryKey: ["system", "automation", "list"],
     queryFn: () => embeddrApi.system.listAutomations(),
     staleTime: 30_000,
-  })
+  });
 
   const missingCaps = useMemo(() => {
-    const caps = (capsData?.items || []) as LotusCapability[]
-    return REQUIRED_CAPS.filter(
-      (required) => !caps.some((cap) => required.match(cap)),
-    )
-  }, [capsData])
+    const caps = capsData?.items || [];
+    return REQUIRED_CAPS.filter((required) => !caps.some((cap) => required.match(cap)));
+  }, [capsData]);
 
   const ingestActions = useMemo(() => {
-    const caps = (capsData?.items || []) as LotusCapability[]
+    const caps = capsData?.items || [];
     return caps.filter((cap) => {
-      if (cap.kind !== 'action' || !(cap.tags || []).includes('ingest')) {
-        return false
+      if (cap.kind !== "action" || !(cap.tags || []).includes("ingest")) {
+        return false;
       }
-      const inputSchema = (cap.data as any)?.input?.schema || {}
-      const props = inputSchema?.properties || {}
-      const supportsArtifacts =
-        'artifact_id' in props || 'artifact_ids' in props
-      if (!supportsArtifacts) return false
-      const title = String(cap.title || cap.id || '').toLowerCase()
-      if (title.includes('backfill')) return false
-      return true
-    })
-  }, [capsData])
+      const inputSchema = (cap.data as any)?.input?.schema || {};
+      const props = inputSchema?.properties || {};
+      const supportsArtifacts = "artifact_id" in props || "artifact_ids" in props;
+      if (!supportsArtifacts) return false;
+      const title = String(cap.title || cap.id || "").toLowerCase();
+      if (title.includes("backfill")) return false;
+      return true;
+    });
+  }, [capsData]);
 
   const activePipeline = useMemo(() => {
-    const pipelineId = pipelineConfig?.pipeline_id
-    if (!pipelineId) return null
-    return (
-      automationsData?.items?.find((item) => item.id === pipelineId) || null
-    )
-  }, [pipelineConfig, automationsData])
+    const pipelineId = pipelineConfig?.pipeline_id;
+    if (!pipelineId) return null;
+    return automationsData?.items?.find((item) => item.id === pipelineId) || null;
+  }, [pipelineConfig, automationsData]);
 
-  const defaultsReady = Boolean(activePipeline) && missingCaps.length === 0
+  const defaultsReady = Boolean(activePipeline) && missingCaps.length === 0;
 
   const applyDefaults = useMutation({
     mutationFn: () => embeddrApi.system.applyIngestionDefaults(),
     onSuccess: async () => {
-      setDefaultsResult('success')
+      setDefaultsResult("success");
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ['system', 'ingestion', 'pipeline'],
+          queryKey: ["system", "ingestion", "pipeline"],
         }),
         queryClient.invalidateQueries({
-          queryKey: ['system', 'automation', 'list'],
+          queryKey: ["system", "automation", "list"],
         }),
         queryClient.invalidateQueries({
-          queryKey: ['lotus', 'capabilities', 'onboarding'],
+          queryKey: ["lotus", "capabilities", "onboarding"],
         }),
-      ])
+      ]);
     },
     onError: () => {
-      setDefaultsResult('error')
+      setDefaultsResult("error");
     },
-  })
+  });
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={defaultsReady ? 'default' : 'secondary'}>
-          {defaultsReady ? 'Ready to ingest' : 'Needs defaults'}
+        <Badge variant={defaultsReady ? "default" : "secondary"}>
+          {defaultsReady ? "Ready to ingest" : "Needs defaults"}
         </Badge>
         {activePipeline ? (
           <Badge variant="outline">Pipeline: {activePipeline.name}</Badge>
@@ -128,7 +115,7 @@ export function OnboardingWizard({
           <Badge variant="outline">Core capabilities available</Badge>
         ) : (
           <Badge variant="secondary">
-            Missing {missingCaps.map((cap) => cap.label).join(', ')}
+            Missing {missingCaps.map((cap) => cap.label).join(", ")}
           </Badge>
         )}
       </div>
@@ -146,9 +133,7 @@ export function OnboardingWizard({
         <div className="rounded-md border border-border/60 p-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <div className="text-sm font-medium">
-                1) Workspace and sources
-              </div>
+              <div className="text-sm font-medium">1) Workspace and sources</div>
               <div className="text-xs text-muted-foreground">
                 Use Lotus to review workspace state, then add a folder to scan.
               </div>
@@ -156,15 +141,10 @@ export function OnboardingWizard({
             <Badge variant="outline">Beginner</Badge>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={() => navigate({ to: '/lotus' })}
-            >
+            <Button variant="outline" onClick={() => navigate({ to: "/lotus" })}>
               Open Lotus
             </Button>
-            <Button onClick={() => onOpenSettingsTab('library')}>
-              Add directory
-            </Button>
+            <Button onClick={() => onOpenSettingsTab("library")}>Add directory</Button>
           </div>
         </div>
 
@@ -173,53 +153,41 @@ export function OnboardingWizard({
             <div>
               <div className="text-sm font-medium">2) Apply sane defaults</div>
               <div className="text-xs text-muted-foreground">
-                Automatically configures ingestion defaults for thumbnails and
-                embeddings when available.
+                Automatically configures ingestion defaults for thumbnails and embeddings when
+                available.
               </div>
             </div>
-            <Badge variant={defaultsReady ? 'default' : 'secondary'}>
-              {defaultsReady ? 'Configured' : 'Recommended'}
+            <Badge variant={defaultsReady ? "default" : "secondary"}>
+              {defaultsReady ? "Configured" : "Recommended"}
             </Badge>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => applyDefaults.mutate()}
-              disabled={applyDefaults.isPending}
-            >
-              {applyDefaults.isPending
-                ? 'Applying defaults...'
-                : 'Apply defaults'}
+            <Button onClick={() => applyDefaults.mutate()} disabled={applyDefaults.isPending}>
+              {applyDefaults.isPending ? "Applying defaults..." : "Apply defaults"}
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate({ to: '/pipelines' })}
-            >
+            <Button variant="outline" onClick={() => navigate({ to: "/pipelines" })}>
               Open pipeline composer
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => onOpenSettingsTab('automation')}
-            >
+            <Button variant="outline" onClick={() => onOpenSettingsTab("automation")}>
               Advanced automation
             </Button>
           </div>
-          {(defaultsResult === 'success' || defaultsResult === 'error') && (
+          {(defaultsResult === "success" || defaultsResult === "error") && (
             <div
               className={
-                defaultsResult === 'success'
-                  ? 'text-xs text-emerald-600 dark:text-emerald-400'
-                  : 'text-xs text-destructive'
+                defaultsResult === "success"
+                  ? "text-xs text-emerald-600 dark:text-emerald-400"
+                  : "text-xs text-destructive"
               }
             >
-              {defaultsResult === 'success'
-                ? 'Defaults applied. You can start ingesting now.'
-                : 'Could not apply defaults automatically. Use pipeline composer or automation settings.'}
+              {defaultsResult === "success"
+                ? "Defaults applied. You can start ingesting now."
+                : "Could not apply defaults automatically. Use pipeline composer or automation settings."}
             </div>
           )}
           {ingestActions.length > 0 && (
             <div className="text-[11px] text-muted-foreground">
-              Available ingest actions:{' '}
-              {ingestActions.map((cap) => cap.title || cap.id).join(', ')}
+              Available ingest actions: {ingestActions.map((cap) => cap.title || cap.id).join(", ")}
             </div>
           )}
         </div>
@@ -235,15 +203,10 @@ export function OnboardingWizard({
             <Badge variant="outline">Ready</Badge>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={() => onOpenSettingsTab('upload')}
-            >
+            <Button variant="outline" onClick={() => onOpenSettingsTab("upload")}>
               Upload files
             </Button>
-            <Button onClick={() => navigate({ to: '/search' })}>
-              Open search
-            </Button>
+            <Button onClick={() => navigate({ to: "/search" })}>Open search</Button>
           </div>
         </div>
       </Card>
@@ -255,5 +218,5 @@ export function OnboardingWizard({
         <Button onClick={() => onComplete?.()}>Finish onboarding</Button>
       </div>
     </div>
-  )
+  );
 }

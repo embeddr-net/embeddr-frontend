@@ -1,33 +1,26 @@
-import { useQuery } from '@tanstack/react-query'
-import { Link, useParams } from '@tanstack/react-router'
-import { Spinner } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Card } from '@embeddr/react-ui/ui'
-import { ArrowLeft, GitBranch, GitCommit } from 'lucide-react'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { fetchItem } from '@/lib/api'
+import { useQuery } from "@tanstack/react-query";
+import { Link, useParams } from "@tanstack/react-router";
+import { Button, Card, ScrollArea, Spinner } from "@embeddr/react-ui/ui";
+import { ArrowLeft, GitBranch, GitCommit } from "lucide-react";
+import { fetchItem } from "@/lib/api";
 
 export default function ImagePage() {
-  const { imageId } = useParams({ from: '/images/$imageId' })
+  const { imageId } = useParams({ from: "/images/$imageId" });
   const { data: image, isLoading } = useQuery({
-    queryKey: ['image', imageId],
+    queryKey: ["image", imageId],
     queryFn: () => fetchItem(imageId),
-  })
+  });
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Spinner />
       </div>
-    )
+    );
   }
 
   if (!image) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        Image not found
-      </div>
-    )
+    return <div className="flex items-center justify-center h-full">Image not found</div>;
   }
 
   return (
@@ -113,9 +106,7 @@ export default function ImagePage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground italic">
-                      No parents recorded
-                    </p>
+                    <p className="text-xs text-muted-foreground italic">No parents recorded</p>
                   )}
                 </div>
 
@@ -143,9 +134,7 @@ export default function ImagePage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground italic">
-                      No children recorded
-                    </p>
+                    <p className="text-xs text-muted-foreground italic">No children recorded</p>
                   )}
                 </div>
               </div>
@@ -154,5 +143,5 @@ export default function ImagePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

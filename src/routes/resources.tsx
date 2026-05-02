@@ -1,81 +1,88 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import { useEmbeddrAPI } from '@/plugins/store'
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
+  Badge,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import {
+  Input,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Search, Database, FileBox, Cpu, Activity } from 'lucide-react'
-import { SystemResourceBar } from '@embeddr/react-ui'
+} from "@embeddr/react-ui/ui";
+import { Activity, Cpu, Database, FileBox, Search } from "lucide-react";
+import { SystemResourceBar } from "@embeddr/react-ui";
+import { useEmbeddrAPI } from "@/plugins/store";
 
-export const Route = createFileRoute('/resources')({
+export const Route = createFileRoute("/resources")({
   component: ResourcesPage,
-})
+});
 
 function ResourcesPage() {
-  const api = useEmbeddrAPI()
+  const api = useEmbeddrAPI();
   const [loras, setLoras] = useState<{
-    items: string[]
-    total: number
-    page: number
-    pages: number
-  }>({ items: [], total: 0, page: 1, pages: 0 })
+    items: Array<string>;
+    total: number;
+    page: number;
+    pages: number;
+  }>({ items: [], total: 0, page: 1, pages: 0 });
   const [checkpoints, setCheckpoints] = useState<{
-    items: string[]
-    total: number
-    page: number
-    pages: number
-  }>({ items: [], total: 0, page: 1, pages: 0 })
+    items: Array<string>;
+    total: number;
+    page: number;
+    pages: number;
+  }>({ items: [], total: 0, page: 1, pages: 0 });
   const [embeddings, setEmbeddings] = useState<{
-    items: string[]
-    total: number
-    page: number
-    pages: number
-  }>({ items: [], total: 0, page: 1, pages: 0 })
-  const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState('loras')
+    items: Array<string>;
+    total: number;
+    page: number;
+    pages: number;
+  }>({ items: [], total: 0, page: 1, pages: 0 });
+  const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("loras");
 
-  const limit = 60
+  const limit = 60;
 
   useEffect(() => {
-    loadLoras(1)
-    loadCheckpoints(1)
-    loadEmbeddings(1)
-  }, [api])
+    loadLoras(1);
+    loadCheckpoints(1);
+    loadEmbeddings(1);
+  }, [api]);
 
   const loadLoras = (page: number) => {
     // @ts-expect-error Legacy API — models namespace removed in 0.2.0
-    api.models?.list?.({ category: 'loras', page, limit }).then(setLoras).catch(() => {})
-  }
+    api.models
+      ?.list?.({ category: "loras", page, limit })
+      .then(setLoras)
+      .catch(() => {});
+  };
 
   const loadCheckpoints = (page: number) => {
     // @ts-expect-error Legacy API — models namespace removed in 0.2.0
-    api.models?.list?.({ category: 'checkpoints', page, limit }).then(setCheckpoints).catch(() => {})
-  }
+    api.models
+      ?.list?.({ category: "checkpoints", page, limit })
+      .then(setCheckpoints)
+      .catch(() => {});
+  };
 
   const loadEmbeddings = (page: number) => {
     // @ts-expect-error Legacy API — models namespace removed in 0.2.0
-    api.models?.list?.({ category: 'embeddings', page, limit }).then(setEmbeddings).catch(() => {})
-  }
+    api.models
+      ?.list?.({ category: "embeddings", page, limit })
+      .then(setEmbeddings)
+      .catch(() => {});
+  };
 
-  const filterItems = (items: string[]) =>
-    items.filter((item) => item.toLowerCase().includes(search.toLowerCase()))
+  const filterItems = (items: Array<string>) =>
+    items.filter((item) => item.toLowerCase().includes(search.toLowerCase()));
 
   const renderPagination = (
     data: { page: number; pages: number },
     onPageChange: (page: number) => void,
   ) => {
-    if (data.pages <= 1) return null
+    if (data.pages <= 1) return null;
     return (
       <div className="flex justify-center gap-2 mt-6">
         <button
@@ -96,8 +103,8 @@ function ResourcesPage() {
           Next
         </button>
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -114,32 +121,21 @@ function ResourcesPage() {
         </div>
       </div>
 
-      <Tabs
-        defaultValue="system"
-        className="w-full"
-        onValueChange={setActiveTab}
-      >
+      <Tabs defaultValue="system" className="w-full" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
           <TabsTrigger value="system">System Status</TabsTrigger>
           <TabsTrigger value="loras">LoRAs ({loras.total})</TabsTrigger>
-          <TabsTrigger value="checkpoints">
-            Checkpoints ({checkpoints.total})
-          </TabsTrigger>
-          <TabsTrigger value="embeddings">
-            Embeddings ({embeddings.total})
-          </TabsTrigger>
+          <TabsTrigger value="checkpoints">Checkpoints ({checkpoints.total})</TabsTrigger>
+          <TabsTrigger value="embeddings">Embeddings ({embeddings.total})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="system" className="mt-6 space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div className="space-y-1">
-                <CardTitle className="text-xl">
-                  VRAM / Memory Tracking
-                </CardTitle>
+                <CardTitle className="text-xl">VRAM / Memory Tracking</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Active models and system resources currently in use by the
-                  backend.
+                  Active models and system resources currently in use by the backend.
                 </p>
               </div>
               <Activity className="h-5 w-5 text-primary" />
@@ -152,14 +148,11 @@ function ResourcesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Auto-Unload
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Auto-Unload</CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-muted-foreground">
-                Models can be manually unloaded via the context menu on the
-                resource bar. Double-click or right-click on a resource block to
-                see options.
+                Models can be manually unloaded via the context menu on the resource bar.
+                Double-click or right-click on a resource block to see options.
               </CardContent>
             </Card>
           </div>
@@ -170,18 +163,13 @@ function ResourcesPage() {
             {filterItems(loras.items).map((lora) => (
               <Card key={lora} className="overflow-hidden">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle
-                    className="text-sm font-medium truncate"
-                    title={lora}
-                  >
+                  <CardTitle className="text-sm font-medium truncate" title={lora}>
                     {lora}
                   </CardTitle>
                   <Database className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-xs text-muted-foreground truncate">
-                    LoRA Model
-                  </div>
+                  <div className="text-xs text-muted-foreground truncate">LoRA Model</div>
                 </CardContent>
               </Card>
             ))}
@@ -199,18 +187,13 @@ function ResourcesPage() {
             {filterItems(checkpoints.items).map((ckpt) => (
               <Card key={ckpt} className="overflow-hidden">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle
-                    className="text-sm font-medium truncate"
-                    title={ckpt}
-                  >
+                  <CardTitle className="text-sm font-medium truncate" title={ckpt}>
                     {ckpt}
                   </CardTitle>
                   <FileBox className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-xs text-muted-foreground truncate">
-                    Checkpoint Model
-                  </div>
+                  <div className="text-xs text-muted-foreground truncate">Checkpoint Model</div>
                 </CardContent>
               </Card>
             ))}
@@ -223,10 +206,7 @@ function ResourcesPage() {
             {filterItems(embeddings.items).map((emb) => (
               <Card key={emb} className="overflow-hidden">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle
-                    className="text-sm font-medium truncate"
-                    title={emb}
-                  >
+                  <CardTitle className="text-sm font-medium truncate" title={emb}>
                     {emb}
                   </CardTitle>
                   <Cpu className="h-4 w-4 text-muted-foreground" />
@@ -243,5 +223,5 @@ function ResourcesPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

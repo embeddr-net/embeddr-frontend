@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState } from "react";
 import {
   Badge,
   Button,
@@ -9,58 +9,52 @@ import {
   Slider,
   Spinner,
   Switch,
-} from '@embeddr/react-ui'
-import {
-  ChevronLeft,
-  ChevronRight,
-  RefreshCcw,
-  Search,
-  Settings2,
-} from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
-import type { Point3D, SearchResult } from './types'
+} from "@embeddr/react-ui";
+import { ChevronLeft, ChevronRight, RefreshCcw, Search, Settings2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import type { Point3D, SearchResult } from "./types";
 
 interface AtlasControlsProps {
-  isSettingsFolded: boolean
-  setIsSettingsFolded: (v: boolean) => void
-  pointsCount: number
-  isBackendLoading: boolean
-  focusMode: boolean
-  setFocusMode: (v: boolean) => void
-  useBackend: boolean
-  setUseBackend: (v: boolean) => void
-  filterCollection: string
-  setFilterCollection: (v: string) => void
-  collections: any[]
-  searchQuery: string
-  setSearchQuery: (v: string) => void
-  handleSearch: () => void
-  activeSearches: SearchResult[]
-  removeSearch: (id: string) => void
-  clearSearches: () => void
-  onPointSelect: (p: Point3D) => void
-  points: Point3D[]
-  depth: number[]
-  setDepth: (v: number[]) => void
-  pointSize: number[]
-  setPointSize: (v: number[]) => void
-  showSettings: boolean
-  setShowSettings: (v: boolean) => void
-  nNeighbors: number[]
-  setNNeighbors: (v: number[]) => void
-  minDist: number[]
-  setMinDist: (v: number[]) => void
-  spread: number[]
-  setSpread: (v: number[]) => void
-  onClearCache: () => void
-  onRefresh: () => void
+  isSettingsFolded: boolean;
+  setIsSettingsFolded: (v: boolean) => void;
+  pointsCount: number;
+  isBackendLoading: boolean;
+  focusMode: boolean;
+  setFocusMode: (v: boolean) => void;
+  useBackend: boolean;
+  setUseBackend: (v: boolean) => void;
+  filterCollection: string;
+  setFilterCollection: (v: string) => void;
+  collections: Array<any>;
+  searchQuery: string;
+  setSearchQuery: (v: string) => void;
+  handleSearch: () => void;
+  activeSearches: Array<SearchResult>;
+  removeSearch: (id: string) => void;
+  clearSearches: () => void;
+  onPointSelect: (p: Point3D) => void;
+  points: Array<Point3D>;
+  depth: Array<number>;
+  setDepth: (v: Array<number>) => void;
+  pointSize: Array<number>;
+  setPointSize: (v: Array<number>) => void;
+  showSettings: boolean;
+  setShowSettings: (v: boolean) => void;
+  nNeighbors: Array<number>;
+  setNNeighbors: (v: Array<number>) => void;
+  minDist: Array<number>;
+  setMinDist: (v: Array<number>) => void;
+  spread: Array<number>;
+  setSpread: (v: Array<number>) => void;
+  onClearCache: () => void;
+  onRefresh: () => void;
 }
 
 const UMAP_PRESETS = {
   default: { neighbors: 15, dist: 0.1, spread: 1.0 },
   clustered: { neighbors: 50, dist: 0.05, spread: 0.5 },
   loose: { neighbors: 5, dist: 0.5, spread: 2.0 },
-}
+};
 
 export const AtlasControls: React.FC<AtlasControlsProps> = ({
   isSettingsFolded,
@@ -100,13 +94,11 @@ export const AtlasControls: React.FC<AtlasControlsProps> = ({
   return (
     <div
       className={`absolute top-2 left-2 z-10 bg-background/80 p-2 backdrop-blur border pointer-events-auto transition-all duration-200 overflow-hidden flex flex-col ${
-        isSettingsFolded ? 'w-10 h-10' : 'w-64'
+        isSettingsFolded ? "w-10 h-10" : "w-64"
       }`}
     >
       <div className="flex items-center justify-between">
-        {!isSettingsFolded && (
-          <h3 className="text-xs font-bold px-1">Vector Atlas</h3>
-        )}
+        {!isSettingsFolded && <h3 className="text-xs font-bold px-1">Vector Atlas</h3>}
         <Button
           variant="ghost"
           size="icon"
@@ -176,14 +168,9 @@ export const AtlasControls: React.FC<AtlasControlsProps> = ({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search..."
                   className="h-6 text-[10px] px-1"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 w-6 p-0"
-                  onClick={handleSearch}
-                >
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={handleSearch}>
                   <Search className="w-3 h-3" />
                 </Button>
               </div>
@@ -197,23 +184,18 @@ export const AtlasControls: React.FC<AtlasControlsProps> = ({
                       <div
                         className="flex items-center gap-1 cursor-pointer hover:opacity-80 flex-1"
                         onClick={() => {
-                          const p = points.find((p) => p.id === s.id)
-                          if (p) onPointSelect(p)
+                          const p = points.find((p) => p.id === s.id);
+                          if (p) onPointSelect(p);
                         }}
                       >
                         <div
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: s.color }}
                         />
-                        <span
-                          className="truncate max-w-[100px]"
-                          title={s.query}
-                        >
+                        <span className="truncate max-w-[100px]" title={s.query}>
                           {s.query}
                         </span>
-                        <span className="text-muted-foreground">
-                          ({s.items.length})
-                        </span>
+                        <span className="text-muted-foreground">({s.items.length})</span>
                       </div>
                       <span
                         className="cursor-pointer hover:text-destructive px-1"
@@ -236,7 +218,7 @@ export const AtlasControls: React.FC<AtlasControlsProps> = ({
 
           <div className="flex items-center gap-2 mt-2 px-1">
             <span className="text-[10px] font-medium">
-              Depth: {depth[0] === 10 ? 'Full' : depth[0]}
+              Depth: {depth[0] === 10 ? "Full" : depth[0]}
             </span>
             <Slider
               value={depth}
@@ -248,9 +230,7 @@ export const AtlasControls: React.FC<AtlasControlsProps> = ({
             />
           </div>
           <div className="flex items-center gap-2 mt-1 px-1">
-            <span className="text-[10px] font-medium w-8">
-              Size: {pointSize[0]}
-            </span>
+            <span className="text-[10px] font-medium w-8">Size: {pointSize[0]}</span>
             <Slider
               value={pointSize}
               onValueChange={setPointSize}
@@ -263,7 +243,7 @@ export const AtlasControls: React.FC<AtlasControlsProps> = ({
 
           <Button
             size="sm"
-            variant={showSettings ? 'secondary' : 'ghost'}
+            variant={showSettings ? "secondary" : "ghost"}
             className="h-6 text-xs mt-2 w-full"
             onClick={() => setShowSettings(!showSettings)}
           >
@@ -280,9 +260,9 @@ export const AtlasControls: React.FC<AtlasControlsProps> = ({
                     size="icon"
                     className="w-full h-5 text-[9px] uppercase"
                     onClick={() => {
-                      setNNeighbors([config.neighbors])
-                      setMinDist([config.dist])
-                      setSpread([config.spread])
+                      setNNeighbors([config.neighbors]);
+                      setMinDist([config.dist]);
+                      setSpread([config.spread]);
                     }}
                     title={`Set to ${key} preset`}
                   >
@@ -321,13 +301,7 @@ export const AtlasControls: React.FC<AtlasControlsProps> = ({
                   <span>Spread</span>
                   <span>{spread[0]}</span>
                 </div>
-                <Slider
-                  value={spread}
-                  onValueChange={setSpread}
-                  min={0.1}
-                  max={5.0}
-                  step={0.1}
-                />
+                <Slider value={spread} onValueChange={setSpread} min={0.1} max={5.0} step={0.1} />
               </div>
             </div>
           )}
@@ -352,5 +326,5 @@ export const AtlasControls: React.FC<AtlasControlsProps> = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};

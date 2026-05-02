@@ -1,36 +1,31 @@
 {
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "src/test",
-    "../.archive/**",
-    "**/.archive/**"
-  ],
   "compilerOptions": {
     "target": "ES2022",
-    "jsx": "react-jsx",
     "module": "ESNext",
+    "moduleResolution": "bundler",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
+    "jsx": "react-jsx",
 
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "noEmit": true,
-
-    /* Linting */
-    "skipLibCheck": true,
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+
     "paths": {
       "@/*": ["./src/*"]
     }
-  }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist", "dev-dist", "**/*.test.ts", "**/*.test.tsx", "src/test"]
 }

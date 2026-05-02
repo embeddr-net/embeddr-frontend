@@ -18,7 +18,7 @@ export interface WindowState {
   props?: any;
   isMinimized: boolean;
   isPinned: boolean;
-  tabs?: string[];
+  tabs?: Array<string>;
   activeTabId?: string;
   groupHostId?: string;
   positionMode?: "absolute" | "anchored";
@@ -30,7 +30,7 @@ export interface WindowState {
 
 interface WindowStore {
   windows: Record<string, WindowState>;
-  panelOrder: string[]; // For Z-index management
+  panelOrder: Array<string>; // For Z-index management
   activeGroupId: string | null; // For tab groups if we implement them
   backdropWindowId: string | null; // NEW: Tracks which window is in backdrop mode
   showZenToolbar: boolean; // NEW: Tracks visibility of the Zen Toolbar
@@ -38,12 +38,7 @@ interface WindowStore {
   mergeHoverTargetId: string | null;
   hoverPanelId: string | null;
 
-  openWindow: (wm: {
-    id: string;
-    title: string;
-    componentId: string;
-    props?: any;
-  }) => void;
+  openWindow: (wm: { id: string; title: string; componentId: string; props?: any }) => void;
   spawnWindow: (componentId: string, title: string, props?: any) => void;
   closeWindow: (id: string) => void;
   minimizeWindow: (id: string) => void;
@@ -61,7 +56,6 @@ interface WindowStore {
   setActiveTab: (hostId: string, tabId: string) => void;
   setMergeHoverTarget: (id: string | null) => void;
   setHoverPanelId: (id: string | null) => void;
-
 }
 
 const INITIAL_WINDOWS: Record<string, WindowState> = {
@@ -111,8 +105,7 @@ export const useWindowStore = create<WindowStore>()(
       mergeHoverTargetId: null,
       hoverPanelId: null,
 
-      toggleZenToolbar: () =>
-        set((state) => ({ showZenToolbar: !state.showZenToolbar })),
+      toggleZenToolbar: () => set((state) => ({ showZenToolbar: !state.showZenToolbar })),
       setBackdrop: (id: string | null) => set({ backdropWindowId: id }),
       setHoverPanelId: (id: string | null) => set({ hoverPanelId: id }),
 
@@ -120,12 +113,8 @@ export const useWindowStore = create<WindowStore>()(
         set((state) => {
           if (isWorkspaceLocked()) return {};
           const safeTitle = title?.trim() || "Untitled Panel";
-          const defaultPosition = props?.defaultPosition as
-            | { x: number; y: number }
-            | undefined;
-          const defaultSize = props?.defaultSize as
-            | { width: number; height: number }
-            | undefined;
+          const defaultPosition = props?.defaultPosition as { x: number; y: number } | undefined;
+          const defaultSize = props?.defaultSize as { width: number; height: number } | undefined;
           // If already exists, just bring to front and ensure not minimized
           if (state.windows[id]) {
             const newOrder = state.panelOrder.filter((p) => p !== id);
@@ -226,9 +215,7 @@ export const useWindowStore = create<WindowStore>()(
           console.debug(`[WindowStore] Closing window ${id}`);
           return {
             windows: nextWindows,
-            panelOrder: state.panelOrder.filter(
-              (p) => !tabsToClose.includes(p),
-            ),
+            panelOrder: state.panelOrder.filter((p) => !tabsToClose.includes(p)),
           };
         }),
 
@@ -293,8 +280,7 @@ export const useWindowStore = create<WindowStore>()(
           if (!win) return {};
 
           const shouldLog =
-            typeof window !== "undefined" &&
-            localStorage.getItem("embeddr_debug_panels") === "1";
+            typeof window !== "undefined" && localStorage.getItem("embeddr_debug_panels") === "1";
 
           if (shouldLog && (updates.position || updates.size)) {
             console.debug("[WindowStore] updateWindow", {
@@ -310,18 +296,14 @@ export const useWindowStore = create<WindowStore>()(
           const normalizedUpdates = {
             ...updates,
             title:
-              updates.title !== undefined
-                ? updates.title?.trim() || "Untitled Panel"
-                : win.title,
+              updates.title !== undefined ? updates.title?.trim() || "Untitled Panel" : win.title,
           };
 
           // Deep check to avoid redundant updates and potential loops
-          const hasChanges = Object.entries(normalizedUpdates).some(
-            ([key, value]) => {
-              const uKey = key as keyof WindowState;
-              return JSON.stringify(win[uKey]) !== JSON.stringify(value);
-            },
-          );
+          const hasChanges = Object.entries(normalizedUpdates).some(([key, value]) => {
+            const uKey = key as keyof WindowState;
+            return JSON.stringify(win[uKey]) !== JSON.stringify(value);
+          });
 
           if (!hasChanges) return {};
 
@@ -338,8 +320,7 @@ export const useWindowStore = create<WindowStore>()(
         set({ windows: {}, panelOrder: [] });
       },
 
-      toggleHidePanels: () =>
-        set((state) => ({ arePanelsHidden: !state.arePanelsHidden })),
+      toggleHidePanels: () => set((state) => ({ arePanelsHidden: !state.arePanelsHidden })),
 
       setMergeHoverTarget: (id) => set({ mergeHoverTargetId: id }),
 
@@ -364,9 +345,7 @@ export const useWindowStore = create<WindowStore>()(
 
           const targetTabs = target.tabs ?? [targetId];
           const sourceTabs = source.tabs ?? [sourceId];
-          const mergedTabs = Array.from(
-            new Set([...targetTabs, ...sourceTabs]),
-          );
+          const mergedTabs = Array.from(new Set([...targetTabs, ...sourceTabs]));
 
           const nextWindows = { ...state.windows };
           nextWindows[targetId] = {
@@ -408,8 +387,7 @@ export const useWindowStore = create<WindowStore>()(
           const host = state.windows[hostId];
           if (!host?.tabs) return {};
 
-          const hostFallbackPosition =
-            host.position || host.props?.defaultPosition || tab.position;
+          const hostFallbackPosition = host.position || host.props?.defaultPosition || tab.position;
 
           const remainingTabs = host.tabs.filter((id) => id !== tabId);
           const nextWindows = { ...state.windows };
@@ -423,9 +401,7 @@ export const useWindowStore = create<WindowStore>()(
               ...newHost,
               tabs: newTabs,
               activeTabId:
-                host.activeTabId && host.activeTabId !== hostId
-                  ? host.activeTabId
-                  : newHostId,
+                host.activeTabId && host.activeTabId !== hostId ? host.activeTabId : newHostId,
               groupHostId: undefined,
               isMinimized: false,
               position: hostFallbackPosition,
@@ -459,14 +435,9 @@ export const useWindowStore = create<WindowStore>()(
           nextWindows[hostId] = {
             ...host,
             tabs: remainingTabs.length > 1 ? remainingTabs : undefined,
-            activeTabId:
-              host.activeTabId === tabId ? remainingTabs[0] : host.activeTabId,
-            position:
-              tabId === hostId
-                ? (position ?? hostFallbackPosition)
-                : hostFallbackPosition,
-            positionMode:
-              tabId === hostId && position ? "absolute" : host.positionMode,
+            activeTabId: host.activeTabId === tabId ? remainingTabs[0] : host.activeTabId,
+            position: tabId === hostId ? (position ?? hostFallbackPosition) : hostFallbackPosition,
+            positionMode: tabId === hostId && position ? "absolute" : host.positionMode,
           };
           nextWindows[tabId] = {
             ...tab,
@@ -500,12 +471,8 @@ export const useWindowStore = create<WindowStore>()(
           if (!host?.tabs || !host.tabs.includes(tabId)) return {};
           const currentIndex = host.tabs.indexOf(tabId);
           const nextTabs = host.tabs.filter((id) => id !== tabId);
-          const adjustedIndex =
-            targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
-          const clampedIndex = Math.max(
-            0,
-            Math.min(adjustedIndex, nextTabs.length),
-          );
+          const adjustedIndex = targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
+          const clampedIndex = Math.max(0, Math.min(adjustedIndex, nextTabs.length));
           nextTabs.splice(clampedIndex, 0, tabId);
           return {
             windows: {
@@ -517,7 +484,6 @@ export const useWindowStore = create<WindowStore>()(
             },
           };
         }),
-
     }),
     {
       name: "embeddr-window-store", // localstorage key

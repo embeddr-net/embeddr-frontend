@@ -1,5 +1,12 @@
-import React from 'react'
-import { Button } from '@embeddr/react-ui/ui'
+import React from "react";
+import {
+  Button,
+  Separator,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@embeddr/react-ui/ui";
 import {
   Box,
   Database,
@@ -10,37 +17,30 @@ import {
   Play,
   Settings2,
   Sliders,
-} from 'lucide-react'
-import { Separator } from '@embeddr/react-ui/ui'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@embeddr/react-ui/ui'
-import { cn } from '@/lib/utils'
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-import { useLocalStorage } from '@/hooks/useLocalStorage'
-import { usePluginStore } from '@/plugins/store'
-import { useWindowStore } from '@/store/windowStore'
-import { useSettingsStore } from '@/store/settingsStore'
-import { lucideIconFromName } from '@/lib/lucide'
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { usePluginStore } from "@/plugins/store";
+import { useWindowStore } from "@/store/windowStore";
+import { useSettingsStore } from "@/store/settingsStore";
+import { lucideIconFromName } from "@/lib/lucide";
 
 interface ZenToolbarProps {
   panels: {
-    settings: boolean
-    queue: boolean
-    toolbox: boolean
-    images: boolean
-    datasets: boolean
-  }
-  togglePanel: (key: keyof ZenToolbarProps['panels']) => void
-  isGenerating: boolean
-  handleGenerate: () => void
-  selectedWorkflow: any
-  hasPendingGenerations: boolean
-  onExitZenMode: () => void
-  hasZenInputs: boolean
+    settings: boolean;
+    queue: boolean;
+    toolbox: boolean;
+    images: boolean;
+    datasets: boolean;
+  };
+  togglePanel: (key: keyof ZenToolbarProps["panels"]) => void;
+  isGenerating: boolean;
+  handleGenerate: () => void;
+  selectedWorkflow: any;
+  hasPendingGenerations: boolean;
+  onExitZenMode: () => void;
+  hasZenInputs: boolean;
 }
 
 export function ZenToolbar({
@@ -53,83 +53,78 @@ export function ZenToolbar({
   // onExitZenMode,
   // hasZenInputs,
 }: ZenToolbarProps) {
-  const [generateText] = useLocalStorage('zen-generate-text', 'Generate')
-  const [generateTheme] = useLocalStorage('zen-generate-theme', 'default')
+  const [generateText] = useLocalStorage("zen-generate-text", "Generate");
+  const [generateTheme] = useLocalStorage("zen-generate-theme", "default");
   const showTimer = useSettingsStore(
-    (state) => state.pluginSettings['core.zen-mode']?.showTimer ?? true,
-  )
-  const [pinnedPanels] = useLocalStorage<string[]>('zen-pinned-panels', [])
-  const getComponents = usePluginStore((s) => s.getComponents)
-  const spawnWindow = useWindowStore((s) => s.spawnWindow)
+    (state) => state.pluginSettings["core.zen-mode"]?.showTimer ?? true,
+  );
+  const [pinnedPanels] = useLocalStorage<Array<string>>("zen-pinned-panels", []);
+  const getComponents = usePluginStore((s) => s.getComponents);
+  const spawnWindow = useWindowStore((s) => s.spawnWindow);
   const pinnedPanelDefs = React.useMemo(() => {
-    if (!pinnedPanels.length) return []
-    const defs = getComponents('zen-overlay').filter(
-      ({ def }) => !def.options?.spawnOnly,
-    )
+    if (!pinnedPanels.length) return [];
+    const defs = getComponents("zen-overlay").filter(({ def }) => !def.options?.spawnOnly);
     const map = new Map(
-      defs.map(({ pluginId, def }) => [
-        `${pluginId}-${def.id}`,
-        { pluginId, def },
-      ]),
-    )
+      defs.map(({ pluginId, def }) => [`${pluginId}-${def.id}`, { pluginId, def }]),
+    );
     return pinnedPanels.map((id) => map.get(id)).filter(Boolean) as Array<{
-      pluginId: string
-      def: any
-    }>
-  }, [getComponents, pinnedPanels])
+      pluginId: string;
+      def: any;
+    }>;
+  }, [getComponents, pinnedPanels]);
 
-  const [elapsed, setElapsed] = React.useState(0)
+  const [elapsed, setElapsed] = React.useState(0);
 
   React.useEffect(() => {
     if (isGenerating) {
-      const start = Date.now()
+      const start = Date.now();
       const interval = setInterval(() => {
-        setElapsed((Date.now() - start) / 1000)
-      }, 100)
-      return () => clearInterval(interval)
+        setElapsed((Date.now() - start) / 1000);
+      }, 100);
+      return () => clearInterval(interval);
     } else {
-      setElapsed(0)
+      setElapsed(0);
     }
-  }, [isGenerating])
+  }, [isGenerating]);
 
   const getGenerateButtonClass = () => {
-    if (isGenerating) return 'bg-amber-500 hover:bg-amber-600'
+    if (isGenerating) return "bg-amber-500 hover:bg-amber-600";
 
     switch (generateTheme) {
-      case 'amber':
-        return 'bg-amber-500 hover:bg-amber-600 text-white'
-      case 'blue':
-        return 'bg-blue-500 hover:bg-blue-600 text-white'
-      case 'green':
-        return 'bg-green-500 hover:bg-green-600 text-white'
-      case 'purple':
-        return 'bg-purple-500 hover:bg-purple-600 text-white'
-      case 'rose':
-        return 'bg-rose-500 hover:bg-rose-600 text-white'
+      case "amber":
+        return "bg-amber-500 hover:bg-amber-600 text-white";
+      case "blue":
+        return "bg-blue-500 hover:bg-blue-600 text-white";
+      case "green":
+        return "bg-green-500 hover:bg-green-600 text-white";
+      case "purple":
+        return "bg-purple-500 hover:bg-purple-600 text-white";
+      case "rose":
+        return "bg-rose-500 hover:bg-rose-600 text-white";
       default:
-        return 'bg-primary hover:bg-primary/90'
+        return "bg-primary hover:bg-primary/90";
     }
-  }
+  };
 
   return (
     <div
       className="absolute left-1 z-40 flex flex-col gap-2 p-2 bg-background/80 backdrop-blur-md border shadow-lg animate-in slide-in-from-left-4 duration-300 rounded-lg overflow-hidden transition-[bottom]"
       style={{
-        bottom: 'calc(0.25rem + var(--layout-safe-bottom, 0px))',
+        bottom: "calc(0.25rem + var(--layout-safe-bottom, 0px))",
       }}
     >
       <TooltipProvider delayDuration={0}>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={panels.toolbox ? 'secondary' : 'ghost'}
+              variant={panels.toolbox ? "secondary" : "ghost"}
               size="icon"
               onClick={() => {
-                spawnWindow('embeddr-core-control-panel', 'Control Panel', {
-                  pluginId: 'embeddr-core',
-                  componentName: 'ControlPanel',
-                  panelMode: 'single',
-                })
+                spawnWindow("embeddr-core-control-panel", "Control Panel", {
+                  pluginId: "embeddr-core",
+                  componentName: "ControlPanel",
+                  panelMode: "single",
+                });
               }}
             >
               <Box className="h-5 w-5" />
@@ -141,8 +136,8 @@ export function ZenToolbar({
         {pinnedPanelDefs.length > 0 && <Separator className="my-1" />}
 
         {pinnedPanelDefs.map(({ pluginId, def }) => {
-          const componentId = `${pluginId}-${def.id}`
-          const PanelIcon = lucideIconFromName(def.icon) || Box
+          const componentId = `${pluginId}-${def.id}`;
+          const PanelIcon = lucideIconFromName(def.icon) || Box;
           return (
             <Tooltip key={componentId}>
               <TooltipTrigger asChild>
@@ -150,8 +145,8 @@ export function ZenToolbar({
                   variant="ghost"
                   size="icon"
                   onClick={() => {
-                    const componentName = def.exportName || def.component
-                    if (!componentName) return
+                    const componentName = def.exportName || def.component;
+                    if (!componentName) return;
                     spawnWindow(componentId, def.label, {
                       pluginId,
                       componentName,
@@ -160,17 +155,15 @@ export function ZenToolbar({
                       panelMode: def.options?.instanceMode,
                       hideHeader: def.options?.hideHeader,
                       transparent: def.options?.transparent,
-                    })
+                    });
                   }}
                 >
                   <PanelIcon className="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">
-                {def.label || def.id}
-              </TooltipContent>
+              <TooltipContent side="right">{def.label || def.id}</TooltipContent>
             </Tooltip>
-          )
+          );
         })}
 
         {/* <Tooltip>
@@ -190,9 +183,9 @@ export function ZenToolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={panels.queue ? 'secondary' : 'ghost'}
+              variant={panels.queue ? "secondary" : "ghost"}
               size="icon"
-              onClick={() => togglePanel('queue')}
+              onClick={() => togglePanel("queue")}
             >
               <List className="h-5 w-5" />
               {hasPendingGenerations && (
@@ -206,9 +199,9 @@ export function ZenToolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={panels.images ? 'secondary' : 'ghost'}
+              variant={panels.images ? "secondary" : "ghost"}
               size="icon"
-              onClick={() => togglePanel('images')}
+              onClick={() => togglePanel("images")}
             >
               <ImageIcon className="h-5 w-5" />
             </Button>
@@ -270,5 +263,5 @@ export function ZenToolbar({
         </Tooltip> */}
       </TooltipProvider>
     </div>
-  )
+  );
 }

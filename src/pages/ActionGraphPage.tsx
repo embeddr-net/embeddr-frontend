@@ -1,53 +1,53 @@
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { fetchActionArtifacts, createArtifact } from '@/lib/api' // Added createArtifact
-import { Link, useNavigate } from '@tanstack/react-router' // Added useNavigate
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router"; // Added useNavigate
 import {
+  Button,
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Plus, Play, GitBranch } from 'lucide-react'
-import { Spinner } from '@embeddr/react-ui/ui'
+  Spinner,
+} from "@embeddr/react-ui/ui";
+import { GitBranch, Play, Plus } from "lucide-react";
+import { createArtifact, fetchActionArtifacts } from "@/lib/api"; // Added createArtifact
 
 export const ActionGraphPage = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const { data: actions, isLoading } = useQuery({
-    queryKey: ['actions'],
+    queryKey: ["actions"],
     queryFn: fetchActionArtifacts,
-  })
+  });
 
   const createMutation = useMutation({
     mutationFn: async () => {
       // Create a default empty graph
       return createArtifact({
-        type_name: 'action:graph',
+        type_name: "action:graph",
         metadata_json: {
-          name: 'Untitled Graph',
-          description: 'New workflow pipeline',
+          name: "Untitled Graph",
+          description: "New workflow pipeline",
           graph: {
             nodes: [],
             interface: { exposed_inputs: [] },
           },
         },
-      })
+      });
     },
     onSuccess: (newArtifact) => {
       navigate({
-        to: '/actions/$actionId',
+        to: "/actions/$actionId",
         params: { actionId: newArtifact.id },
-      })
+      });
     },
-  })
+  });
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-12">
         <Spinner />
       </div>
-    )
+    );
   }
 
   return (
@@ -55,16 +55,11 @@ export const ActionGraphPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Action Graphs</h1>
-          <p className="text-muted-foreground mt-2">
-            Compose and run automated pipelines
-          </p>
+          <p className="text-muted-foreground mt-2">Compose and run automated pipelines</p>
         </div>
-        <Button
-          onClick={() => createMutation.mutate()}
-          disabled={createMutation.isPending}
-        >
+        <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>
           <Plus className="mr-2 h-4 w-4" />
-          {createMutation.isPending ? 'Creating...' : 'New Graph'}
+          {createMutation.isPending ? "Creating..." : "New Graph"}
         </Button>
       </div>
 
@@ -79,11 +74,11 @@ export const ActionGraphPage = () => {
                   className="hover:underline"
                 >
                   <CardTitle className="text-xl">
-                    {action.metadata_json?.name || 'Untitled Graph'}
+                    {action.metadata_json?.name || "Untitled Graph"}
                   </CardTitle>
                 </Link>
                 <CardDescription>
-                  {action.metadata_json?.description || 'No description'}
+                  {action.metadata_json?.description || "No description"}
                 </CardDescription>
               </div>
               <div className="bg-primary/10 p-2 rounded-full">
@@ -96,10 +91,7 @@ export const ActionGraphPage = () => {
                   {action.id.slice(0, 8)}
                 </div>
                 <div className="flex gap-2">
-                  <Link
-                    to="/actions/$actionId"
-                    params={{ actionId: action.id }}
-                  >
+                  <Link to="/actions/$actionId" params={{ actionId: action.id }}>
                     <Button variant="outline" size="sm">
                       Edit
                     </Button>
@@ -120,5 +112,5 @@ export const ActionGraphPage = () => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};

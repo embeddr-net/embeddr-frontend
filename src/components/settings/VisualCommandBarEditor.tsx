@@ -1,35 +1,25 @@
-import React, { useMemo, useState } from 'react'
-import { useSettingsStore } from '@/store/settingsStore'
-import { useShallow } from 'zustand/react/shallow'
-import { cn } from '@/lib/utils'
-import { Button } from '@embeddr/react-ui/ui'
-import {
-  Eye,
-  EyeOff,
-  GripVertical,
-  ArrowLeft,
-  ArrowRight,
-  RotateCcw,
-} from 'lucide-react'
-import { Badge } from '@embeddr/react-ui/ui'
-import { usePluginStore } from '@/plugins/store'
-import { Switch } from '@embeddr/react-ui/ui'
-import { Label } from '@embeddr/react-ui/ui'
-import { DEFAULT_WIDGETS } from '@/lib/commandBar/defaultWidgets'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
+import React, { useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
+import { Badge, Button, Label, Switch } from "@embeddr/react-ui/ui";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, GripVertical, RotateCcw } from "lucide-react";
+import { usePluginStore } from "@/plugins/store";
+import { cn } from "@/lib/utils";
+import { useSettingsStore } from "@/store/settingsStore";
+import { DEFAULT_WIDGETS } from "@/lib/commandBar/defaultWidgets";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 interface WidgetItem {
-  id: string
-  label: string
-  defaultSection: 'left' | 'center' | 'right'
-  defaultOrder: number
-  scope?: 'zen' | 'global'
+  id: string;
+  label: string;
+  defaultSection: "left" | "center" | "right";
+  defaultOrder: number;
+  scope?: "zen" | "global";
 }
 
 const buildPluginWidgetId = (pluginId: string, def: any) => {
-  const base = def?.id || def?.exportName || def?.label || 'widget'
-  return `plugin:${pluginId}/${base}`
-}
+  const base = def?.id || def?.exportName || def?.label || "widget";
+  return `plugin:${pluginId}/${base}`;
+};
 
 export function VisualCommandBarEditor() {
   const {
@@ -48,77 +38,72 @@ export function VisualCommandBarEditor() {
       commandBarCompact: s.commandBarCompact,
       setCommandBarCompact: s.setCommandBarCompact,
     })),
-  )
+  );
 
   const { plugins, activePlugins } = usePluginStore(
     useShallow((s) => ({ plugins: s.plugins, activePlugins: s.activePlugins })),
-  )
-  const getComponents = usePluginStore((s) => s.getComponents)
-  const [pinnedPanels] = useLocalStorage<string[]>('zen-pinned-panels', [])
+  );
+  const getComponents = usePluginStore((s) => s.getComponents);
+  const [pinnedPanels] = useLocalStorage<Array<string>>("zen-pinned-panels", []);
 
   const pluginWidgets = useMemo(() => {
-    const out: WidgetItem[] = []
+    const out: Array<WidgetItem> = [];
     activePlugins.forEach((pluginId) => {
-      const plugin = plugins[pluginId]
-      if (!plugin?.components) return
+      const plugin = plugins[pluginId];
+      if (!plugin?.components) return;
       plugin.components.forEach((comp: any) => {
-        if (comp.location !== 'command-bar-widget') return
-        const id = buildPluginWidgetId(pluginId, comp)
-        const label = comp.label || comp.name || comp.exportName || id
-        const slot = comp.props?.slot || 'right'
-        const order = comp.props?.order ?? 80
+        if (comp.location !== "command-bar-widget") return;
+        const id = buildPluginWidgetId(pluginId, comp);
+        const label = comp.label || comp.name || comp.exportName || id;
+        const slot = comp.props?.slot || "right";
+        const order = comp.props?.order ?? 80;
         out.push({
           id,
           label: `${label} (${pluginId})`,
           defaultSection: slot,
           defaultOrder: order,
-        })
-      })
-    })
-    return out
-  }, [activePlugins, plugins])
+        });
+      });
+    });
+    return out;
+  }, [activePlugins, plugins]);
 
   const pinnedPanelWidgets = useMemo(() => {
-    if (!pinnedPanels.length) return []
-    const overlays = getComponents('zen-overlay').filter(
-      ({ def }) => !def.options?.spawnOnly,
-    )
+    if (!pinnedPanels.length) return [];
+    const overlays = getComponents("zen-overlay").filter(({ def }) => !def.options?.spawnOnly);
     const map = new Map(
-      overlays.map(({ pluginId, def }) => [
-        `${pluginId}-${def.id}`,
-        { pluginId, def },
-      ]),
-    )
+      overlays.map(({ pluginId, def }) => [`${pluginId}-${def.id}`, { pluginId, def }]),
+    );
     return pinnedPanels
       .map((id, index) => {
-        const entry = map.get(id)
+        const entry = map.get(id);
         if (!entry) {
           return {
             id: `pinned-panel:${id}`,
             label: `Pinned Panel (${id})`,
-            defaultSection: 'left' as const,
+            defaultSection: "left" as const,
             defaultOrder: 100 + index,
-            scope: 'zen' as const,
-          }
+            scope: "zen" as const,
+          };
         }
-        const { pluginId, def } = entry
-        const label = def.label || def.name || def.id || id
+        const { pluginId, def } = entry;
+        const label = def.label || def.name || def.id || id;
         return {
           id: `pinned-panel:${id}`,
           label: `${label} (Pinned)`,
-          defaultSection: 'left' as const,
+          defaultSection: "left" as const,
           defaultOrder: 100 + index,
-          scope: 'zen' as const,
-        }
+          scope: "zen" as const,
+        };
       })
-      .filter(Boolean) as WidgetItem[]
-  }, [getComponents, pinnedPanels])
+      .filter(Boolean);
+  }, [getComponents, pinnedPanels]);
 
-  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   // Merge config with defaults to get current state for all widgets
   const currentWidgets = useMemo(() => {
-    const base: WidgetItem[] = [
+    const base: Array<WidgetItem> = [
       ...DEFAULT_WIDGETS.map((w) => ({
         id: w.id,
         label: w.label,
@@ -128,130 +113,120 @@ export function VisualCommandBarEditor() {
       })),
       ...pluginWidgets,
       ...pinnedPanelWidgets,
-    ]
-    const seen = new Set<string>()
+    ];
+    const seen = new Set<string>();
     const merged = base.filter((item) => {
-      if (seen.has(item.id)) return false
-      seen.add(item.id)
-      return true
-    })
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
 
     return merged
       .map((w) => {
-        const cfg = widgetConfig[w.id]
+        const cfg = widgetConfig[w.id];
         return {
           ...w,
           section: cfg?.section ?? w.defaultSection,
           order: cfg?.order ?? w.defaultOrder,
           visible: cfg?.visible ?? true,
-        }
+        };
       })
       .sort((a, b) => {
         // Sort by section first: left, center, right
-        const sectionScore = (s: string) =>
-          s === 'left' ? 0 : s === 'center' ? 1 : 2
-        const scoreA = sectionScore(a.section)
-        const scoreB = sectionScore(b.section)
-        if (scoreA !== scoreB) return scoreA - scoreB
-        return a.order - b.order
-      })
-  }, [pluginWidgets, pinnedPanelWidgets, widgetConfig])
+        const sectionScore = (s: string) => (s === "left" ? 0 : s === "center" ? 1 : 2);
+        const scoreA = sectionScore(a.section);
+        const scoreB = sectionScore(b.section);
+        if (scoreA !== scoreB) return scoreA - scoreB;
+        return a.order - b.order;
+      });
+  }, [pluginWidgets, pinnedPanelWidgets, widgetConfig]);
 
   // Group into sections for the visualizer
-  const leftWidgets = currentWidgets.filter((w) => w.section === 'left')
-  const centerWidgets = currentWidgets.filter((w) => w.section === 'center')
-  const rightWidgets = currentWidgets.filter((w) => w.section === 'right')
+  const leftWidgets = currentWidgets.filter((w) => w.section === "left");
+  const centerWidgets = currentWidgets.filter((w) => w.section === "center");
+  const rightWidgets = currentWidgets.filter((w) => w.section === "right");
 
   const toggleVisibility = (id: string, currentVisible: boolean) => {
-    updateWidgetConfig(id, { visible: !currentVisible })
-  }
+    updateWidgetConfig(id, { visible: !currentVisible });
+  };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedId(id)
-    e.dataTransfer.effectAllowed = 'move'
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = "move";
     // e.dataTransfer.setDragImage(e.target as Element, 0, 0)
-  }
+  };
 
   const handleDragOver = (
     e: React.DragEvent,
-    _targetSection: 'left' | 'center' | 'right',
+    _targetSection: "left" | "center" | "right",
     _targetOrder?: number,
   ) => {
-    e.preventDefault()
+    e.preventDefault();
     // In a real drag sort, we'd calculate generic index swaps.
     // Simplifying: Use buttons for refined movements if drag is too complex to implement 100% cleanly in one shot.
     // For now, let's just use buttons for moving left/right across sections/order to be safe and accessible,
     // but the user asked for drag.
-  }
+  };
 
-  const handleDrop = (
-    e: React.DragEvent,
-    targetSection: 'left' | 'center' | 'right',
-  ) => {
-    e.preventDefault()
-    if (!draggedId) return
+  const handleDrop = (e: React.DragEvent, targetSection: "left" | "center" | "right") => {
+    e.preventDefault();
+    if (!draggedId) return;
 
     // Move to end of target section
-    const widgetsInTarget = currentWidgets.filter(
-      (w) => w.section === targetSection,
-    )
+    const widgetsInTarget = currentWidgets.filter((w) => w.section === targetSection);
     const maxOrder =
-      widgetsInTarget.length > 0
-        ? Math.max(...widgetsInTarget.map((w) => w.order))
-        : 0
+      widgetsInTarget.length > 0 ? Math.max(...widgetsInTarget.map((w) => w.order)) : 0;
 
     updateWidgetConfig(draggedId, {
       section: targetSection,
       order: maxOrder + 10,
-    })
-    setDraggedId(null)
-  }
+    });
+    setDraggedId(null);
+  };
 
-  const moveToSection = (id: string, section: 'left' | 'center' | 'right') => {
+  const moveToSection = (id: string, section: "left" | "center" | "right") => {
     // Find max order in that section
-    const widgetsInTarget = currentWidgets.filter((w) => w.section === section)
+    const widgetsInTarget = currentWidgets.filter((w) => w.section === section);
     const maxOrder =
-      widgetsInTarget.length > 0
-        ? Math.max(...widgetsInTarget.map((w) => w.order))
-        : 0
-    updateWidgetConfig(id, { section, order: maxOrder + 10 })
-  }
+      widgetsInTarget.length > 0 ? Math.max(...widgetsInTarget.map((w) => w.order)) : 0;
+    updateWidgetConfig(id, { section, order: maxOrder + 10 });
+  };
 
   const moveOrder = (id: string, d: number) => {
     // Find current widget
-    const w = currentWidgets.find((x) => x.id === id)
-    if (!w) return
+    const w = currentWidgets.find((x) => x.id === id);
+    if (!w) return;
 
     // Find neighbors in same section
-    const inSection = currentWidgets.filter((x) => x.section === w.section)
-    const idx = inSection.findIndex((x) => x.id === id)
-    if (idx === -1) return
+    const inSection = currentWidgets.filter((x) => x.section === w.section);
+    const idx = inSection.findIndex((x) => x.id === id);
+    if (idx === -1) return;
 
-    const swapWith = inSection[idx + d]
-    if (!swapWith) return
+    const swapWith = inSection[idx + d];
+    if (!swapWith) return;
 
     // Swap orders
-    const myOrder = w.order
-    const theirOrder = swapWith.order
+    const myOrder = w.order;
+    const theirOrder = swapWith.order;
 
     // If orders are identical, nudge them apart
     if (myOrder === theirOrder) {
-      updateWidgetConfig(id, { order: myOrder + (d > 0 ? 1 : -1) })
+      updateWidgetConfig(id, { order: myOrder + (d > 0 ? 1 : -1) });
     } else {
-      updateWidgetConfig(id, { order: theirOrder })
-      updateWidgetConfig(swapWith.id, { order: myOrder })
+      updateWidgetConfig(id, { order: theirOrder });
+      updateWidgetConfig(swapWith.id, { order: myOrder });
     }
-  }
+  };
 
   const resetWidget = (id: string) => {
-    const w = currentWidgets.find((x) => x.id === id)
-    if (!w) return
+    const w = currentWidgets.find((x) => x.id === id);
+    if (!w) return;
     updateWidgetConfig(id, {
       section: w.defaultSection,
       order: w.defaultOrder,
       visible: true,
-    })
-  }
+    });
+  };
 
   const resetAll = () => {
     currentWidgets.forEach((w) => {
@@ -259,15 +234,15 @@ export function VisualCommandBarEditor() {
         section: w.defaultSection,
         order: w.defaultOrder,
         visible: true,
-      })
-    })
-  }
+      });
+    });
+  };
 
   const WidgetPill = ({ w }: { w: (typeof currentWidgets)[0] }) => (
     <div
       className={cn(
-        'flex items-center gap-2 px-2 py-1.5 rounded-md border bg-card text-[11px] select-none hover:border-primary/50 transition-colors group',
-        !w.visible && 'opacity-50 border-dashed',
+        "flex items-center gap-2 px-2 py-1.5 rounded-md border bg-card text-[11px] select-none hover:border-primary/50 transition-colors group",
+        !w.visible && "opacity-50 border-dashed",
       )}
       title={`${w.label} • ${w.section} • ${w.order}`}
     >
@@ -282,15 +257,13 @@ export function VisualCommandBarEditor() {
 
       <span className="font-medium truncate max-w-[140px]">{w.label}</span>
 
-      {w.scope === 'zen' && (
+      {w.scope === "zen" && (
         <Badge variant="secondary" className="text-[9px] px-1 py-0">
           Zen
         </Badge>
       )}
 
-      {(w.section !== w.defaultSection ||
-        w.order !== w.defaultOrder ||
-        w.visible !== true) && (
+      {(w.section !== w.defaultSection || w.order !== w.defaultOrder || w.visible !== true) && (
         <Badge variant="outline" className="text-[9px] px-1 py-0">
           Custom
         </Badge>
@@ -313,30 +286,26 @@ export function VisualCommandBarEditor() {
           className="h-4 w-4"
           onClick={() => toggleVisibility(w.id, w.visible)}
         >
-          {w.visible ? (
-            <Eye className="h-3 w-3" />
-          ) : (
-            <EyeOff className="h-3 w-3" />
-          )}
+          {w.visible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
           className="h-4 w-4"
-          disabled={leftWidgets.indexOf(w) === 0 && w.section === 'left'}
+          disabled={leftWidgets.indexOf(w) === 0 && w.section === "left"}
           onClick={() => {
-            const idx = leftWidgets.indexOf(w)
-            if (w.section === 'left') {
-              if (idx > 0) moveOrder(w.id, -1)
-            } else if (w.section === 'center') {
-              const cIdx = centerWidgets.indexOf(w)
-              if (cIdx === 0) moveToSection(w.id, 'left')
-              else moveOrder(w.id, -1)
+            const idx = leftWidgets.indexOf(w);
+            if (w.section === "left") {
+              if (idx > 0) moveOrder(w.id, -1);
+            } else if (w.section === "center") {
+              const cIdx = centerWidgets.indexOf(w);
+              if (cIdx === 0) moveToSection(w.id, "left");
+              else moveOrder(w.id, -1);
             } else {
-              const rIdx = rightWidgets.indexOf(w)
-              if (rIdx === 0) moveToSection(w.id, 'center')
-              else moveOrder(w.id, -1)
+              const rIdx = rightWidgets.indexOf(w);
+              if (rIdx === 0) moveToSection(w.id, "center");
+              else moveOrder(w.id, -1);
             }
           }}
         >
@@ -346,21 +315,18 @@ export function VisualCommandBarEditor() {
           variant="ghost"
           size="icon"
           className="h-4 w-4"
-          disabled={
-            rightWidgets.indexOf(w) === rightWidgets.length - 1 &&
-            w.section === 'right'
-          }
+          disabled={rightWidgets.indexOf(w) === rightWidgets.length - 1 && w.section === "right"}
           onClick={() => {
-            if (w.section === 'left') {
-              const idx = leftWidgets.indexOf(w)
-              if (idx === leftWidgets.length - 1) moveToSection(w.id, 'center')
-              else moveOrder(w.id, 1)
-            } else if (w.section === 'center') {
-              const idx = centerWidgets.indexOf(w)
-              if (idx === centerWidgets.length - 1) moveToSection(w.id, 'right')
-              else moveOrder(w.id, 1)
+            if (w.section === "left") {
+              const idx = leftWidgets.indexOf(w);
+              if (idx === leftWidgets.length - 1) moveToSection(w.id, "center");
+              else moveOrder(w.id, 1);
+            } else if (w.section === "center") {
+              const idx = centerWidgets.indexOf(w);
+              if (idx === centerWidgets.length - 1) moveToSection(w.id, "right");
+              else moveOrder(w.id, 1);
             } else {
-              moveOrder(w.id, 1)
+              moveOrder(w.id, 1);
             }
           }}
         >
@@ -368,16 +334,16 @@ export function VisualCommandBarEditor() {
         </Button>
       </div>
     </div>
-  )
+  );
 
   const SectionZone = ({
     title,
     widgets,
     section,
   }: {
-    title: string
-    widgets: typeof currentWidgets
-    section: 'left' | 'center' | 'right'
+    title: string;
+    widgets: typeof currentWidgets;
+    section: "left" | "center" | "right";
   }) => (
     <div
       className="flex-1 min-h-20 border border-dashed rounded-lg p-2 flex flex-col gap-2 transition-colors hover:bg-muted/10"
@@ -398,7 +364,7 @@ export function VisualCommandBarEditor() {
         )}
       </div>
     </div>
-  )
+  );
 
   return (
     <div className="flex flex-col gap-3 border rounded-md p-3 bg-background/50">
@@ -441,5 +407,5 @@ export function VisualCommandBarEditor() {
         Drag using the grip handle. Hover to show controls.
       </p>
     </div>
-  )
+  );
 }

@@ -1,28 +1,28 @@
-import { Label } from '@embeddr/react-ui/ui'
-import { Slider } from '@embeddr/react-ui/ui'
-import { Switch } from '@embeddr/react-ui/ui'
 import {
+  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
-import { Separator } from '@embeddr/react-ui/ui'
+  Separator,
+  Slider,
+  Switch,
+} from "@embeddr/react-ui/ui";
 
 interface FilterConfigPanelProps {
-  gridCols: number
-  setGridCols: (cols: number) => void
-  imageFit: 'cover' | 'contain'
-  setImageFit: (fit: 'cover' | 'contain') => void
-  autoGrid: boolean
-  setAutoGrid: (auto: boolean) => void
-  useOriginalImages: boolean
-  setUseOriginalImages: (useOriginal: boolean) => void
-  mediaType: 'image' | 'video' | 'all'
-  setMediaType: (type: 'image' | 'video' | 'all') => void
-  showArchived: boolean | null
-  setShowArchived: (show: boolean | null) => void
+  gridCols: number;
+  setGridCols: (cols: number) => void;
+  imageFit: "cover" | "contain";
+  setImageFit: (fit: "cover" | "contain") => void;
+  autoGrid: boolean;
+  setAutoGrid: (auto: boolean) => void;
+  useOriginalImages: boolean;
+  setUseOriginalImages: (useOriginal: boolean) => void;
+  mediaType: "image" | "video" | "all";
+  setMediaType: (type: "image" | "video" | "all") => void;
+  showArchived: boolean | null;
+  setShowArchived: (show: boolean | null) => void;
 }
 
 export function FilterConfigPanel({
@@ -43,9 +43,7 @@ export function FilterConfigPanel({
     <div className="flex flex-col gap-4 p-4">
       <div className="space-y-2">
         <h4 className="font-medium leading-none">View Settings</h4>
-        <p className="text-sm text-muted-foreground">
-          Customize how images are displayed.
-        </p>
+        <p className="text-sm text-muted-foreground">Customize how images are displayed.</p>
       </div>
       <Separator />
       <div className="grid gap-4">
@@ -53,9 +51,7 @@ export function FilterConfigPanel({
           <Label htmlFor="media-type">Media Type</Label>
           <Select
             value={mediaType}
-            onValueChange={(value: 'image' | 'video' | 'all') =>
-              setMediaType(value)
-            }
+            onValueChange={(value: "image" | "video" | "all") => setMediaType(value)}
           >
             <SelectTrigger id="media-type">
               <SelectValue placeholder="Select media type" />
@@ -71,17 +67,11 @@ export function FilterConfigPanel({
         <div className="grid gap-2">
           <Label htmlFor="archive-status">Archive Status</Label>
           <Select
-            value={
-              showArchived === null
-                ? 'all'
-                : showArchived
-                  ? 'archived'
-                  : 'active'
-            }
+            value={showArchived === null ? "all" : showArchived ? "archived" : "active"}
             onValueChange={(value) => {
-              if (value === 'all') setShowArchived(null)
-              else if (value === 'archived') setShowArchived(true)
-              else setShowArchived(false)
+              if (value === "all") setShowArchived(null);
+              else if (value === "archived") setShowArchived(true);
+              else setShowArchived(false);
             }}
           >
             <SelectTrigger id="archive-status">
@@ -97,11 +87,7 @@ export function FilterConfigPanel({
 
         <div className="flex items-center justify-between">
           <Label htmlFor="auto-grid">Auto Grid Layout</Label>
-          <Switch
-            id="auto-grid"
-            checked={autoGrid}
-            onCheckedChange={setAutoGrid}
-          />
+          <Switch id="auto-grid" checked={autoGrid} onCheckedChange={setAutoGrid} />
         </div>
 
         <div className="flex items-center justify-between">
@@ -137,7 +123,7 @@ export function FilterConfigPanel({
           <Label htmlFor="image-fit">Image Fit</Label>
           <Select
             value={imageFit}
-            onValueChange={(value: 'cover' | 'contain') => setImageFit(value)}
+            onValueChange={(value: "cover" | "contain") => setImageFit(value)}
           >
             <SelectTrigger id="image-fit">
               <SelectValue placeholder="Select fit" />
@@ -150,5 +136,5 @@ export function FilterConfigPanel({
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-const logoSrc = '/embeddr_logo_transparent.webp'
+const logoSrc = "/embeddr_logo_transparent.webp";
 
 /**
  * Full-screen branded loading screen shown during initial app load.
@@ -9,7 +9,7 @@ export function AppLoadingScreen() {
     <div className="fixed inset-0 z-[65] flex flex-col items-center justify-center bg-background gap-6">
       <div
         className="flex flex-col items-center gap-6"
-        style={{ animation: 'embeddr-logo-pulse 2.4s ease-in-out infinite' }}
+        style={{ animation: "embeddr-logo-pulse 2.4s ease-in-out infinite" }}
       >
         <img
           src={logoSrc}
@@ -26,7 +26,7 @@ export function AppLoadingScreen() {
         }
       `}</style>
     </div>
-  )
+  );
 }
 
 function LoadingDots() {
@@ -48,5 +48,5 @@ function LoadingDots() {
         }
       `}</style>
     </div>
-  )
+  );
 }

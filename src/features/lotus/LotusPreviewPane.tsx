@@ -1,115 +1,101 @@
 // src/features/lotus/LotusPreviewPane.tsx
-import React from 'react'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import type { LotusResultItem } from './types'
-import { cn } from '@/lib/utils'
-import { usePluginLogos } from '@/hooks/usePluginLogos'
+import React from "react";
+import { Badge, Button, ScrollArea } from "@embeddr/react-ui/ui";
 import {
-  CornerDownLeft,
-  Command,
-  Option,
   ArrowUpDown,
-  FileText,
-  PlugZap,
-  Cpu,
-  Zap,
+  Command,
   Compass,
+  CornerDownLeft,
+  Cpu,
+  FileText,
   Globe,
   Image as ImageIcon,
-} from 'lucide-react'
+  Option,
+  PlugZap,
+  Zap,
+} from "lucide-react";
+import type { LotusResultItem } from "./types";
+import { cn } from "@/lib/utils";
+import { usePluginLogos } from "@/hooks/usePluginLogos";
 
-const kindConfig: Record<
-  string,
-  { icon: React.ElementType; color: string; label: string }
-> = {
-  panel: { icon: Cpu, color: 'text-blue-500', label: 'Panel' },
-  action: { icon: Zap, color: 'text-amber-500', label: 'Action' },
-  nav: { icon: Compass, color: 'text-green-500', label: 'Navigation' },
-  artifact: { icon: ImageIcon, color: 'text-purple-500', label: 'Artifact' },
-  resource: { icon: Globe, color: 'text-cyan-500', label: 'Resource' },
-}
+const kindConfig: Record<string, { icon: React.ElementType; color: string; label: string }> = {
+  panel: { icon: Cpu, color: "text-blue-500", label: "Panel" },
+  action: { icon: Zap, color: "text-amber-500", label: "Action" },
+  nav: { icon: Compass, color: "text-green-500", label: "Navigation" },
+  artifact: { icon: ImageIcon, color: "text-purple-500", label: "Artifact" },
+  resource: { icon: Globe, color: "text-cyan-500", label: "Resource" },
+};
 
 interface LotusPreviewPaneProps {
-  item: LotusResultItem | null
-  onRun: () => void
-  className?: string
+  item: LotusResultItem | null;
+  onRun: () => void;
+  className?: string;
 }
 
-export function LotusPreviewPane({
-  item,
-  onRun,
-  className,
-}: LotusPreviewPaneProps) {
-  const { logos } = usePluginLogos()
+export function LotusPreviewPane({ item, onRun, className }: LotusPreviewPaneProps) {
+  const { logos } = usePluginLogos();
 
   if (!item) {
     return (
       <div
         className={cn(
-          'h-full p-4 flex flex-col items-center justify-center text-muted-foreground gap-3',
+          "h-full p-4 flex flex-col items-center justify-center text-muted-foreground gap-3",
           className,
         )}
       >
-        <div className="text-3xl opacity-20">{'\u2726'}</div>
+        <div className="text-3xl opacity-20">{"\u2726"}</div>
         <span className="text-sm">Select an item to preview</span>
         <div className="text-[10px] space-y-1 text-center opacity-60">
           <div>Use arrow keys to navigate</div>
           <div>Press Enter to run</div>
         </div>
       </div>
-    )
+    );
   }
 
   // Extract plugin info
   const pluginId =
-    item.data?.pluginId ||
-    item.data?.plugin ||
-    item.data?.plugin_name ||
-    item.subtitle ||
-    ''
-  const pluginLogo = pluginId ? logos?.[pluginId] : null
+    item.data?.pluginId || item.data?.plugin || item.data?.plugin_name || item.subtitle || "";
+  const pluginLogo = pluginId ? logos?.[pluginId] : null;
 
   // Extract kind styling
   const kind = kindConfig[item.kind] || {
     icon: PlugZap,
-    color: 'text-muted-foreground',
+    color: "text-muted-foreground",
     label: item.kind,
-  }
-  const KindIcon = kind.icon
+  };
+  const KindIcon = kind.icon;
 
   // Resource/media preview
-  const resource = item.data?.resource || {}
-  const resourceType = resource?.type || item.kind
-  let previewUrl = item.data?.preview_url || resource?.preview_url
-  if (!previewUrl && resource?.content_url) previewUrl = resource.content_url
-  if (resourceType === 'document') previewUrl = undefined
-  if (resourceType === 'video' && previewUrl) {
-    if (previewUrl.includes('/scene/') && /\/stream(\?|$)/.test(previewUrl)) {
-      previewUrl = previewUrl.replace(/\/stream(\?.*)?$/, '/screenshot$1')
+  const resource = item.data?.resource || {};
+  const resourceType = resource?.type || item.kind;
+  let previewUrl = item.data?.preview_url || resource?.preview_url;
+  if (!previewUrl && resource?.content_url) previewUrl = resource.content_url;
+  if (resourceType === "document") previewUrl = undefined;
+  if (resourceType === "video" && previewUrl) {
+    if (previewUrl.includes("/scene/") && /\/stream(\?|$)/.test(previewUrl)) {
+      previewUrl = previewUrl.replace(/\/stream(\?.*)?$/, "/screenshot$1");
     }
   }
-  if (resourceType === 'image' && previewUrl) {
-    if (previewUrl.includes('/image/') && /\/image(\?|$)/.test(previewUrl)) {
-      previewUrl = previewUrl.replace(/\/image(\?.*)?$/, '/thumbnail$1')
+  if (resourceType === "image" && previewUrl) {
+    if (previewUrl.includes("/image/") && /\/image(\?|$)/.test(previewUrl)) {
+      previewUrl = previewUrl.replace(/\/image(\?.*)?$/, "/thumbnail$1");
     }
   }
 
   // Score display — only show for server results (local items get +1000 boost)
-  const rawScore = item.score ?? 0
-  const score = item.source === 'server' && rawScore > 0 && rawScore <= 1
-    ? Math.round(rawScore * 100)
-    : null
+  const rawScore = item.score ?? 0;
+  const score =
+    item.source === "server" && rawScore > 0 && rawScore <= 1 ? Math.round(rawScore * 100) : null;
 
   return (
-    <div className={cn('h-full flex flex-col', className)}>
+    <div className={cn("h-full flex flex-col", className)}>
       {/* Header with plugin branding */}
       <div className="p-4 border-b border-border/60">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <KindIcon className={cn('h-4 w-4 shrink-0', kind.color)} />
+              <KindIcon className={cn("h-4 w-4 shrink-0", kind.color)} />
               <h3 className="font-semibold text-base truncate">{item.title}</h3>
             </div>
             <div className="flex items-center gap-2 mt-1.5">
@@ -130,11 +116,7 @@ export function LotusPreviewPane({
         </div>
       </div>
 
-      <ScrollArea
-        className="flex-1 min-h-0"
-        type="always"
-        variant="left-border"
-      >
+      <ScrollArea className="flex-1 min-h-0" type="always" variant="left-border">
         <div className="p-4 space-y-4">
           {/* Plugin branding card */}
           {pluginId && (
@@ -162,12 +144,12 @@ export function LotusPreviewPane({
             <div className="border border-border/60 rounded-lg bg-muted/30 overflow-hidden">
               <img
                 src={previewUrl}
-                alt={item.title || 'Preview'}
+                alt={item.title || "Preview"}
                 className="w-full max-h-65 object-contain bg-background"
                 loading="lazy"
               />
             </div>
-          ) : resourceType === 'document' ? (
+          ) : resourceType === "document" ? (
             <div className="border border-border/60 rounded-lg bg-muted/30 flex items-center gap-2 p-4 text-muted-foreground">
               <FileText className="h-4 w-4" />
               <span className="text-xs">Document preview unavailable.</span>
@@ -187,20 +169,14 @@ export function LotusPreviewPane({
           ) : null}
 
           {/* Action/capability metadata */}
-          {(item.kind === 'action' || item.kind === 'panel') && item.data && (
+          {(item.kind === "action" || item.kind === "panel") && item.data && (
             <div className="space-y-2">
-              {item.data.action && (
-                <MetaRow label="Action" value={item.data.action} />
-              )}
+              {item.data.action && <MetaRow label="Action" value={item.data.action} />}
               {item.data.action_name && !item.data.action && (
                 <MetaRow label="Action" value={item.data.action_name} />
               )}
-              {item.data.job_type && (
-                <MetaRow label="Job Type" value={item.data.job_type} />
-              )}
-              {item.data.slot && (
-                <MetaRow label="Slot" value={item.data.slot} />
-              )}
+              {item.data.job_type && <MetaRow label="Job Type" value={item.data.job_type} />}
+              {item.data.slot && <MetaRow label="Slot" value={item.data.slot} />}
               {item.data.componentName && (
                 <MetaRow label="Component" value={item.data.componentName} />
               )}
@@ -251,16 +227,14 @@ export function LotusPreviewPane({
         {item.id}
       </div>
     </div>
-  )
+  );
 }
 
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center gap-2 text-xs">
       <span className="text-muted-foreground/70 shrink-0">{label}:</span>
-      <code className="text-[11px] bg-muted rounded px-1.5 py-0.5 truncate">
-        {value}
-      </code>
+      <code className="text-[11px] bg-muted rounded px-1.5 py-0.5 truncate">{value}</code>
     </div>
-  )
+  );
 }

@@ -1,55 +1,53 @@
-import React from 'react'
-import { Input } from '@embeddr/react-ui/ui'
-import { Textarea } from '@embeddr/react-ui/ui'
-import { Switch } from '@embeddr/react-ui/ui'
+import React from "react";
 import {
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
-import { normalizeSchemaType } from './schema'
-import { ConfigArrayEditor } from './ConfigArrayEditor'
-import { ConfigObjectEditor } from './ConfigObjectEditor'
+  Switch,
+  Textarea,
+} from "@embeddr/react-ui/ui";
+import { normalizeSchemaType } from "./schema";
+import { ConfigArrayEditor } from "./ConfigArrayEditor";
+import { ConfigObjectEditor } from "./ConfigObjectEditor";
 
 type ConfigFieldProps = {
-  name: string
-  schemaProp?: any
-  widget?: string
-  options?: Array<{ label: string; value: string }> | string[]
+  name: string;
+  schemaProp?: any;
+  widget?: string;
+  options?: Array<{ label: string; value: string }> | Array<string>;
   arrayEditor?: {
-    defaultKeyField?: string
-    keyFields?: string[]
-    label?: string
+    defaultKeyField?: string;
+    keyFields?: Array<string>;
+    label?: string;
     primary?: {
-      label?: string
-      fields: Record<string, string>
-    }
-  }
-  value: any
-  draft?: string
-  error?: string
-  rootValue?: Record<string, any>
-  onRootValueChange?: (key: string, value: any) => void
-  onValueChange: (value: any) => void
-  onDraftChange?: (value: string) => void
-}
+      label?: string;
+      fields: Record<string, string>;
+    };
+  };
+  value: any;
+  draft?: string;
+  error?: string;
+  rootValue?: Record<string, any>;
+  onRootValueChange?: (key: string, value: any) => void;
+  onValueChange: (value: any) => void;
+  onDraftChange?: (value: string) => void;
+};
 
-function normalizeOptions(
-  options?: Array<{ label: string; value: string }> | string[],
-) {
-  if (!options) return null
+function normalizeOptions(options?: Array<{ label: string; value: string }> | Array<string>) {
+  if (!options) return null;
   if (Array.isArray(options) && options.length > 0) {
-    if (typeof options[0] === 'string') {
-      return (options as string[]).map((opt) => ({
+    if (typeof options[0] === "string") {
+      return (options as Array<string>).map((opt) => ({
         label: opt,
         value: opt,
-      }))
+      }));
     }
-    return options as Array<{ label: string; value: string }>
+    return options as Array<{ label: string; value: string }>;
   }
-  return null
+  return null;
 }
 
 export function ConfigField({
@@ -65,23 +63,17 @@ export function ConfigField({
   onValueChange,
   onDraftChange,
 }: ConfigFieldProps) {
-  const type = normalizeSchemaType(schemaProp)
-  const enumOptions = schemaProp?.enum
-  const selectOptions =
-    normalizeOptions(options) ?? normalizeOptions(enumOptions)
+  const type = normalizeSchemaType(schemaProp);
+  const enumOptions = schemaProp?.enum;
+  const selectOptions = normalizeOptions(options) ?? normalizeOptions(enumOptions);
 
-  if (widget === 'checkbox' || type === 'boolean') {
-    return (
-      <Switch
-        checked={Boolean(value)}
-        onCheckedChange={(next) => onValueChange(next)}
-      />
-    )
+  if (widget === "checkbox" || type === "boolean") {
+    return <Switch checked={Boolean(value)} onCheckedChange={(next) => onValueChange(next)} />;
   }
 
-  if (widget === 'select' || selectOptions) {
+  if (widget === "select" || selectOptions) {
     return (
-      <Select value={value ?? ''} onValueChange={(next) => onValueChange(next)}>
+      <Select value={value ?? ""} onValueChange={(next) => onValueChange(next)}>
         <SelectTrigger>
           <SelectValue placeholder="Select option" />
         </SelectTrigger>
@@ -93,33 +85,33 @@ export function ConfigField({
           ))}
         </SelectContent>
       </Select>
-    )
+    );
   }
 
-  if (widget === 'json') {
+  if (widget === "json") {
     return (
       <div className="flex flex-col gap-1">
         <Textarea
-          value={draft ?? ''}
+          value={draft ?? ""}
           onChange={(event) => onDraftChange?.(event.target.value)}
           className="min-h-28 font-mono text-[11px]"
         />
         {error && <span className="text-[10px] text-red-500">{error}</span>}
       </div>
-    )
+    );
   }
 
-  if (type === 'object') {
+  if (type === "object") {
     return (
       <ConfigObjectEditor
         value={(value as Record<string, any>) || {}}
         schema={schemaProp || {}}
         onChange={onValueChange}
       />
-    )
+    );
   }
 
-  if (type === 'array') {
+  if (type === "array") {
     return (
       <ConfigArrayEditor
         items={Array.isArray(value) ? value : []}
@@ -129,36 +121,31 @@ export function ConfigField({
         onRootValueChange={onRootValueChange}
         onChange={onValueChange}
       />
-    )
+    );
   }
 
-  if (type === 'number') {
+  if (type === "number") {
     return (
       <Input
         type="number"
-        value={value ?? ''}
+        value={value ?? ""}
         onChange={(event) => {
-          const next = event.target.value
-          onValueChange(next === '' ? null : Number(next))
+          const next = event.target.value;
+          onValueChange(next === "" ? null : Number(next));
         }}
       />
-    )
+    );
   }
 
-  if (widget === 'text-multi') {
+  if (widget === "text-multi") {
     return (
       <Textarea
-        value={value ?? ''}
+        value={value ?? ""}
         onChange={(event) => onValueChange(event.target.value)}
         className="min-h-20 text-[11px]"
       />
-    )
+    );
   }
 
-  return (
-    <Input
-      value={value ?? ''}
-      onChange={(event) => onValueChange(event.target.value)}
-    />
-  )
+  return <Input value={value ?? ""} onChange={(event) => onValueChange(event.target.value)} />;
 }

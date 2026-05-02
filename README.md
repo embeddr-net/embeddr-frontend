@@ -13,7 +13,6 @@
 >
 > Please use [embeddr-cli](https://github.com/embeddr-net/embeddr-cli)
 
-
 ## Development
 
 > Requires [embeddr-cli](https://github.com/embeddr-net/embeddr-cli) to be running.
@@ -29,6 +28,7 @@ pnpm install
 # During buildtime this is set to `/api/v1`
 VITE_BACKEND_URL="http://127.0.0.1:8003/api/v1" pnpm dev
 ```
+
 Once running, open [http://localhost:5173](http://localhost:5173) to view
 
 ## Components

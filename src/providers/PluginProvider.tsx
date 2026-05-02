@@ -1,13 +1,11 @@
-import React, { useContext, useEffect, useRef } from 'react'
-import { EmbeddrProvider, PluginContext } from '@embeddr/zen-shell'
-import { useEmbeddrAPI, usePluginStore } from '@/plugins/store'
-import { useUserStore } from '@/store/userStore'
-import { DEFAULT_PLUGINS } from '@/plugins/defaults'
+import React, { useContext, useEffect, useRef } from "react";
+import { EmbeddrProvider, PluginContext } from "@embeddr/zen-shell";
+import { useEmbeddrAPI, usePluginStore } from "@/plugins/store";
+import { useUserStore } from "@/store/userStore";
+import { DEFAULT_PLUGINS } from "@/plugins/defaults";
 
-export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const api = useEmbeddrAPI()
+export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const api = useEmbeddrAPI();
   const {
     registerPlugin,
     loadExternalPlugins,
@@ -15,41 +13,39 @@ export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({
     activePlugins,
     activatePlugin,
     deactivatePlugin,
-  } = usePluginStore()
-  const apiKey = useUserStore((s) => s.apiKey)
+  } = usePluginStore();
+  const apiKey = useUserStore((s) => s.apiKey);
 
-  const initializedPlugins = useRef<Set<string>>(new Set())
-  const autoActivated = useRef<Set<string>>(new Set())
-  const cleanupFns = useRef<Record<string, () => void>>({})
-  const lastApiKeyRef = useRef<string | null | undefined>(undefined)
+  const initializedPlugins = useRef<Set<string>>(new Set());
+  const autoActivated = useRef<Set<string>>(new Set());
+  const cleanupFns = useRef<Record<string, () => void>>({});
+  const lastApiKeyRef = useRef<string | null | undefined>(undefined);
 
   // 1. Register default plugins and load external ones (ONCE)
   useEffect(() => {
-    console.log(
-      '[PluginProvider] Registering default plugins and loading external ones',
-    )
+    console.log("[PluginProvider] Registering default plugins and loading external ones");
     DEFAULT_PLUGINS.forEach((plugin) => {
-      registerPlugin(plugin)
-    })
-    loadExternalPlugins()
-  }, []) // Empty dependency array: run once on mount
+      registerPlugin(plugin);
+    });
+    loadExternalPlugins();
+  }, []); // Empty dependency array: run once on mount
 
   useEffect(() => {
     if (lastApiKeyRef.current === undefined) {
-      lastApiKeyRef.current = apiKey
-      return
+      lastApiKeyRef.current = apiKey;
+      return;
     }
 
     if (lastApiKeyRef.current === apiKey) {
-      return
+      return;
     }
 
-    lastApiKeyRef.current = apiKey
+    lastApiKeyRef.current = apiKey;
 
     if (apiKey) {
-      loadExternalPlugins({ force: true })
+      loadExternalPlugins({ force: true });
     }
-  }, [apiKey, loadExternalPlugins])
+  }, [apiKey, loadExternalPlugins]);
 
   // 2. Initialize plugins when they appear in the store
   useEffect(() => {
@@ -61,41 +57,38 @@ export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({
 
     Object.values(plugins).forEach((plugin) => {
       if (!initializedPlugins.current.has(plugin.id)) {
-        console.log('[PluginProvider] Initializing plugin:', plugin.id)
+        console.log("[PluginProvider] Initializing plugin:", plugin.id);
         try {
-          const cleanup = plugin.initialize?.(api)
-          if (typeof cleanup === 'function') {
-            cleanupFns.current[plugin.id] = cleanup
+          const cleanup = plugin.initialize?.(api);
+          if (typeof cleanup === "function") {
+            cleanupFns.current[plugin.id] = cleanup;
           }
-          initializedPlugins.current.add(plugin.id)
+          initializedPlugins.current.add(plugin.id);
         } catch (err) {
-          console.error(
-            `[PluginProvider] Failed to initialize plugin ${plugin.id}:`,
-            err,
-          )
+          console.error(`[PluginProvider] Failed to initialize plugin ${plugin.id}:`, err);
         }
       }
-    })
-  }, [plugins, api]) // Re-run when plugins list changes or api changes (but guarded)
+    });
+  }, [plugins, api]); // Re-run when plugins list changes or api changes (but guarded)
 
   useEffect(() => {
-    const targetId = 'embeddr-umap'
-    if (!plugins[targetId]) return
-    if (activePlugins.includes(targetId)) return
-    if (autoActivated.current.has(targetId)) return
-    autoActivated.current.add(targetId)
-    activatePlugin(targetId)
-  }, [plugins, activePlugins, activatePlugin])
+    const targetId = "embeddr-umap";
+    if (!plugins[targetId]) return;
+    if (activePlugins.includes(targetId)) return;
+    if (autoActivated.current.has(targetId)) return;
+    autoActivated.current.add(targetId);
+    activatePlugin(targetId);
+  }, [plugins, activePlugins, activatePlugin]);
 
   // 3. Cleanup on unmount
   useEffect(() => {
     return () => {
-      console.log('[PluginProvider] Unmounting, cleaning up all plugins')
-      Object.values(cleanupFns.current).forEach((fn) => fn())
-      cleanupFns.current = {}
-      initializedPlugins.current.clear()
-    }
-  }, [])
+      console.log("[PluginProvider] Unmounting, cleaning up all plugins");
+      Object.values(cleanupFns.current).forEach((fn) => fn());
+      cleanupFns.current = {};
+      initializedPlugins.current.clear();
+    };
+  }, []);
 
   return (
     <EmbeddrProvider api={api}>
@@ -111,5 +104,5 @@ export const PluginProvider: React.FC<{ children: React.ReactNode }> = ({
         {children}
       </PluginContext.Provider>
     </EmbeddrProvider>
-  )
-}
+  );
+};

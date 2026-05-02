@@ -1,38 +1,36 @@
-import { useMemo, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { Card } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { Separator } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { Switch } from '@embeddr/react-ui/ui'
+import { useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
+  Badge,
+  Button,
+  Card,
+  Input,
+  ScrollArea,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
-import {
+  Separator,
+  Switch,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/ui'
-import { PlugZap } from 'lucide-react'
-import { CloudOnboarding } from '@/components/onboarding/CloudOnboarding'
-import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
-import { useThemePacks } from '@/hooks/useThemePacks'
-import { embeddrApi } from '@/lib/api/client'
-import { fetchPluginLogos } from '@/lib/api/endpoints/plugins'
-import { useUserStore } from '@/store/userStore'
-import { useSettingsStore } from '@/store/settingsStore'
+} from "@embeddr/react-ui/ui";
+import { PlugZap } from "lucide-react";
+import { CloudOnboarding } from "@/components/onboarding/CloudOnboarding";
+import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useThemePacks } from "@/hooks/useThemePacks";
+import { embeddrApi } from "@/lib/api/client";
+import { fetchPluginLogos } from "@/lib/api/endpoints/plugins";
+import { useUserStore } from "@/store/userStore";
+import { useSettingsStore } from "@/store/settingsStore";
 
 const OnboardingPage = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const {
     themeMode,
     setThemeMode,
@@ -40,61 +38,58 @@ const OnboardingPage = () => {
     setThemePackLightId,
     themePackDarkId,
     setThemePackDarkId,
-  } = useSettingsStore()
-  const [, setOnboardingDismissed] = useLocalStorage(
-    'zen-onboarding-dismissed',
-    false,
-  )
-  const { displayName, setDisplayName, apiKey, setApiKey } = useUserStore()
-  const [showKey, setShowKey] = useState(false)
+  } = useSettingsStore();
+  const [, setOnboardingDismissed] = useLocalStorage("zen-onboarding-dismissed", false);
+  const { displayName, setDisplayName, apiKey, setApiKey } = useUserStore();
+  const [showKey, setShowKey] = useState(false);
 
   const { data: plugins, isLoading: pluginsLoading } = useQuery({
-    queryKey: ['plugins', 'onboarding'],
+    queryKey: ["plugins", "onboarding"],
     queryFn: () => embeddrApi.plugins.list(),
     staleTime: 30_000,
-  })
+  });
 
   const { data: pluginLogos } = useQuery({
-    queryKey: ['plugins', 'logos', 'onboarding'],
+    queryKey: ["plugins", "logos", "onboarding"],
     queryFn: () => fetchPluginLogos(),
     staleTime: 60_000,
-  })
+  });
 
   const { data: publicInfo } = useQuery({
-    queryKey: ['system', 'public', 'onboarding'],
+    queryKey: ["system", "public", "onboarding"],
     queryFn: () => embeddrApi.system.publicInfo(),
     staleTime: 60_000,
-  })
+  });
 
-  const instanceProfile = publicInfo?.instance
+  const instanceProfile = publicInfo?.instance;
 
-  const { packs, isLoading: themesLoading } = useThemePacks()
+  const { packs, isLoading: themesLoading } = useThemePacks();
   const availablePacks = useMemo(
-    () => [{ id: 'default', name: 'Default', version: '' }, ...packs],
+    () => [{ id: "default", name: "Default", version: "" }, ...packs],
     [packs],
-  )
+  );
 
-  const pluginList = useMemo(() => plugins || [], [plugins])
+  const pluginList = useMemo(() => plugins || [], [plugins]);
 
   const getPluginStats = (plugin: any) => {
-    const actions = Array.isArray(plugin?.actions) ? plugin.actions.length : 0
+    const actions = Array.isArray(plugin?.actions) ? plugin.actions.length : 0;
     const components =
       (plugin?.frontend_components?.length || 0) +
       (plugin?.panels?.length || 0) +
       (plugin?.pages?.length || 0) +
-      (plugin?.widgets?.length || 0)
-    const intents = Array.isArray(plugin?.intents) ? plugin.intents : []
-    return { actions, components, intents }
-  }
+      (plugin?.widgets?.length || 0);
+    const intents = Array.isArray(plugin?.intents) ? plugin.intents : [];
+    return { actions, components, intents };
+  };
 
   const handleComplete = () => {
-    setOnboardingDismissed(true)
-    navigate({ to: '/' })
-  }
+    setOnboardingDismissed(true);
+    navigate({ to: "/" });
+  };
 
   // Cloud mode: show simplified onboarding flow
   if (publicInfo?.cloud_mode) {
-    return <CloudOnboarding publicInfo={publicInfo} onComplete={handleComplete} />
+    return <CloudOnboarding publicInfo={publicInfo} onComplete={handleComplete} />;
   }
 
   return (
@@ -104,12 +99,12 @@ const OnboardingPage = () => {
           <div>
             <h1 className="text-2xl font-semibold">Welcome to Embeddr</h1>
             <p className="text-sm text-muted-foreground">
-              Start with sensible defaults, ingest content quickly, and tune
-              advanced options only when you need them.
+              Start with sensible defaults, ingest content quickly, and tune advanced options only
+              when you need them.
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate({ to: '/' })}>
+            <Button variant="outline" onClick={() => navigate({ to: "/" })}>
               Enter app
             </Button>
             <Button onClick={handleComplete}>Finish setup</Button>
@@ -122,17 +117,15 @@ const OnboardingPage = () => {
             <div>
               <h2 className="text-lg font-semibold">Quick start</h2>
               <p className="text-sm text-muted-foreground">
-                Beginner path with minimal clicks. Nelumbo and Lotus handle the
-                heavy lifting; defaults can be applied in one action.
+                Beginner path with minimal clicks. Nelumbo and Lotus handle the heavy lifting;
+                defaults can be applied in one action.
               </p>
             </div>
             <Badge variant="default">Recommended</Badge>
           </div>
           <OnboardingWizard
             onComplete={handleComplete}
-            onOpenSettingsTab={(tab) =>
-              navigate({ to: '/settings', search: { tab } })
-            }
+            onOpenSettingsTab={(tab) => navigate({ to: "/settings", search: { tab } })}
           />
         </Card>
 
@@ -158,20 +151,20 @@ const OnboardingPage = () => {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
-                  variant={themeMode === 'system' ? 'default' : 'outline'}
-                  onClick={() => setThemeMode('system')}
+                  variant={themeMode === "system" ? "default" : "outline"}
+                  onClick={() => setThemeMode("system")}
                 >
                   System
                 </Button>
                 <Button
-                  variant={themeMode === 'dark' ? 'default' : 'outline'}
-                  onClick={() => setThemeMode('dark')}
+                  variant={themeMode === "dark" ? "default" : "outline"}
+                  onClick={() => setThemeMode("dark")}
                 >
                   Dark
                 </Button>
                 <Button
-                  variant={themeMode === 'light' ? 'default' : 'outline'}
-                  onClick={() => setThemeMode('light')}
+                  variant={themeMode === "light" ? "default" : "outline"}
+                  onClick={() => setThemeMode("light")}
                 >
                   Light
                 </Button>
@@ -188,9 +181,7 @@ const OnboardingPage = () => {
                   >
                     <SelectTrigger>
                       <SelectValue
-                        placeholder={
-                          themesLoading ? 'Loading themes…' : 'Select a pack'
-                        }
+                        placeholder={themesLoading ? "Loading themes…" : "Select a pack"}
                       />
                     </SelectTrigger>
                     <SelectContent>
@@ -213,9 +204,7 @@ const OnboardingPage = () => {
                   >
                     <SelectTrigger>
                       <SelectValue
-                        placeholder={
-                          themesLoading ? 'Loading themes…' : 'Select a pack'
-                        }
+                        placeholder={themesLoading ? "Loading themes…" : "Select a pack"}
                       />
                     </SelectTrigger>
                     <SelectContent>
@@ -243,24 +232,20 @@ const OnboardingPage = () => {
                 <Badge variant="secondary">{pluginList.length} available</Badge>
               </div>
               <div className="text-xs text-muted-foreground">
-                Beginner setup works without touching plugins. Use this list for
-                visibility and optional tuning.
+                Beginner setup works without touching plugins. Use this list for visibility and
+                optional tuning.
               </div>
               <ScrollArea className="h-90 pr-2">
                 <div className="space-y-2">
                   {pluginsLoading && (
-                    <div className="text-sm text-muted-foreground">
-                      Loading plugins...
-                    </div>
+                    <div className="text-sm text-muted-foreground">Loading plugins...</div>
                   )}
                   {!pluginsLoading && pluginList.length === 0 && (
-                    <div className="text-sm text-muted-foreground">
-                      No plugins detected.
-                    </div>
+                    <div className="text-sm text-muted-foreground">No plugins detected.</div>
                   )}
                   {pluginList.map((plugin: any) =>
                     (() => {
-                      const stats = getPluginStats(plugin)
+                      const stats = getPluginStats(plugin);
                       return (
                         <div
                           key={plugin.id || plugin.name}
@@ -269,11 +254,7 @@ const OnboardingPage = () => {
                           <div className="flex items-center gap-3">
                             {pluginLogos?.[plugin.name || plugin.id] ? (
                               <img
-                                src={
-                                  pluginLogos[
-                                    plugin.name || plugin.id
-                                  ] as string
-                                }
+                                src={pluginLogos[plugin.name || plugin.id] as string}
                                 alt={`${plugin.name || plugin.id} logo`}
                                 className="h-6 w-6 rounded-md object-contain"
                               />
@@ -283,25 +264,15 @@ const OnboardingPage = () => {
                               </div>
                             )}
                             <div className="space-y-1">
-                              <div className="text-sm font-medium">
-                                {plugin.name || plugin.id}
-                              </div>
+                              <div className="text-sm font-medium">{plugin.name || plugin.id}</div>
                               <div className="text-[11px] text-muted-foreground">
-                                {plugin.version
-                                  ? `v${plugin.version}`
-                                  : 'Plugin'}
+                                {plugin.version ? `v${plugin.version}` : "Plugin"}
                               </div>
                               <div className="flex flex-wrap gap-1">
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px]"
-                                >
+                                <Badge variant="outline" className="text-[10px]">
                                   {stats.actions} actions
                                 </Badge>
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px]"
-                                >
+                                <Badge variant="outline" className="text-[10px]">
                                   {stats.components} UI
                                 </Badge>
                                 {stats.intents.map((intent: string) => (
@@ -318,7 +289,7 @@ const OnboardingPage = () => {
                           </div>
                           <Badge variant="outline">Loaded</Badge>
                         </div>
-                      )
+                      );
                     })(),
                   )}
                 </div>
@@ -330,16 +301,14 @@ const OnboardingPage = () => {
             <Card className="p-4 space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold">
-                    Profile & client access
-                  </h2>
+                  <h2 className="text-lg font-semibold">Profile & client access</h2>
                   <p className="text-sm text-muted-foreground">
-                    Optional fields for managed or secured deployments. Local
-                    installs can leave these blank.
+                    Optional fields for managed or secured deployments. Local installs can leave
+                    these blank.
                   </p>
                 </div>
-                <Badge variant={apiKey ? 'default' : 'secondary'}>
-                  {apiKey ? 'Client key set' : 'Client key optional'}
+                <Badge variant={apiKey ? "default" : "secondary"}>
+                  {apiKey ? "Client key set" : "Client key optional"}
                 </Badge>
               </div>
 
@@ -359,11 +328,10 @@ const OnboardingPage = () => {
                     )}
                     <div className="flex-1">
                       <div className="text-sm font-semibold">
-                        {instanceProfile.name || 'Embeddr Instance'}
+                        {instanceProfile.name || "Embeddr Instance"}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {instanceProfile.description ||
-                          'Connected to your local Embeddr instance.'}
+                        {instanceProfile.description || "Connected to your local Embeddr instance."}
                       </div>
                     </div>
                   </div>
@@ -386,11 +354,9 @@ const OnboardingPage = () => {
                     Client key
                   </label>
                   <Input
-                    type={showKey ? 'text' : 'password'}
-                    value={apiKey ?? ''}
-                    onChange={(e) =>
-                      setApiKey(e.target.value ? e.target.value : null)
-                    }
+                    type={showKey ? "text" : "password"}
+                    value={apiKey ?? ""}
+                    onChange={(e) => setApiKey(e.target.value ? e.target.value : null)}
                     placeholder="Optional client key"
                   />
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -401,33 +367,28 @@ const OnboardingPage = () => {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate({ to: '/access' })}
-                >
+                <Button variant="outline" onClick={() => navigate({ to: "/access" })}>
                   Open access setup
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() =>
-                    navigate({ to: '/settings', search: { tab: 'automation' } })
-                  }
+                  onClick={() => navigate({ to: "/settings", search: { tab: "automation" } })}
                 >
                   Open advanced settings
                 </Button>
               </div>
               <div className="text-xs text-muted-foreground">
-                Local-first by default: no username/password is required unless
-                your deployment enforces it.
+                Local-first by default: no username/password is required unless your deployment
+                enforces it.
               </div>
             </Card>
           </TabsContent>
         </Tabs>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export const Route = createFileRoute('/onboarding')({
+export const Route = createFileRoute("/onboarding")({
   component: OnboardingPage,
-})
+});

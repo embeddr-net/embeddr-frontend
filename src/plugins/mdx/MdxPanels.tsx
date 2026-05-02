@@ -1,52 +1,45 @@
-import React from 'react'
-import { Card } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
+import React from "react";
 import {
+  Button,
+  Card,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/ui'
-import { Textarea } from '@embeddr/react-ui/ui'
-import { useSettingsStore } from '@/store/settingsStore'
-import { MdxRenderer } from '@embeddr/react-ui'
-import type { EmbeddrAPI } from '@embeddr/react-ui/types'
+  Textarea,
+} from "@embeddr/react-ui/ui";
+import { MdxRenderer } from "@embeddr/react-ui";
+import type { EmbeddrAPI } from "@embeddr/react-ui/types";
+import { useSettingsStore } from "@/store/settingsStore";
 
-const PLUGIN_ID = 'core.mdx'
+const PLUGIN_ID = "core.mdx";
 
-const DEFAULT_CONTENT = `# Embeddr MDX\n\nWelcome to the MDX foundation layer. This content can reference Embeddr UI components.\n\n<Callout type="info" title="Pro tip">\nMDX lets you mix Markdown and JSX to build tutorials and interactive docs.\n</Callout>\n\n## Built-in Components\n\n- <Kbd>Shift</Kbd> + <Kbd>Space</Kbd> toggles the command bar.\n- <Badge>Embeddr</Badge> components can be used directly.\n\n<Button>Trigger action</Button>\n\n---\n\n\`\`\`ts\n// MDX supports fenced code blocks\nconst hello = "Embeddr"\n\`\`\`\n`
+const DEFAULT_CONTENT = `# Embeddr MDX\n\nWelcome to the MDX foundation layer. This content can reference Embeddr UI components.\n\n<Callout type="info" title="Pro tip">\nMDX lets you mix Markdown and JSX to build tutorials and interactive docs.\n</Callout>\n\n## Built-in Components\n\n- <Kbd>Shift</Kbd> + <Kbd>Space</Kbd> toggles the command bar.\n- <Badge>Embeddr</Badge> components can be used directly.\n\n<Button>Trigger action</Button>\n\n---\n\n\`\`\`ts\n// MDX supports fenced code blocks\nconst hello = "Embeddr"\n\`\`\`\n`;
 
 type MdxPanelProps = {
-  api: EmbeddrAPI
-}
+  api: EmbeddrAPI;
+};
 
 const useMdxContent = () => {
-  const content = useSettingsStore(
-    (state) => state.pluginSettings[PLUGIN_ID]?.content,
-  )
-  const setPluginSetting = useSettingsStore((state) => state.setPluginSetting)
-  const hasContent = content !== undefined
+  const content = useSettingsStore((state) => state.pluginSettings[PLUGIN_ID]?.content);
+  const setPluginSetting = useSettingsStore((state) => state.setPluginSetting);
+  const hasContent = content !== undefined;
 
   React.useEffect(() => {
     if (!hasContent) {
-      setPluginSetting(PLUGIN_ID, 'content', DEFAULT_CONTENT)
+      setPluginSetting(PLUGIN_ID, "content", DEFAULT_CONTENT);
     }
-  }, [hasContent, setPluginSetting])
+  }, [hasContent, setPluginSetting]);
 
   return {
     content: (content ?? DEFAULT_CONTENT) as string,
-    setContent: (value: string) =>
-      setPluginSetting(PLUGIN_ID, 'content', value),
-  }
-}
+    setContent: (value: string) => setPluginSetting(PLUGIN_ID, "content", value),
+  };
+};
 
 export function MdxViewerPanel({ api }: MdxPanelProps) {
-  const { content } = useMdxContent()
-  const panelTitle = api.settings.getPlugin(
-    PLUGIN_ID,
-    'title',
-    'MDX Viewer',
-  ) as string
+  const { content } = useMdxContent();
+  const panelTitle = api.settings.getPlugin(PLUGIN_ID, "title", "MDX Viewer") as string;
 
   return (
     <Card className="h-full w-full p-3 overflow-hidden">
@@ -57,26 +50,26 @@ export function MdxViewerPanel({ api }: MdxPanelProps) {
         </div>
       </div>
     </Card>
-  )
+  );
 }
 
 export function MdxEditorPanel() {
-  const { content, setContent } = useMdxContent()
-  const [draft, setDraft] = React.useState(content)
+  const { content, setContent } = useMdxContent();
+  const [draft, setDraft] = React.useState(content);
 
   React.useEffect(() => {
-    setDraft(content)
-  }, [content])
+    setDraft(content);
+  }, [content]);
 
   const handleReset = () => {
-    setDraft(DEFAULT_CONTENT)
-    setContent(DEFAULT_CONTENT)
-  }
+    setDraft(DEFAULT_CONTENT);
+    setContent(DEFAULT_CONTENT);
+  };
 
   const handleChange = (value: string) => {
-    setDraft(value)
-    setContent(value)
-  }
+    setDraft(value);
+    setContent(value);
+  };
 
   return (
     <Card className="h-full w-full p-3 overflow-hidden">
@@ -105,5 +98,5 @@ export function MdxEditorPanel() {
         </Tabs>
       </div>
     </Card>
-  )
+  );
 }

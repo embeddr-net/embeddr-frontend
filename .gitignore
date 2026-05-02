@@ -1,11 +1,12 @@
 node_modules
-.DS_Store
 dist
-dist-ssr
-*.local
-count.txt
+dev-dist
+.DS_Store
 .env
-.nitro
+*.local
+coverage
+
+# Tooling artifacts
 .tanstack
-.wrangler
+.vite
 .vscode

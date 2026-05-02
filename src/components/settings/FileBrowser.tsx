@@ -1,108 +1,89 @@
-import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Folder,
-  File as FileIcon,
   ChevronRight,
   CornerLeftUp,
-  Loader2,
+  File as FileIcon,
+  Folder,
   HardDrive,
-} from 'lucide-react'
-import { Button } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { cn } from '@/lib/utils'
-import { embeddrApi } from '@/lib/api/client'
+  Loader2,
+} from "lucide-react";
+import { Button, Input, ScrollArea } from "@embeddr/react-ui/ui";
+import { cn } from "@/lib/utils";
+import { embeddrApi } from "@/lib/api/client";
 
 interface FileEntry {
-  name: string
-  path: string
-  is_dir: boolean
-  is_file: boolean
-  size: number
-  extension?: string
-  mtime: number
+  name: string;
+  path: string;
+  is_dir: boolean;
+  is_file: boolean;
+  size: number;
+  extension?: string;
+  mtime: number;
 }
 
 interface FileBrowserProps {
-  initialPath?: string
-  onSelect: (path: string) => void
-  className?: string
+  initialPath?: string;
+  onSelect: (path: string) => void;
+  className?: string;
 }
 
-export function FileBrowser({
-  initialPath,
-  onSelect,
-  className,
-}: FileBrowserProps) {
-  const [currentPath, setCurrentPath] = useState(initialPath || '')
-  const [history, setHistory] = useState<string[]>([])
+export function FileBrowser({ initialPath, onSelect, className }: FileBrowserProps) {
+  const [currentPath, setCurrentPath] = useState(initialPath || "");
+  const [history, setHistory] = useState<Array<string>>([]);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['fs', 'list', currentPath],
+    queryKey: ["fs", "list", currentPath],
     queryFn: async () => {
       // Try embeddr-fs-scanner first (SDK/Plugin), then fallback to embeddr-core if available
-      const caps = ['embeddr-fs-scanner.fs.list', 'embeddr-core.fs.list']
+      const caps = ["embeddr-fs-scanner.fs.list", "embeddr-core.fs.list"];
 
-      let lastError: unknown
+      let lastError: unknown;
       for (const cap of caps) {
         try {
-          const res = (await embeddrApi.lotus.invoke(cap, {
+          const res = await embeddrApi.lotus.invoke(cap, {
             path: currentPath || undefined,
-          })) as {
-            ok?: boolean
-            error?: unknown
-            path?: string
-            parent?: string
-            items?: FileEntry[]
-          }
+          });
           if (res.ok) {
-            return res as { path: string; parent: string; items: FileEntry[] }
+            return res as { path: string; parent: string; items: Array<FileEntry> };
           }
-          lastError = res.error
+          lastError = res.error;
         } catch (err) {
-          lastError = err
+          lastError = err;
           // Continue to next capability
         }
       }
 
-      throw new Error(
-        String(lastError || 'Failed to list directory (capability not found)'),
-      )
+      throw new Error(String(lastError || "Failed to list directory (capability not found)"));
     },
     retry: false,
-  })
+  });
 
   // Update internal path when server returns resolved path (e.g. after default expansion)
   useEffect(() => {
     if (data?.path && data.path !== currentPath) {
-      setCurrentPath(data.path)
+      setCurrentPath(data.path);
     }
-  }, [data?.path])
+  }, [data?.path]);
 
   const handleNavigate = (path: string) => {
-    setHistory([...history, currentPath])
-    setCurrentPath(path)
-  }
+    setHistory([...history, currentPath]);
+    setCurrentPath(path);
+  };
 
   const handleUp = () => {
     if (data?.parent) {
-      handleNavigate(data.parent)
+      handleNavigate(data.parent);
     }
-  }
+  };
 
   const handlePathSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    refetch()
-  }
+    e.preventDefault();
+    refetch();
+  };
 
   return (
-    <div
-      className={cn(
-        'flex flex-col h-100 border rounded-md overflow-hidden',
-        className,
-      )}
-    >
+    <div className={cn("flex flex-col h-100 border rounded-md overflow-hidden", className)}>
       {/* Path Bar */}
       <div className="flex items-center gap-2 p-2 border-b bg-muted/40">
         <Button
@@ -122,11 +103,7 @@ export function FileBrowser({
             placeholder="/path/to/directory"
           />
         </form>
-        <Button
-          size="sm"
-          onClick={() => onSelect(currentPath)}
-          disabled={isLoading}
-        >
+        <Button size="sm" onClick={() => onSelect(currentPath)} disabled={isLoading}>
           Select Current
         </Button>
       </div>
@@ -142,9 +119,7 @@ export function FileBrowser({
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-40 text-destructive gap-2 p-4 text-center">
               <span className="font-semibold">Error listing directory</span>
-              <span className="text-sm opacity-80">
-                {(error as Error).message}
-              </span>
+              <span className="text-sm opacity-80">{error.message}</span>
               <Button variant="outline" size="sm" onClick={() => refetch()}>
                 Retry
               </Button>
@@ -160,8 +135,8 @@ export function FileBrowser({
                 <button
                   key={item.name}
                   className={cn(
-                    'flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground text-sm text-left truncate w-full',
-                    item.name.startsWith('.') && 'opacity-60',
+                    "flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground text-sm text-left truncate w-full",
+                    item.name.startsWith(".") && "opacity-60",
                   )}
                   onClick={() => item.is_dir && handleNavigate(item.path)}
                 >
@@ -170,9 +145,7 @@ export function FileBrowser({
                   ) : (
                     <FileIcon className="w-4 h-4 text-muted-foreground shrink-0" />
                   )}
-                  <span className="truncate flex-1 font-mono text-xs md:text-sm">
-                    {item.name}
-                  </span>
+                  <span className="truncate flex-1 font-mono text-xs md:text-sm">{item.name}</span>
                   {!item.is_dir && (
                     <span className="text-xs text-muted-foreground shrink-0">
                       {(item.size / 1024).toFixed(1)} KB
@@ -191,11 +164,11 @@ export function FileBrowser({
       {/* Footer / Stats */}
       <div className="p-2 border-t bg-muted/20 text-xs text-muted-foreground flex justify-between">
         <div>
-          {data?.items.filter((i) => i.is_dir).length ?? 0} folders,{' '}
+          {data?.items.filter((i) => i.is_dir).length ?? 0} folders,{" "}
           {data?.items.filter((i) => !i.is_dir).length ?? 0} files
         </div>
         <div>{currentPath}</div>
       </div>
     </div>
-  )
+  );
 }

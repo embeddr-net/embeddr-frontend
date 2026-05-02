@@ -1,64 +1,59 @@
-import { useState } from 'react'
+import { useState } from "react";
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { Label } from '@embeddr/react-ui/ui'
-import {
+  Input,
+  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
-import { Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { useCreateDataset } from '@/hooks/useDatasets'
-import { useCollections } from '@/hooks/useCollections'
+} from "@embeddr/react-ui/ui";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useCreateDataset } from "@/hooks/useDatasets";
+import { useCollections } from "@/hooks/useCollections";
 
 export function CreateDatasetDialog({
   open,
   onOpenChange,
 }: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [type, setType] = useState<'regular' | 'image_pair'>('regular')
-  const [collectionId, setCollectionId] = useState<string>('')
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [type, setType] = useState<"regular" | "image_pair">("regular");
+  const [collectionId, setCollectionId] = useState<string>("");
 
-  const { data: collections } = useCollections()
-  const createDataset = useCreateDataset()
+  const { data: collections } = useCollections();
+  const createDataset = useCreateDataset();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name) return
+    e.preventDefault();
+    if (!name) return;
 
     try {
       await createDataset.mutateAsync({
         name,
         description,
         type,
-        collection_id:
-          collectionId && collectionId !== 'none'
-            ? parseInt(collectionId)
-            : undefined,
-      })
-      toast.success('Dataset created successfully')
-      onOpenChange(false)
-      setName('')
-      setDescription('')
-      setCollectionId('')
+        collection_id: collectionId && collectionId !== "none" ? parseInt(collectionId) : undefined,
+      });
+      toast.success("Dataset created successfully");
+      onOpenChange(false);
+      setName("");
+      setDescription("");
+      setCollectionId("");
     } catch (error) {
-      toast.error('Failed to create dataset')
+      toast.error("Failed to create dataset");
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -95,12 +90,8 @@ export function CreateDatasetDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="regular">
-                  Regular (Images + Captions)
-                </SelectItem>
-                <SelectItem value="image_pair">
-                  Image Pair (Input + Target)
-                </SelectItem>
+                <SelectItem value="regular">Regular (Images + Captions)</SelectItem>
+                <SelectItem value="image_pair">Image Pair (Input + Target)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -122,14 +113,12 @@ export function CreateDatasetDialog({
           </div>
           <DialogFooter>
             <Button type="submit" disabled={createDataset.isPending}>
-              {createDataset.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {createDataset.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Dataset
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

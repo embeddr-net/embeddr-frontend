@@ -1,34 +1,34 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface UserState {
   // Profile
-  displayName: string
-  setDisplayName: (name: string) => void
+  displayName: string;
+  setDisplayName: (name: string) => void;
 
-  avatarUrl: string
-  setAvatarUrl: (url: string) => void
+  avatarUrl: string;
+  setAvatarUrl: (url: string) => void;
 
-  isOperator: boolean
-  setIsOperator: (isOperator: boolean) => void
+  isOperator: boolean;
+  setIsOperator: (isOperator: boolean) => void;
 
   // Authentication
-  apiKey: string | null
-  setApiKey: (key: string | null) => void
+  apiKey: string | null;
+  setApiKey: (key: string | null) => void;
 
   // Preferences
-  activePlugins: string[]
-  setActivePlugins: (plugins: string[]) => void
-  togglePlugin: (pluginId: string) => void
+  activePlugins: Array<string>;
+  setActivePlugins: (plugins: Array<string>) => void;
+  togglePlugin: (pluginId: string) => void;
 }
 
 export const useUserStore = create<UserState>()(
   persist(
     (set) => ({
-      displayName: 'Guest User',
+      displayName: "Guest User",
       setDisplayName: (name) => set({ displayName: name }),
 
-      avatarUrl: '',
+      avatarUrl: "",
       setAvatarUrl: (url) => set({ avatarUrl: url }),
 
       isOperator: false,
@@ -41,17 +41,17 @@ export const useUserStore = create<UserState>()(
       setActivePlugins: (plugins) => set({ activePlugins: plugins }),
       togglePlugin: (pluginId) =>
         set((state) => {
-          const plugins = new Set(state.activePlugins)
+          const plugins = new Set(state.activePlugins);
           if (plugins.has(pluginId)) {
-            plugins.delete(pluginId)
+            plugins.delete(pluginId);
           } else {
-            plugins.add(pluginId)
+            plugins.add(pluginId);
           }
-          return { activePlugins: Array.from(plugins) }
+          return { activePlugins: Array.from(plugins) };
         }),
     }),
     {
-      name: 'embeddr-user-storage',
+      name: "embeddr-user-storage",
     },
   ),
-)
+);

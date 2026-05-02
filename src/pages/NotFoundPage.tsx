@@ -1,4 +1,4 @@
-import { TriangleAlertIcon } from 'lucide-react'
+import { TriangleAlertIcon } from "lucide-react";
 
 const NotFoundPage = () => {
   return (
@@ -8,7 +8,7 @@ const NotFoundPage = () => {
         <span>404 - Not Found</span>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default NotFoundPage
+export default NotFoundPage;

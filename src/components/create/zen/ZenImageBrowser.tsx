@@ -1,16 +1,15 @@
-import React, { useState } from 'react'
-import { DraggablePanel } from '@/components/ui/DraggablePanel'
-import { ImageBrowser } from '@/components/search/ImageBrowser'
-import { Switch } from '@embeddr/react-ui/ui'
-import { Label } from '@embeddr/react-ui/ui'
-import { useWindowStore } from '@/store/windowStore'
+import React, { useState } from "react";
+import { Label, Switch } from "@embeddr/react-ui/ui";
+import { DraggablePanel } from "@/components/ui/DraggablePanel";
+import { ImageBrowser } from "@/components/search/ImageBrowser";
+import { useWindowStore } from "@/store/windowStore";
 
 interface ZenImageBrowserProps {
-  isOpen?: boolean
-  onClose?: () => void
-  activeImageInput: { nodeId: string; field: string } | null
-  onSelect: (image: any) => void
-  onMultiSelect?: (images: any[]) => void
+  isOpen?: boolean;
+  onClose?: () => void;
+  activeImageInput: { nodeId: string; field: string } | null;
+  onSelect: (image: any) => void;
+  onMultiSelect?: (images: Array<any>) => void;
 }
 
 export function ZenImageBrowser({
@@ -20,16 +19,14 @@ export function ZenImageBrowser({
   onSelect,
   onMultiSelect,
 }: ZenImageBrowserProps) {
-  const closeWindow = useWindowStore((s) => s.closeWindow)
+  const closeWindow = useWindowStore((s) => s.closeWindow);
   // Only subscribe to the minimized state of this window
-  const isMinimized = useWindowStore(
-    (s) => s.windows['zen-images']?.isMinimized,
-  )
+  const isMinimized = useWindowStore((s) => s.windows["zen-images"]?.isMinimized);
 
-  const isOpen = propIsOpen ?? isMinimized === false
-  const onClose = propOnClose ?? (() => closeWindow('zen-images'))
+  const isOpen = propIsOpen ?? isMinimized === false;
+  const onClose = propOnClose ?? (() => closeWindow("zen-images"));
 
-  const [isMultiSelect, setIsMultiSelect] = useState(false)
+  const [isMultiSelect, setIsMultiSelect] = useState(false);
 
   return (
     <DraggablePanel
@@ -46,18 +43,13 @@ export function ZenImageBrowser({
           {activeImageInput && (
             <div className="px-3 py-1.5 border-b bg-muted/30 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-primary">
-                  Selection Mode
-                </span>
+                <span className="text-xs font-medium text-primary">Selection Mode</span>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5">
                   Selecting for: {activeImageInput.field}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Label
-                  htmlFor="multi-select"
-                  className="text-xs cursor-pointer"
-                >
+                <Label htmlFor="multi-select" className="text-xs cursor-pointer">
                   Multi-select
                 </Label>
                 <Switch
@@ -82,5 +74,5 @@ export function ZenImageBrowser({
         </div>
       )}
     </DraggablePanel>
-  )
+  );
 }

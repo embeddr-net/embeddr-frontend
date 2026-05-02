@@ -12,8 +12,8 @@ interface DynamicPluginComponentProps {
  * A wrapper that attempts to resolve a React component from the global window object.
  * Plugins are expected to be attached to window as [pluginId.replace(/-/g, '_')]Plugin.
  */
-export const DynamicPluginComponent: React.FC<DynamicPluginComponentProps> =
-  React.memo(({ pluginId, componentName, api, ...props }) => {
+export const DynamicPluginComponent: React.FC<DynamicPluginComponentProps> = React.memo(
+  ({ pluginId, componentName, api, ...props }) => {
     const {
       windowId: legacyWindowId,
       id: legacyId,
@@ -34,14 +34,10 @@ export const DynamicPluginComponent: React.FC<DynamicPluginComponentProps> =
         : undefined);
 
     const effectiveWindowId =
-      (forwardedProps as any).windowId ??
-      panelMeta?.id ??
-      legacyWindowId ??
-      legacyId;
+      (forwardedProps as any).windowId ?? panelMeta?.id ?? legacyWindowId ?? legacyId;
     const effectiveId = (forwardedProps as any).id ?? effectiveWindowId;
 
-    const [Component, setComponent] =
-      React.useState<React.ComponentType<any> | null>(null);
+    const [Component, setComponent] = React.useState<React.ComponentType<any> | null>(null);
 
     React.useEffect(() => {
       if (
@@ -58,22 +54,16 @@ export const DynamicPluginComponent: React.FC<DynamicPluginComponentProps> =
       let attempts = 0;
       const maxAttempts = 50; // 5 seconds total
 
-      console.debug(
-        `[DynamicLoader] Starting load for ${pluginId} (expecting window.${libName})`,
-      );
+      console.debug(`[DynamicLoader] Starting load for ${pluginId} (expecting window.${libName})`);
 
       const checkLib = () => {
         const lib = (window as any)[libName];
         if (lib) {
           console.log(`[DynamicLoader] Found library for ${pluginId}`, lib);
           const comp =
-            lib[componentName] ||
-            (lib.default && lib.default[componentName]) ||
-            lib.default;
+            lib[componentName] || (lib.default && lib.default[componentName]) || lib.default;
           if (comp) {
-            console.log(
-              `[DynamicLoader] Found component ${componentName} in ${pluginId}`,
-            );
+            console.log(`[DynamicLoader] Found component ${componentName} in ${pluginId}`);
             setComponent(() => comp);
             return true;
           } else {
@@ -129,4 +119,5 @@ export const DynamicPluginComponent: React.FC<DynamicPluginComponentProps> =
         {...forwardedProps}
       />
     );
-  });
+  },
+);

@@ -1,29 +1,29 @@
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import type { PromptImage } from '@/lib/api/types'
-import { ImageBrowser } from '@/components/search/ImageBrowser'
+} from "@embeddr/react-ui/ui";
+import type { PromptImage } from "@/lib/api/types";
+import { ImageBrowser } from "@/components/search/ImageBrowser";
 
 interface ImageSelectorDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSelect: (image: PromptImage) => void
-  title?: string
-  description?: string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSelect: (image: PromptImage) => void;
+  title?: string;
+  description?: string;
 }
 
 export function ImageSelectorDialog({
   open,
   onOpenChange,
   onSelect,
-  title = 'Select Image',
-  description = 'Choose an image from your library.',
+  title = "Select Image",
+  description = "Choose an image from your library.",
 }: ImageSelectorDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -37,8 +37,8 @@ export function ImageSelectorDialog({
           <ImageBrowser
             useArtifactsApi={true}
             onSelect={(image) => {
-              onSelect(image)
-              onOpenChange(false)
+              onSelect(image);
+              onOpenChange(false);
             }}
           />
         </div>
@@ -50,5 +50,5 @@ export function ImageSelectorDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

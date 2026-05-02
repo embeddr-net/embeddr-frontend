@@ -1,66 +1,65 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 import {
+  Badge,
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Shield, Trash2, RefreshCw } from 'lucide-react'
-import { fetchWithAuth } from '@/lib/api/fetch'
-import { BACKEND_URL } from '@/lib/api/config'
+} from "@embeddr/react-ui/ui";
+import { RefreshCw, Shield, Trash2 } from "lucide-react";
+import { fetchWithAuth } from "@/lib/api/fetch";
+import { BACKEND_URL } from "@/lib/api/config";
 
 interface ServiceClientItem {
-  id: string
-  client_id: string
-  name: string
-  description?: string | null
-  allowed_scopes: string[]
-  grant_types: string[]
-  is_active: boolean
-  created_at?: string | null
-  last_used_at?: string | null
-  active_sessions: number
+  id: string;
+  client_id: string;
+  name: string;
+  description?: string | null;
+  allowed_scopes: Array<string>;
+  grant_types: Array<string>;
+  is_active: boolean;
+  created_at?: string | null;
+  last_used_at?: string | null;
+  active_sessions: number;
 }
 
 export const OperatorServiceClientsSection = () => {
-  const [clients, setClients] = useState<ServiceClientItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [clients, setClients] = useState<Array<ServiceClientItem>>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchClients = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetchWithAuth(`${BACKEND_URL}/security/service-clients`)
-      if (!res.ok) throw new Error(`Failed: ${res.status}`)
-      const data = await res.json()
-      setClients(data.items || [])
+      const res = await fetchWithAuth(`${BACKEND_URL}/security/service-clients`);
+      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      const data = await res.json();
+      setClients(data.items || []);
     } catch (e: any) {
-      setError(e.message)
+      setError(e.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchClients()
-  }, [])
+    fetchClients();
+  }, []);
 
   const handleRevokeSessions = async (clientId: string) => {
     try {
-      const res = await fetchWithAuth(
-        `${BACKEND_URL}/security/service-clients/${clientId}`,
-        { method: 'DELETE' },
-      )
-      if (!res.ok) throw new Error(`Failed: ${res.status}`)
-      fetchClients()
+      const res = await fetchWithAuth(`${BACKEND_URL}/security/service-clients/${clientId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      fetchClients();
     } catch (e: any) {
-      setError(e.message)
+      setError(e.message);
     }
-  }
+  };
 
   return (
     <Card>
@@ -87,9 +86,7 @@ export const OperatorServiceClientsSection = () => {
         ) : error ? (
           <div className="text-sm text-destructive">{error}</div>
         ) : clients.length === 0 ? (
-          <div className="text-sm text-muted-foreground">
-            No service clients registered yet.
-          </div>
+          <div className="text-sm text-muted-foreground">No service clients registered yet.</div>
         ) : (
           <div className="space-y-3">
             {clients.map((client) => (
@@ -101,46 +98,35 @@ export const OperatorServiceClientsSection = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{client.name}</span>
                     <Badge
-                      variant={client.is_active ? 'outline' : 'destructive'}
+                      variant={client.is_active ? "outline" : "destructive"}
                       className="text-[9px]"
                     >
-                      {client.is_active ? 'active' : 'disabled'}
+                      {client.is_active ? "active" : "disabled"}
                     </Badge>
                     {client.active_sessions > 0 && (
                       <Badge variant="secondary" className="text-[9px]">
                         {client.active_sessions} session
-                        {client.active_sessions !== 1 ? 's' : ''}
+                        {client.active_sessions !== 1 ? "s" : ""}
                       </Badge>
                     )}
                   </div>
                   {client.description && (
-                    <div className="text-xs text-muted-foreground">
-                      {client.description}
-                    </div>
+                    <div className="text-xs text-muted-foreground">{client.description}</div>
                   )}
                   <div className="text-[10px] text-muted-foreground font-mono">
                     {client.client_id}
                   </div>
                   <div className="flex flex-wrap gap-1 pt-1">
                     {client.allowed_scopes.map((scope) => (
-                      <Badge
-                        key={scope}
-                        variant="secondary"
-                        className="text-[9px] px-1.5 py-0"
-                      >
+                      <Badge key={scope} variant="secondary" className="text-[9px] px-1.5 py-0">
                         {scope}
                       </Badge>
                     ))}
                   </div>
                   <div className="flex gap-3 pt-1 text-[10px] text-muted-foreground">
-                    <span>
-                      Grants: {client.grant_types.join(', ')}
-                    </span>
+                    <span>Grants: {client.grant_types.join(", ")}</span>
                     {client.last_used_at && (
-                      <span>
-                        Last used:{' '}
-                        {new Date(client.last_used_at).toLocaleDateString()}
-                      </span>
+                      <span>Last used: {new Date(client.last_used_at).toLocaleDateString()}</span>
                     )}
                   </div>
                 </div>
@@ -159,5 +145,5 @@ export const OperatorServiceClientsSection = () => {
         )}
       </CardContent>
     </Card>
-  )
-}
+  );
+};

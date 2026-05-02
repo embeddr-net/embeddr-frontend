@@ -1,33 +1,33 @@
-import { Outlet, createRootRoute, useRouterState } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { Toaster } from '@embeddr/react-ui/ui'
-import Header from '../components/ui/Header'
-import AppProviders from '@/providers/AppProvider'
-import NotFoundPage from '@/pages/NotFoundPage'
-import { DragDropOverlay } from '@/components/upload/DragDropOverlay'
-import { AppLoadingScreen } from '@/components/AppLoadingScreen'
-import { useSettingsStore } from '@/store/settingsStore'
-import { GlobalCommandBar } from '@/components/GlobalCommandBar'
-import { CustomStyles } from '@/components/ui/CustomStyles'
-import { useDefaultWidgets } from '@/hooks/useDefaultWidgets'
-import { usePluginWidgets } from '@/hooks/usePluginWidgets'
-import { usePinnedPanelWidgets } from '@/hooks/usePinnedPanelWidgets'
-import { useEffect, useState } from 'react'
-import { cn } from '@/lib/utils'
-import { AuthGate } from '@/components/auth/AuthGate'
-import { fetchSecurityOverviewStatus } from '@/lib/api/endpoints/security'
-import { useUserStore } from '@/store/userStore'
-import { usePluginStore } from '@/plugins/store'
-import { DockManager } from '@/components/ui/DockManager'
-import { useWorkspaceStore } from '@/store/workspaceStore'
+import { Outlet, createRootRoute, useRouterState } from "@tanstack/react-router";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { TanStackDevtools } from "@tanstack/react-devtools";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { Toaster } from "@embeddr/react-ui/ui";
+import { useEffect, useState } from "react";
+import Header from "../components/ui/Header";
+import AppProviders from "@/providers/AppProvider";
+import NotFoundPage from "@/pages/NotFoundPage";
+import { DragDropOverlay } from "@/components/upload/DragDropOverlay";
+import { AppLoadingScreen } from "@/components/AppLoadingScreen";
+import { useSettingsStore } from "@/store/settingsStore";
+import { GlobalCommandBar } from "@/components/GlobalCommandBar";
+import { CustomStyles } from "@/components/ui/CustomStyles";
+import { useDefaultWidgets } from "@/hooks/useDefaultWidgets";
+import { usePluginWidgets } from "@/hooks/usePluginWidgets";
+import { usePinnedPanelWidgets } from "@/hooks/usePinnedPanelWidgets";
+import { cn } from "@/lib/utils";
+import { AuthGate } from "@/components/auth/AuthGate";
+import { fetchSecurityOverviewStatus } from "@/lib/api/endpoints/security";
+import { useUserStore } from "@/store/userStore";
+import { usePluginStore } from "@/plugins/store";
+import { DockManager } from "@/components/ui/DockManager";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 
 function Root() {
-  const { apiKey } = useUserStore()
-  const { isLoadingExternal, hasLoadedExternal } = usePluginStore()
-  const isLocked = useWorkspaceStore((s) => s.isLocked)
-  const [showCommandBar, setShowCommandBar] = useState(false)
+  const { apiKey } = useUserStore();
+  const { isLoadingExternal, hasLoadedExternal } = usePluginStore();
+  const isLocked = useWorkspaceStore((s) => s.isLocked);
+  const [showCommandBar, setShowCommandBar] = useState(false);
   const {
     backgroundImage,
     backgroundOpacity,
@@ -35,63 +35,55 @@ function Root() {
     themeMode,
     commandBarPosition,
     commandBarHoverParams,
-  } = useSettingsStore()
+  } = useSettingsStore();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
-  })
-  const hideChrome = pathname === '/access'
+  });
+  const hideChrome = pathname === "/access";
 
   // "Overlay" means the bar floats (auto-hides).
   // If false (default), it's "Docked" (static blocks layout).
-  const isOverlay = commandBarHoverParams.enabled
+  const isOverlay = commandBarHoverParams.enabled;
 
   // Apply Theme Mode
   useEffect(() => {
-    const root = window.document.documentElement
-    root.classList.remove(
-      'light',
-      'dark',
-      'midnight',
-      'latte',
-      'forest',
-      'frappe',
-    )
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark", "midnight", "latte", "forest", "frappe");
 
-    if (themeMode === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
-        .matches
-        ? 'dark'
-        : 'light'
-      root.classList.add(systemTheme)
-      return
+    if (themeMode === "system") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+      root.classList.add(systemTheme);
+      return;
     }
 
-    root.classList.add(themeMode)
-  }, [themeMode])
+    root.classList.add(themeMode);
+  }, [themeMode]);
 
   useEffect(() => {
-    let active = true
+    let active = true;
     const checkAuthGate = async () => {
       try {
-        const status = await fetchSecurityOverviewStatus()
-        if (!active) return
-        setShowCommandBar(true)
+        const status = await fetchSecurityOverviewStatus();
+        if (!active) return;
+        setShowCommandBar(true);
       } catch (err) {
-        console.error(err)
-        if (active) setShowCommandBar(true)
+        console.error(err);
+        if (active) setShowCommandBar(true);
       }
-    }
-    checkAuthGate()
+    };
+    checkAuthGate();
     return () => {
-      active = false
-    }
-  }, [apiKey])
+      active = false;
+    };
+  }, [apiKey]);
 
-  const pluginsReady = hasLoadedExternal && !isLoadingExternal
+  const pluginsReady = hasLoadedExternal && !isLoadingExternal;
 
-  const barHeight = hideChrome ? '0px' : '2.25rem'
-  const screenBarHeight = hideChrome ? '0px' : '2.20rem'
-  const showChrome = showCommandBar && !hideChrome
+  const barHeight = hideChrome ? "0px" : "2.25rem";
+  const screenBarHeight = hideChrome ? "0px" : "2.20rem";
+  const showChrome = showCommandBar && !hideChrome;
 
   return (
     <AppProviders>
@@ -116,41 +108,33 @@ function Root() {
         )}
         <div
           className={cn(
-            'relative z-10 flex flex-col h-full w-full transition-opacity duration-500 ease-out',
-            pluginsReady ? 'opacity-100' : 'opacity-0',
+            "relative z-10 flex flex-col h-full w-full transition-opacity duration-500 ease-out",
+            pluginsReady ? "opacity-100" : "opacity-0",
           )}
           style={
             {
               // CSS Variables for children to respect layout
-              '--layout-bar-height': barHeight,
+              "--layout-bar-height": barHeight,
               // Flow Content Safe Area (Outlet)
-              '--layout-safe-top':
-                !hideChrome && commandBarPosition === 'top' && isOverlay
-                  ? barHeight
-                  : '0px',
-              '--layout-safe-bottom':
-                !hideChrome && commandBarPosition === 'bottom' && isOverlay
-                  ? barHeight
-                  : '0px',
+              "--layout-safe-top":
+                !hideChrome && commandBarPosition === "top" && isOverlay ? barHeight : "0px",
+              "--layout-safe-bottom":
+                !hideChrome && commandBarPosition === "bottom" && isOverlay ? barHeight : "0px",
               // Screen/Fixed Content Safe Area (Backdrops/Modals) - Bar is always present in Z-space
-              '--layout-screen-safe-top':
-                !hideChrome && commandBarPosition === 'top'
-                  ? screenBarHeight
-                  : '0px',
-              '--layout-screen-safe-bottom':
-                !hideChrome && commandBarPosition === 'bottom'
-                  ? screenBarHeight
-                  : '0px',
+              "--layout-screen-safe-top":
+                !hideChrome && commandBarPosition === "top" ? screenBarHeight : "0px",
+              "--layout-screen-safe-bottom":
+                !hideChrome && commandBarPosition === "bottom" ? screenBarHeight : "0px",
               // If overlay is active, the content is full-bleed (0 inset).
               // If static, the flex layout handles it (0 inset inside main).
             } as React.CSSProperties
           }
         >
-          {showChrome && commandBarPosition === 'top' && (
+          {showChrome && commandBarPosition === "top" && (
             <div
               className={cn(
-                'relative z-60',
-                isOverlay && 'absolute top-0 inset-x-0 transition-colors',
+                "relative z-60",
+                isOverlay && "absolute top-0 inset-x-0 transition-colors",
               )}
             >
               <GlobalCommandBar />
@@ -164,11 +148,11 @@ function Root() {
           </main>
           <DockManager />
 
-          {showChrome && commandBarPosition === 'bottom' && (
+          {showChrome && commandBarPosition === "bottom" && (
             <div
               className={cn(
-                'relative z-60',
-                isOverlay && 'absolute bottom-0 inset-x-0 transition-colors',
+                "relative z-60",
+                isOverlay && "absolute bottom-0 inset-x-0 transition-colors",
               )}
             >
               <GlobalCommandBar />
@@ -177,8 +161,8 @@ function Root() {
         </div>
         <div
           className={cn(
-            'absolute inset-0 z-20 transition-opacity duration-500',
-            pluginsReady ? 'opacity-0 pointer-events-none' : 'opacity-100',
+            "absolute inset-0 z-20 transition-opacity duration-500",
+            pluginsReady ? "opacity-0 pointer-events-none" : "opacity-100",
           )}
         >
           <AppLoadingScreen />
@@ -188,23 +172,23 @@ function Root() {
       <Toaster dir="ltr" position="top-center" closeButton />
       {/* <TanStackDevtools ... /> */}
     </AppProviders>
-  )
+  );
 }
 
 function CommandBarBootstrap() {
-  useDefaultWidgets()
-  usePluginWidgets()
-  usePinnedPanelWidgets()
+  useDefaultWidgets();
+  usePluginWidgets();
+  usePinnedPanelWidgets();
 
   // Ensure at least one workspace exists on first load
   useEffect(() => {
-    useWorkspaceStore.getState().ensureDefaultWorkspace()
-  }, [])
+    useWorkspaceStore.getState().ensureDefaultWorkspace();
+  }, []);
 
-  return null
+  return null;
 }
 
 export const Route = createRootRoute({
   component: Root,
   notFoundComponent: NotFoundPage,
-})
+});

@@ -1,172 +1,155 @@
-import { useMemo, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Badge,
+  Button,
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-} from '@embeddr/react-ui/ui'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@embeddr/react-ui/ui'
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/ui'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Spinner,
+} from "@embeddr/react-ui/ui";
+import { ArrowDown, ArrowUp, Plus, Settings2, Trash2 } from "lucide-react";
+import { PluginConfigCard } from "./PluginSettings";
+import type { LotusCapability } from "@/lib/api/types";
+import type { PluginCapabilities } from "@/lib/api/endpoints/analysis";
 import {
-  fetchAnalysisConfigs,
   fetchAnalysisCapabilities,
+  fetchAnalysisConfigs,
   setAnalysisConfig,
-  type PluginCapabilities,
-} from '@/lib/api/endpoints/analysis'
-import { embeddrApi } from '@/lib/api/client'
-import type { LotusCapability } from '@/lib/api/types'
-import { Spinner } from '@embeddr/react-ui/ui'
-import { ArrowUp, ArrowDown, Settings2, Plus, Trash2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { PluginConfigCard } from './PluginSettings'
+} from "@/lib/api/endpoints/analysis";
+import { embeddrApi } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 
 interface Props {
-  scope?: 'global' | 'collection'
-  scopeId?: string | null
+  scope?: "global" | "collection";
+  scopeId?: string | null;
 }
 
 interface WorkflowStep {
-  id: string
-  pluginName: string
-  label: string
-  description?: string
-  priority: number
-  enabled: boolean
-  originalPriority: number
-  isDirty: boolean
-  tags: string[]
+  id: string;
+  pluginName: string;
+  label: string;
+  description?: string;
+  priority: number;
+  enabled: boolean;
+  originalPriority: number;
+  isDirty: boolean;
+  tags: Array<string>;
 }
 
 const CORE_PRESET = [
-  { pluginName: 'embeddr-thumbnailer', label: 'Thumbnailer', priority: 20 },
-  { pluginName: 'embeddr-embeddings', label: 'Embeddings', priority: 10 },
-]
+  { pluginName: "embeddr-thumbnailer", label: "Thumbnailer", priority: 20 },
+  { pluginName: "embeddr-embeddings", label: "Embeddings", priority: 10 },
+];
 
-const INGESTION_KEYWORDS = [
-  'ingest',
-  'thumbnail',
-  'embedding',
-  'embed',
-  'scanner',
-]
+const INGESTION_KEYWORDS = ["ingest", "thumbnail", "embedding", "embed", "scanner"];
 
 const isIngestionCapability = (cap: LotusCapability) => {
-  if (cap.tags?.includes('ingest')) return true
-  const id = String(cap.id || '').toLowerCase()
-  const title = String(cap.title || '').toLowerCase()
-  const slot = String(cap.slot || '').toLowerCase()
+  if (cap.tags?.includes("ingest")) return true;
+  const id = String(cap.id || "").toLowerCase();
+  const title = String(cap.title || "").toLowerCase();
+  const slot = String(cap.slot || "").toLowerCase();
   return INGESTION_KEYWORDS.some(
     (key) => id.includes(key) || title.includes(key) || slot.includes(key),
-  )
-}
+  );
+};
 
 const isBackfillCapability = (label?: string) =>
-  String(label || '')
+  String(label || "")
     .toLowerCase()
-    .includes('backfill')
+    .includes("backfill");
 
 const isIngestionAnalysisCap = (cap: any) => {
-  const tags = cap.tags || []
-  if (tags.includes('ingest')) return true
-  const name = String(cap.name || '').toLowerCase()
-  const label = String(cap.label || '').toLowerCase()
-  const trigger = String(cap.trigger_event || '').toLowerCase()
+  const tags = cap.tags || [];
+  if (tags.includes("ingest")) return true;
+  const name = String(cap.name || "").toLowerCase();
+  const label = String(cap.label || "").toLowerCase();
+  const trigger = String(cap.trigger_event || "").toLowerCase();
   return INGESTION_KEYWORDS.some(
     (key) => name.includes(key) || label.includes(key) || trigger.includes(key),
-  )
-}
+  );
+};
 
-const pickPrimaryCapability = (caps: any[]) => {
-  if (caps.length === 0) return null
+const pickPrimaryCapability = (caps: Array<any>) => {
+  if (caps.length === 0) return null;
   const ranked = [...caps].sort((a, b) => {
     const score = (cap: any) => {
-      const label = String(cap.label || cap.name || '').toLowerCase()
-      let s = 0
-      if (label.includes('generate')) s += 3
-      if (label.includes('thumbnail')) s += 3
-      if (label.includes('embedding')) s += 2
-      if (label.includes('ingest')) s += 2
-      if (label.includes('scan')) s += 1
-      if (isBackfillCapability(label)) s -= 5
-      return s
-    }
-    return score(b) - score(a)
-  })
-  return ranked[0]
-}
+      const label = String(cap.label || cap.name || "").toLowerCase();
+      let s = 0;
+      if (label.includes("generate")) s += 3;
+      if (label.includes("thumbnail")) s += 3;
+      if (label.includes("embedding")) s += 2;
+      if (label.includes("ingest")) s += 2;
+      if (label.includes("scan")) s += 1;
+      if (isBackfillCapability(label)) s -= 5;
+      return s;
+    };
+    return score(b) - score(a);
+  });
+  return ranked[0];
+};
 
-export const IngestionWorkflowEditor = ({
-  scope = 'global',
-  scopeId,
-}: Props) => {
-  const queryClient = useQueryClient()
-  const effectiveScopeId = scopeId || undefined
-  const [selectedPluginForConfig, setSelectedPluginForConfig] = useState<
-    string | null
-  >(null)
-  const [applyingPreset, setApplyingPreset] = useState(false)
+export const IngestionWorkflowEditor = ({ scope = "global", scopeId }: Props) => {
+  const queryClient = useQueryClient();
+  const effectiveScopeId = scopeId || undefined;
+  const [selectedPluginForConfig, setSelectedPluginForConfig] = useState<string | null>(null);
+  const [applyingPreset, setApplyingPreset] = useState(false);
 
   // 1. Fetching Data
   const { data: configs, isLoading: loadingConfigs } = useQuery({
-    queryKey: ['analysis-config', scope, effectiveScopeId],
+    queryKey: ["analysis-config", scope, effectiveScopeId],
     queryFn: () => fetchAnalysisConfigs(scope, effectiveScopeId),
-  })
+  });
 
   const { data: capabilities, isLoading: loadingCaps } = useQuery({
-    queryKey: ['analysis-capabilities'],
+    queryKey: ["analysis-capabilities"],
     queryFn: fetchAnalysisCapabilities,
-  })
+  });
 
   const { data: lotusCaps, isLoading: loadingLotusCaps } = useQuery({
-    queryKey: ['lotus', 'capabilities', 'ingestion'],
+    queryKey: ["lotus", "capabilities", "ingestion"],
     queryFn: () => embeddrApi.lotus.list({ limit: 500 }),
     staleTime: 30_000,
-  })
+  });
 
   const mutation = useMutation({
     mutationFn: setAnalysisConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['analysis-config', scope, effectiveScopeId],
-      })
+        queryKey: ["analysis-config", scope, effectiveScopeId],
+      });
     },
-  })
+  });
 
-  const effectiveCapabilities = useMemo<PluginCapabilities[]>(() => {
+  const effectiveCapabilities = useMemo<Array<PluginCapabilities>>(() => {
     if (capabilities && capabilities.length > 0) {
       return capabilities.map((plugin) => ({
         ...plugin,
-        capabilities: (plugin.capabilities || []).filter(
-          isIngestionAnalysisCap,
-        ),
-      }))
+        capabilities: (plugin.capabilities || []).filter(isIngestionAnalysisCap),
+      }));
     }
-    const items = (lotusCaps?.items || []) as LotusCapability[]
-    if (items.length === 0) return []
+    const items = lotusCaps?.items || [];
+    if (items.length === 0) return [];
 
-    const byPlugin = new Map<string, PluginCapabilities>()
+    const byPlugin = new Map<string, PluginCapabilities>();
     items.forEach((cap) => {
-      if (!isIngestionCapability(cap)) return
-      const pluginName = cap.plugin || cap.id?.split('.')[0]
-      if (!pluginName) return
+      if (!isIngestionCapability(cap)) return;
+      const pluginName = cap.plugin || cap.id?.split(".")[0];
+      if (!pluginName) return;
       if (!byPlugin.has(pluginName)) {
         byPlugin.set(pluginName, {
           plugin_name: pluginName,
           capabilities: [],
-        })
+        });
       }
       byPlugin.get(pluginName)?.capabilities.push({
         name: cap.id,
@@ -175,50 +158,46 @@ export const IngestionWorkflowEditor = ({
         trigger_event: cap.kind,
         priority: cap.data?.priority ?? 10,
         tags: cap.tags || [],
-      } as any)
-    })
+      } as any);
+    });
 
-    return Array.from(byPlugin.values())
-  }, [capabilities, lotusCaps?.items])
+    return Array.from(byPlugin.values());
+  }, [capabilities, lotusCaps?.items]);
 
   const presetMissing = useMemo(() => {
-    if (!effectiveCapabilities || effectiveCapabilities.length === 0) return []
-    const available = new Set(effectiveCapabilities.map((p) => p.plugin_name))
-    return CORE_PRESET.filter((p) => !available.has(p.pluginName)).map(
-      (p) => p.pluginName,
-    )
-  }, [effectiveCapabilities])
+    if (!effectiveCapabilities || effectiveCapabilities.length === 0) return [];
+    const available = new Set(effectiveCapabilities.map((p) => p.plugin_name));
+    return CORE_PRESET.filter((p) => !available.has(p.pluginName)).map((p) => p.pluginName);
+  }, [effectiveCapabilities]);
 
   const handleApplyCorePreset = async () => {
-    setApplyingPreset(true)
+    setApplyingPreset(true);
     try {
       await Promise.all(
         CORE_PRESET.map(async (preset) => {
-          const pluginCaps = effectiveCapabilities.find(
-            (p) => p.plugin_name === preset.pluginName,
-          )
-          const capPriority = pluginCaps?.capabilities?.[0]?.priority
+          const pluginCaps = effectiveCapabilities.find((p) => p.plugin_name === preset.pluginName);
+          const capPriority = pluginCaps?.capabilities?.[0]?.priority;
           await mutation.mutateAsync({
             scope,
             scope_id: effectiveScopeId,
             plugin_name: preset.pluginName,
             enabled: true,
             priority: capPriority ?? preset.priority,
-          })
+          });
         }),
-      )
+      );
     } finally {
-      setApplyingPreset(false)
+      setApplyingPreset(false);
     }
-  }
+  };
 
   // 2. Transforming Data into Linear Workflow
   const { steps, availableSteps } = useMemo(() => {
     if (loadingConfigs || (loadingCaps && loadingLotusCaps))
-      return { steps: [], availableSteps: [] }
+      return { steps: [], availableSteps: [] };
 
     if (effectiveCapabilities.length === 0) {
-      const enabledConfigs = (configs || []).filter((c) => c.enabled)
+      const enabledConfigs = (configs || []).filter((c) => c.enabled);
       const activeSteps = enabledConfigs.map((cfg) => ({
         id: cfg.plugin_name,
         pluginName: cfg.plugin_name,
@@ -229,29 +208,27 @@ export const IngestionWorkflowEditor = ({
         enabled: cfg.enabled,
         isDirty: false,
         tags: [],
-      }))
+      }));
       return {
         steps: activeSteps.sort((a, b) => b.priority - a.priority),
         availableSteps: [],
-      }
+      };
     }
 
-    const activeSteps: WorkflowStep[] = []
-    const inactiveSteps: WorkflowStep[] = []
+    const activeSteps: Array<WorkflowStep> = [];
+    const inactiveSteps: Array<WorkflowStep> = [];
 
     effectiveCapabilities.forEach((p: PluginCapabilities) => {
-      const caps = (p.capabilities || []).filter(isIngestionAnalysisCap)
-      if (caps.length === 0) return
-      const primaryCap = pickPrimaryCapability(caps)
-      if (!primaryCap) return
+      const caps = (p.capabilities || []).filter(isIngestionAnalysisCap);
+      if (caps.length === 0) return;
+      const primaryCap = pickPrimaryCapability(caps);
+      if (!primaryCap) return;
 
-      const fullId = `${p.plugin_name}:${primaryCap.name}`
-      const cfg = configs?.find(
-        (c) => c.plugin_name === fullId || c.plugin_name === p.plugin_name,
-      )
+      const fullId = `${p.plugin_name}:${primaryCap.name}`;
+      const cfg = configs?.find((c) => c.plugin_name === fullId || c.plugin_name === p.plugin_name);
 
-      const enabled = cfg ? cfg.enabled : false
-      const priority = cfg?.priority ?? primaryCap.priority ?? 10
+      const enabled = cfg ? cfg.enabled : false;
+      const priority = cfg?.priority ?? primaryCap.priority ?? 10;
 
       const step: WorkflowStep = {
         id: p.plugin_name,
@@ -263,32 +240,24 @@ export const IngestionWorkflowEditor = ({
         enabled,
         isDirty: false,
         tags: primaryCap.tags || [],
-      }
+      };
 
-      if (enabled) activeSteps.push(step)
-      else inactiveSteps.push(step)
-    })
+      if (enabled) activeSteps.push(step);
+      else inactiveSteps.push(step);
+    });
 
     // Sort by Priority Descending (Highest runs first)
     return {
       steps: activeSteps.sort((a, b) => b.priority - a.priority),
-      availableSteps: inactiveSteps.sort((a, b) =>
-        a.label.localeCompare(b.label),
-      ),
-    }
-  }, [
-    effectiveCapabilities,
-    configs,
-    loadingConfigs,
-    loadingCaps,
-    loadingLotusCaps,
-  ])
+      availableSteps: inactiveSteps.sort((a, b) => a.label.localeCompare(b.label)),
+    };
+  }, [effectiveCapabilities, configs, loadingConfigs, loadingCaps, loadingLotusCaps]);
 
   // 3. Handlers
   const handleAdd = (step: WorkflowStep) => {
     // Add to END of list (Lowest priority)
-    const lowestPrio = steps.length > 0 ? steps[steps.length - 1].priority : 10
-    const newPrio = Math.max(0, lowestPrio - 1)
+    const lowestPrio = steps.length > 0 ? steps[steps.length - 1].priority : 10;
+    const newPrio = Math.max(0, lowestPrio - 1);
 
     mutation.mutate({
       scope,
@@ -296,8 +265,8 @@ export const IngestionWorkflowEditor = ({
       plugin_name: step.id,
       enabled: true,
       priority: newPrio,
-    })
-  }
+    });
+  };
 
   const handleRemove = (step: WorkflowStep) => {
     // Just disable it
@@ -307,27 +276,27 @@ export const IngestionWorkflowEditor = ({
       plugin_name: step.id,
       enabled: false,
       priority: step.priority,
-    })
-  }
+    });
+  };
 
-  const handleMove = (index: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && index === 0) return
-    if (direction === 'down' && index === steps.length - 1) return
+  const handleMove = (index: number, direction: "up" | "down") => {
+    if (direction === "up" && index === 0) return;
+    if (direction === "down" && index === steps.length - 1) return;
 
-    const newSteps = [...steps]
-    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    const newSteps = [...steps];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
 
-    const current = newSteps[index]
-    const target = newSteps[targetIndex]
+    const current = newSteps[index];
+    const target = newSteps[targetIndex];
 
     // Swap Priorities logic
-    const tempPrio = current.priority
-    current.priority = target.priority
-    target.priority = tempPrio
+    const tempPrio = current.priority;
+    current.priority = target.priority;
+    target.priority = tempPrio;
 
     if (current.priority === target.priority) {
-      if (direction === 'up') current.priority += 1
-      else current.priority -= 1
+      if (direction === "up") current.priority += 1;
+      else current.priority -= 1;
     }
 
     mutation.mutate({
@@ -336,22 +305,22 @@ export const IngestionWorkflowEditor = ({
       plugin_name: current.id,
       enabled: current.enabled,
       priority: current.priority,
-    })
+    });
     mutation.mutate({
       scope,
       scope_id: effectiveScopeId,
       plugin_name: target.id,
       enabled: target.enabled,
       priority: target.priority,
-    })
-  }
+    });
+  };
 
   if (loadingConfigs || loadingCaps)
     return (
       <div className="p-8 flex justify-center">
         <Spinner />
       </div>
-    )
+    );
 
   return (
     <>
@@ -361,8 +330,8 @@ export const IngestionWorkflowEditor = ({
             <div>
               <CardTitle>Ingestion Pipeline</CardTitle>
               <CardDescription>
-                Customize steps that run when new artifacts are scanned. Steps
-                execute in order from Top (High Priority) to Bottom.
+                Customize steps that run when new artifacts are scanned. Steps execute in order from
+                Top (High Priority) to Bottom.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -374,11 +343,11 @@ export const IngestionWorkflowEditor = ({
                 className="gap-2"
                 title={
                   presetMissing.length > 0
-                    ? `Missing plugins: ${presetMissing.join(', ')}`
-                    : 'Enable thumbnails + embeddings'
+                    ? `Missing plugins: ${presetMissing.join(", ")}`
+                    : "Enable thumbnails + embeddings"
                 }
               >
-                {applyingPreset ? 'Applying...' : 'Quick setup: core'}
+                {applyingPreset ? "Applying..." : "Quick setup: core"}
               </Button>
               <Popover>
                 <PopoverTrigger asChild>
@@ -388,9 +357,7 @@ export const IngestionWorkflowEditor = ({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-0" align="end">
-                  <div className="p-3 border-b font-medium bg-muted/30">
-                    Available Actions
-                  </div>
+                  <div className="p-3 border-b font-medium bg-muted/30">Available Actions</div>
                   <div className="max-h-64 overflow-y-auto p-1">
                     {availableSteps.length === 0 && (
                       <div className="p-4 text-center text-sm text-muted-foreground">
@@ -429,7 +396,7 @@ export const IngestionWorkflowEditor = ({
                     size="icon"
                     className="h-5 w-5"
                     disabled={index === 0}
-                    onClick={() => handleMove(index, 'up')}
+                    onClick={() => handleMove(index, "up")}
                   >
                     <ArrowUp className="w-3 h-3" />
                   </Button>
@@ -438,7 +405,7 @@ export const IngestionWorkflowEditor = ({
                     size="icon"
                     className="h-5 w-5"
                     disabled={index === steps.length - 1}
-                    onClick={() => handleMove(index, 'down')}
+                    onClick={() => handleMove(index, "down")}
                   >
                     <ArrowDown className="w-3 h-3" />
                   </Button>
@@ -452,9 +419,7 @@ export const IngestionWorkflowEditor = ({
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-semibold text-sm truncate">
-                      {step.label}
-                    </h4>
+                    <h4 className="font-semibold text-sm truncate">{step.label}</h4>
                     <Badge variant="secondary" className="text-[10px] h-4 px-1">
                       {step.pluginName}
                     </Badge>
@@ -462,9 +427,7 @@ export const IngestionWorkflowEditor = ({
                       P{step.priority}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {step.description}
-                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{step.description}</p>
                 </div>
 
                 {/* Actions */}
@@ -510,14 +473,11 @@ export const IngestionWorkflowEditor = ({
           </DialogHeader>
           {selectedPluginForConfig && (
             <div className="pt-2">
-              <PluginConfigCard
-                pluginId={selectedPluginForConfig}
-                showHeader={false}
-              />
+              <PluginConfigCard pluginId={selectedPluginForConfig} showHeader={false} />
             </div>
           )}
         </DialogContent>
       </Dialog>
     </>
-  )
-}
+  );
+};

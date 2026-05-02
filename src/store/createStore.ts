@@ -1,15 +1,15 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface CreateState {
-  selectedWorkflowId: string | null
-  workflowInputs: Record<string, any>
+  selectedWorkflowId: string | null;
+  workflowInputs: Record<string, any>;
   // Add other persistent state here as needed (e.g. layout, zoom)
 
-  setSelectedWorkflowId: (id: string | null) => void
-  setWorkflowInput: (key: string, value: any) => void
-  setWorkflowInputs: (inputs: Record<string, any>) => void
-  reset: () => void
+  setSelectedWorkflowId: (id: string | null) => void;
+  setWorkflowInput: (key: string, value: any) => void;
+  setWorkflowInputs: (inputs: Record<string, any>) => void;
+  reset: () => void;
 }
 
 export const useCreateStore = create<CreateState>()(
@@ -27,7 +27,7 @@ export const useCreateStore = create<CreateState>()(
       reset: () => set({ selectedWorkflowId: null, workflowInputs: {} }),
     }),
     {
-      name: 'embeddr-create-storage',
+      name: "embeddr-create-storage",
     },
   ),
-)
+);

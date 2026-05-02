@@ -1,146 +1,139 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ResizablePanelGroup,
-  ResizablePanel,
+  Badge,
+  Input,
   ResizableHandle,
-} from '@embeddr/react-ui/ui'
-import { LotusInspector } from './LotusInspector'
-import { useNavigate } from '@tanstack/react-router'
-import { toast } from 'sonner'
-import { useEmbeddrAPI } from '@/plugins/store'
-import type { LotusResultItem } from './types'
-import { LotusSearchBar } from './LotusSearchBar'
-import { LotusResultsList } from './LotusResultsList'
-import {
+  ResizablePanel,
+  ResizablePanelGroup,
+  ScrollArea,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { embeddrApi } from '@/lib/api/client'
+} from "@embeddr/react-ui/ui";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { LotusInspector } from "./LotusInspector";
+import { LotusSearchBar } from "./LotusSearchBar";
+import { LotusResultsList } from "./LotusResultsList";
+import type { LotusResultItem } from "./types";
+import { useEmbeddrAPI } from "@/plugins/store";
+import { embeddrApi } from "@/lib/api/client";
 
 interface LotusQueryResponse {
-  query: string
-  results: LotusResultItem[]
+  query: string;
+  results: Array<LotusResultItem>;
 }
 
 export function LotusExplorer() {
-  const api = useEmbeddrAPI()
-  const navigate = useNavigate()
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<LotusResultItem[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [dispatching, setDispatching] = useState(false)
-  const [capFilter, setCapFilter] = useState('')
-  const [capabilities, setCapabilities] = useState<any[]>([])
-  const [capLoading, setCapLoading] = useState(false)
+  const api = useEmbeddrAPI();
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Array<LotusResultItem>>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [dispatching, setDispatching] = useState(false);
+  const [capFilter, setCapFilter] = useState("");
+  const [capabilities, setCapabilities] = useState<Array<any>>([]);
+  const [capLoading, setCapLoading] = useState(false);
 
-  const selectedItem = results.find((r) => r.id === selectedId) || null
+  const selectedItem = results.find((r) => r.id === selectedId) || null;
 
   const filteredCapabilities = useMemo(() => {
-    const q = capFilter.trim().toLowerCase()
-    if (!q) return capabilities
+    const q = capFilter.trim().toLowerCase();
+    if (!q) return capabilities;
     return capabilities.filter((cap) => {
-      const hay =
-        `${cap.id} ${cap.title} ${cap.kind} ${cap.plugin}`.toLowerCase()
-      return hay.includes(q)
-    })
-  }, [capFilter, capabilities])
+      const hay = `${cap.id} ${cap.title} ${cap.kind} ${cap.plugin}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [capFilter, capabilities]);
 
   const search = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const data: LotusQueryResponse = await api.lotus.query(query, 50)
-      setResults(data.results || [])
+      const data: LotusQueryResponse = await api.lotus.query(query, 50);
+      setResults(data.results || []);
     } catch (e: any) {
-      toast.error('Search failed: ' + e.message)
+      toast.error("Search failed: " + e.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [api.lotus, query])
+  }, [api.lotus, query]);
 
   // Initial load
   useEffect(() => {
-    search()
-  }, [])
+    search();
+  }, []);
 
   const loadCapabilities = useCallback(async () => {
-    setCapLoading(true)
+    setCapLoading(true);
     try {
-      const data = await api.lotus.list({ limit: 500 })
-      setCapabilities(data.items || [])
+      const data = await api.lotus.list({ limit: 500 });
+      setCapabilities(data.items || []);
     } catch (e: any) {
-      toast.error('Failed to load capabilities: ' + e.message)
+      toast.error("Failed to load capabilities: " + e.message);
     } finally {
-      setCapLoading(false)
+      setCapLoading(false);
     }
-  }, [api.lotus])
+  }, [api.lotus]);
 
   useEffect(() => {
-    loadCapabilities()
-  }, [loadCapabilities])
+    loadCapabilities();
+  }, [loadCapabilities]);
 
   const handleDispatch = async (item: LotusResultItem, inputs?: any) => {
-    if (item.kind === 'nav') {
-      const route = item.data?.route as string | undefined
+    if (item.kind === "nav") {
+      const route = item.data?.route as string | undefined;
       if (route) {
-        navigate({ to: route })
-        toast.success(`Navigating to ${route}`)
+        navigate({ to: route });
+        toast.success(`Navigating to ${route}`);
       }
-      return
+      return;
     }
 
-    if (item.kind !== 'action' && item.kind !== 'feature') {
-      toast.info('This item is not dispatchable.')
-      return
+    if (item.kind !== "action" && item.kind !== "feature") {
+      toast.info("This item is not dispatchable.");
+      return;
     }
 
-    const baseData = { ...(item.data || {}), inputs: inputs || {} } as Record<
-      string,
-      any
-    >
-    const pluginName = (baseData.plugin_name || baseData.plugin) as string | undefined
-    const actionName = (baseData.action_name || baseData.action) as string | undefined
+    const baseData = { ...(item.data || {}), inputs: inputs || {} } as Record<string, any>;
+    const pluginName = (baseData.plugin_name || baseData.plugin) as string | undefined;
+    const actionName = (baseData.action_name || baseData.action) as string | undefined;
     if (!pluginName || !actionName) {
-      toast.error('Action missing plugin or action name.')
-      return
+      toast.error("Action missing plugin or action name.");
+      return;
     }
-    baseData.plugin_name = pluginName
-    baseData.action_name = actionName
+    baseData.plugin_name = pluginName;
+    baseData.action_name = actionName;
 
-    setDispatching(true)
+    setDispatching(true);
     try {
       const payload = {
         result_id: item.id,
         kind: item.kind,
         data: baseData,
-      }
+      };
 
-      const out = (await embeddrApi.lotus.dispatch(
-        payload.result_id,
-        item.kind as 'action' | 'feature',
-        payload.data,
-      )) as { navigate_to?: string; execution_id?: string }
+      const out = (await embeddrApi.lotus.dispatch(payload.result_id, item.kind, payload.data)) as {
+        navigate_to?: string;
+        execution_id?: string;
+      };
 
       if (out.navigate_to) {
-        navigate({ to: out.navigate_to })
+        navigate({ to: out.navigate_to });
       }
 
       if (out.execution_id) {
-        toast.success('Action queued', {
+        toast.success("Action queued", {
           description: `Execution ID: ${out.execution_id}`,
-        })
+        });
       }
     } catch (e: any) {
-      toast.error('Dispatch failed: ' + e.message)
+      toast.error("Dispatch failed: " + e.message);
     } finally {
-      setDispatching(false)
+      setDispatching(false);
     }
-  }
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
@@ -190,9 +183,7 @@ export function LotusExplorer() {
                 <ScrollArea className="h-full">
                   <div className="flex flex-col gap-2 p-4 text-xs">
                     {capLoading ? (
-                      <div className="text-muted-foreground">
-                        Loading capabilities...
-                      </div>
+                      <div className="text-muted-foreground">Loading capabilities...</div>
                     ) : filteredCapabilities.length === 0 ? (
                       <div className="text-muted-foreground">No matches.</div>
                     ) : (
@@ -201,7 +192,7 @@ export function LotusExplorer() {
                           key={cap.id}
                           className="flex w-full flex-col gap-1 rounded-md border px-3 py-2 text-left hover:bg-muted/40"
                           onClick={() => {
-                            setSelectedId(null)
+                            setSelectedId(null);
                             setResults([
                               {
                                 id: cap.id,
@@ -210,22 +201,18 @@ export function LotusExplorer() {
                                 description: cap.description,
                                 data: cap.data,
                                 score: 1,
-                              } as LotusResultItem,
-                            ])
-                            setSelectedId(cap.id)
+                              },
+                            ]);
+                            setSelectedId(cap.id);
                           }}
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-[11px] font-medium">
-                              {cap.title}
-                            </span>
+                            <span className="text-[11px] font-medium">{cap.title}</span>
                             <Badge variant="outline" className="text-[10px]">
                               {cap.kind}
                             </Badge>
                           </div>
-                          <span className="text-[10px] text-muted-foreground">
-                            {cap.id}
-                          </span>
+                          <span className="text-[10px] text-muted-foreground">{cap.id}</span>
                         </button>
                       ))
                     )}
@@ -238,14 +225,10 @@ export function LotusExplorer() {
           <ResizableHandle withHandle />
 
           <ResizablePanel defaultSize="65%">
-            <LotusInspector
-              item={selectedItem}
-              onDispatch={handleDispatch}
-              running={dispatching}
-            />
+            <LotusInspector item={selectedItem} onDispatch={handleDispatch} running={dispatching} />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
     </div>
-  )
+  );
 }

@@ -1,228 +1,208 @@
-import { useMemo, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Label } from '@embeddr/react-ui/ui'
-import { Switch } from '@embeddr/react-ui/ui'
-import {
+  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
-import { embeddrApi } from '@/lib/api/client'
-import {
-  fetchAnalysisConfigs,
-  setAnalysisConfig,
-  type AnalysisConfig,
-} from '@/lib/api/endpoints/analysis'
-import type { LotusCapability } from '@/lib/api/types'
+  Switch,
+} from "@embeddr/react-ui/ui";
+import type { LotusCapability } from "@/lib/api/types";
+import type { AnalysisConfig } from "@/lib/api/endpoints/analysis";
+import { embeddrApi } from "@/lib/api/client";
+import { fetchAnalysisConfigs, setAnalysisConfig } from "@/lib/api/endpoints/analysis";
 
 type IngestionStep = {
-  plugin_name: string
-  label: string
-  priority: number
-}
+  plugin_name: string;
+  label: string;
+  priority: number;
+};
 
-const CORE_STEPS: IngestionStep[] = [
+const CORE_STEPS: Array<IngestionStep> = [
   {
-    plugin_name: 'embeddr-thumbnailer',
-    label: 'Generate thumbnails',
+    plugin_name: "embeddr-thumbnailer",
+    label: "Generate thumbnails",
     priority: 20,
   },
   {
-    plugin_name: 'embeddr-embeddings',
-    label: 'Generate embeddings',
+    plugin_name: "embeddr-embeddings",
+    label: "Generate embeddings",
     priority: 10,
   },
-]
+];
 
-const INGESTION_KEYWORDS = [
-  'ingest',
-  'thumbnail',
-  'embedding',
-  'embed',
-  'scanner',
-]
+const INGESTION_KEYWORDS = ["ingest", "thumbnail", "embedding", "embed", "scanner"];
 
 const isIngestionCapability = (cap: LotusCapability) => {
-  if (cap.tags?.includes('ingest')) return true
-  const id = String(cap.id || '').toLowerCase()
-  const title = String(cap.title || '').toLowerCase()
-  const slot = String(cap.slot || '').toLowerCase()
+  if (cap.tags?.includes("ingest")) return true;
+  const id = String(cap.id || "").toLowerCase();
+  const title = String(cap.title || "").toLowerCase();
+  const slot = String(cap.slot || "").toLowerCase();
   return INGESTION_KEYWORDS.some(
     (key) => id.includes(key) || title.includes(key) || slot.includes(key),
-  )
-}
+  );
+};
 
 export function IngestionProfiles() {
-  const queryClient = useQueryClient()
-  const [applying, setApplying] = useState(false)
+  const queryClient = useQueryClient();
+  const [applying, setApplying] = useState(false);
 
   const { data: lotusCaps } = useQuery({
-    queryKey: ['lotus', 'capabilities', 'ingestion-defaults'],
+    queryKey: ["lotus", "capabilities", "ingestion-defaults"],
     queryFn: () => embeddrApi.lotus.list({ limit: 500 }),
     staleTime: 30_000,
-  })
+  });
 
   const { data: blobRegistry } = useQuery({
-    queryKey: ['system', 'blob-registry', 'ingestion-defaults'],
+    queryKey: ["system", "blob-registry", "ingestion-defaults"],
     queryFn: () => embeddrApi.system.getBlobRegistry(),
     staleTime: 30_000,
-  })
+  });
 
   const { data: configs } = useQuery({
-    queryKey: ['analysis-config', 'global', 'core-defaults'],
-    queryFn: () => fetchAnalysisConfigs('global'),
+    queryKey: ["analysis-config", "global", "core-defaults"],
+    queryFn: () => fetchAnalysisConfigs("global"),
     staleTime: 30_000,
-  })
+  });
 
   const ingestionPlugins = useMemo(() => {
-    const items = (lotusCaps?.items || []) as LotusCapability[]
-    const names = new Set<string>()
+    const items = lotusCaps?.items || [];
+    const names = new Set<string>();
     items.forEach((cap) => {
-      if (!isIngestionCapability(cap)) return
-      const pluginName = cap.plugin || cap.id?.split('.')[0]
-      if (pluginName) names.add(pluginName)
-    })
-    return Array.from(names)
-  }, [lotusCaps?.items])
+      if (!isIngestionCapability(cap)) return;
+      const pluginName = cap.plugin || cap.id?.split(".")[0];
+      if (pluginName) names.add(pluginName);
+    });
+    return Array.from(names);
+  }, [lotusCaps?.items]);
 
   const coreStatus = useMemo(() => {
-    const map = new Map(configs?.map((cfg) => [cfg.plugin_name, cfg]) || [])
+    const map = new Map(configs?.map((cfg) => [cfg.plugin_name, cfg]) || []);
     return CORE_STEPS.map((step) => ({
       ...step,
       enabled: map.get(step.plugin_name)?.enabled ?? false,
-    }))
-  }, [configs])
+    }));
+  }, [configs]);
 
-  const isCoreAvailable = CORE_STEPS.every((step) =>
-    ingestionPlugins.includes(step.plugin_name),
-  )
+  const isCoreAvailable = CORE_STEPS.every((step) => ingestionPlugins.includes(step.plugin_name));
 
-  const providerOptions = blobRegistry?.providers || []
-  const defaultProvider = blobRegistry?.default_provider || 'default'
+  const providerOptions = blobRegistry?.providers || [];
+  const defaultProvider = blobRegistry?.default_provider || "default";
 
-  const applyIngestionDefaults = async (enabledSteps: IngestionStep[]) => {
+  const applyIngestionDefaults = async (enabledSteps: Array<IngestionStep>) => {
     await embeddrApi.system.applyIngestionDefaults({
       enabled_plugins: enabledSteps.map((step) => step.plugin_name),
-    })
+    });
     queryClient.invalidateQueries({
-      queryKey: ['system', 'ingestion', 'pipeline'],
-    })
+      queryKey: ["system", "ingestion", "pipeline"],
+    });
     queryClient.invalidateQueries({
-      queryKey: ['system', 'automation', 'status'],
-    })
-  }
+      queryKey: ["system", "automation", "status"],
+    });
+  };
 
   const handleStorageChange = async (value: string) => {
-    const provider = value === 'default' ? null : value
+    const provider = value === "default" ? null : value;
     await embeddrApi.system.setBlobDefaults({
       default_provider: provider,
       default_resolver: null,
-    })
+    });
     queryClient.invalidateQueries({
-      queryKey: ['system', 'blob-registry', 'ingestion-defaults'],
-    })
-  }
+      queryKey: ["system", "blob-registry", "ingestion-defaults"],
+    });
+  };
 
   const handleToggleStep = async (step: IngestionStep, enabled: boolean) => {
     const nextEnabled = coreStatus
-      .map((item) =>
-        item.plugin_name === step.plugin_name ? { ...item, enabled } : item,
-      )
-      .filter((item) => item.enabled)
+      .map((item) => (item.plugin_name === step.plugin_name ? { ...item, enabled } : item))
+      .filter((item) => item.enabled);
 
     await setAnalysisConfig({
-      scope: 'global',
+      scope: "global",
       plugin_name: step.plugin_name,
       enabled,
       priority: step.priority,
-    })
-    queryClient.setQueryData<AnalysisConfig[]>(
-      ['analysis-config', 'global', 'core-defaults'],
+    });
+    queryClient.setQueryData<Array<AnalysisConfig>>(
+      ["analysis-config", "global", "core-defaults"],
       (prev) => {
-        const next = prev ? [...prev] : []
+        const next = prev ? [...prev] : [];
         const index = next.findIndex(
-          (cfg) =>
-            cfg.plugin_name === step.plugin_name &&
-            cfg.scope === 'global' &&
-            !cfg.scope_id,
-        )
+          (cfg) => cfg.plugin_name === step.plugin_name && cfg.scope === "global" && !cfg.scope_id,
+        );
         const payload: AnalysisConfig = {
-          scope: 'global',
+          scope: "global",
           plugin_name: step.plugin_name,
           enabled,
           priority: step.priority,
-        }
+        };
         if (index >= 0) {
-          next[index] = { ...next[index], ...payload }
+          next[index] = { ...next[index], ...payload };
         } else {
-          next.push(payload)
+          next.push(payload);
         }
-        return next
+        return next;
       },
-    )
-    await applyIngestionDefaults(nextEnabled)
+    );
+    await applyIngestionDefaults(nextEnabled);
     queryClient.invalidateQueries({
-      queryKey: ['analysis-config', 'global', 'core-defaults'],
-    })
-  }
+      queryKey: ["analysis-config", "global", "core-defaults"],
+    });
+  };
 
   const handleApplyCoreDefaults = async () => {
-    setApplying(true)
+    setApplying(true);
     try {
       await Promise.all(
         CORE_STEPS.map((step) =>
           setAnalysisConfig({
-            scope: 'global',
+            scope: "global",
             plugin_name: step.plugin_name,
             enabled: true,
             priority: step.priority,
           }),
         ),
-      )
-      queryClient.setQueryData<AnalysisConfig[]>(
-        ['analysis-config', 'global', 'core-defaults'],
+      );
+      queryClient.setQueryData<Array<AnalysisConfig>>(
+        ["analysis-config", "global", "core-defaults"],
         (prev) => {
-          const next = prev ? [...prev] : []
+          const next = prev ? [...prev] : [];
           CORE_STEPS.forEach((step) => {
             const index = next.findIndex(
               (cfg) =>
-                cfg.plugin_name === step.plugin_name &&
-                cfg.scope === 'global' &&
-                !cfg.scope_id,
-            )
+                cfg.plugin_name === step.plugin_name && cfg.scope === "global" && !cfg.scope_id,
+            );
             const payload: AnalysisConfig = {
-              scope: 'global',
+              scope: "global",
               plugin_name: step.plugin_name,
               enabled: true,
               priority: step.priority,
-            }
+            };
             if (index >= 0) {
-              next[index] = { ...next[index], ...payload }
+              next[index] = { ...next[index], ...payload };
             } else {
-              next.push(payload)
+              next.push(payload);
             }
-          })
-          return next
+          });
+          return next;
         },
-      )
-      await applyIngestionDefaults(CORE_STEPS)
+      );
+      await applyIngestionDefaults(CORE_STEPS);
       queryClient.invalidateQueries({
-        queryKey: ['analysis-config', 'global', 'core-defaults'],
-      })
+        queryKey: ["analysis-config", "global", "core-defaults"],
+      });
     } finally {
-      setApplying(false)
+      setApplying(false);
     }
-  }
+  };
 
   return (
     <Card className="my-1">
@@ -241,10 +221,7 @@ export function IngestionProfiles() {
                 No storage providers registered yet.
               </div>
             ) : (
-              <Select
-                value={defaultProvider}
-                onValueChange={(value) => handleStorageChange(value)}
-              >
+              <Select value={defaultProvider} onValueChange={(value) => handleStorageChange(value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Default" />
                 </SelectTrigger>
@@ -260,11 +237,8 @@ export function IngestionProfiles() {
             )}
           </div>
           <div className="flex items-end">
-            <Button
-              onClick={handleApplyCoreDefaults}
-              disabled={!isCoreAvailable || applying}
-            >
-              {applying ? 'Applying...' : 'Apply core defaults'}
+            <Button onClick={handleApplyCoreDefaults} disabled={!isCoreAvailable || applying}>
+              {applying ? "Applying..." : "Apply core defaults"}
             </Button>
           </div>
         </div>
@@ -284,9 +258,7 @@ export function IngestionProfiles() {
               >
                 <div className="space-y-1">
                   <div className="text-sm font-medium">{step.label}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {step.plugin_name}
-                  </div>
+                  <div className="text-[11px] text-muted-foreground">{step.plugin_name}</div>
                 </div>
                 <Switch
                   checked={step.enabled}
@@ -296,13 +268,13 @@ export function IngestionProfiles() {
             ))}
             {!isCoreAvailable && (
               <div className="text-xs text-muted-foreground">
-                Core plugins not detected. Install thumbnailer and embeddings
-                plugins to enable defaults.
+                Core plugins not detected. Install thumbnailer and embeddings plugins to enable
+                defaults.
               </div>
             )}
           </CardContent>
         </Card>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,25 +1,25 @@
-import { useQuery } from '@tanstack/react-query'
-import { useEffect, useRef } from 'react'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { Loader2 } from 'lucide-react'
-import { fetchSystemLogs } from '@/lib/api'
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { ScrollArea } from "@embeddr/react-ui/ui";
+import { Loader2 } from "lucide-react";
+import { fetchSystemLogs } from "@/lib/api";
 
 export function SystemLogsPanel({ isActive }: { isActive: boolean }) {
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const { data: logs, isLoading } = useQuery({
-    queryKey: ['system-logs-viewer'],
+    queryKey: ["system-logs-viewer"],
     queryFn: () => fetchSystemLogs(100),
     refetchInterval: isActive ? 2000 : false,
     enabled: isActive,
-  })
+  });
 
   // Auto-scroll to bottom using scrollIntoView
   useEffect(() => {
     if (isActive && logs) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [logs, isActive])
+  }, [logs, isActive]);
 
   return (
     <div className="h-full w-full flex flex-col min-h-0">
@@ -27,9 +27,7 @@ export function SystemLogsPanel({ isActive }: { isActive: boolean }) {
         <span className="text-xs font-medium text-muted-foreground">
           System Logs (Last 100 lines)
         </span>
-        {isLoading && (
-          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-        )}
+        {isLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
       </div>
       <div className="flex-1 min-h-0 relative">
         <ScrollArea
@@ -47,9 +45,7 @@ export function SystemLogsPanel({ isActive }: { isActive: boolean }) {
               </div>
             ))}
             {(!logs || logs.length === 0) && !isLoading && (
-              <div className="text-muted-foreground italic py-2">
-                No logs available...
-              </div>
+              <div className="text-muted-foreground italic py-2">No logs available...</div>
             )}
             {/* Anchor for auto-scrolling */}
             <div ref={bottomRef} />
@@ -57,5 +53,5 @@ export function SystemLogsPanel({ isActive }: { isActive: boolean }) {
         </ScrollArea>
       </div>
     </div>
-  )
+  );
 }

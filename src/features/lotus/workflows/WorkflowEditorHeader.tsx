@@ -1,16 +1,15 @@
-import React from 'react'
-import type { Workflow } from '@/lib/api/endpoints/workflows'
-import { Button } from '@embeddr/react-ui/ui'
-import { CardHeader, CardTitle } from '@embeddr/react-ui/ui'
-import { Copy, Play, Save, Trash2 } from 'lucide-react'
+import React from "react";
+import { Button, CardHeader, CardTitle } from "@embeddr/react-ui/ui";
+import { Copy, Play, Save, Trash2 } from "lucide-react";
+import type { Workflow } from "@/lib/api/endpoints/workflows";
 
 type WorkflowEditorHeaderProps = {
-  selectedWorkflow: Workflow | null
-  onDuplicate: () => void
-  onDelete: () => void
-  onSave: () => void
-  onRun: () => void
-}
+  selectedWorkflow: Workflow | null;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onSave: () => void;
+  onRun: () => void;
+};
 
 export function WorkflowEditorHeader({
   selectedWorkflow,
@@ -22,7 +21,7 @@ export function WorkflowEditorHeader({
   return (
     <CardHeader className="flex flex-row items-center justify-between py-3">
       <CardTitle className="text-sm">
-        {selectedWorkflow ? selectedWorkflow.metadata_json.name : 'Editor'}
+        {selectedWorkflow ? selectedWorkflow.metadata_json.name : "Editor"}
       </CardTitle>
       {selectedWorkflow && (
         <div className="flex items-center gap-2">
@@ -41,5 +40,5 @@ export function WorkflowEditorHeader({
         </div>
       )}
     </CardHeader>
-  )
+  );
 }

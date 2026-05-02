@@ -1,106 +1,89 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { Badge, Button, ScrollArea } from '@embeddr/react-ui'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@embeddr/react-ui/ui'
+import React, { useEffect, useMemo, useState } from "react";
+import { Badge, Button, ScrollArea } from "@embeddr/react-ui";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/ui'
-import {
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
+  Separator,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@embeddr/react-ui/ui";
 import {
-  RefreshCcw,
-  Search,
+  ChevronLeft,
+  ChevronRight,
   Database,
+  Hash,
   Loader2,
   Microscope,
-  Hash,
-  ChevronRight,
-  ChevronLeft,
-} from 'lucide-react'
-import { Input } from '@embeddr/react-ui/ui'
-import { useQuery } from '@tanstack/react-query'
-import { embeddrApi } from '@/lib/api/client'
-import type { Artifact, PaginatedResponse } from '@/lib/api/types'
-import { useArtifact } from '@/hooks/useArtifact'
-import { Separator } from '@embeddr/react-ui/ui'
-import { useDebounce } from '@/hooks/use-debounce'
+  RefreshCcw,
+  Search,
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import type { Artifact, PaginatedResponse } from "@/lib/api/types";
+import { embeddrApi } from "@/lib/api/client";
+import { useArtifact } from "@/hooks/useArtifact";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export const ApiExplorer = () => {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [typeFilter, setTypeFilter] = useState('all')
-  const [storageFilter, setStorageFilter] = useState('all')
-  const [originFilter, setOriginFilter] = useState('all')
-  const [pluginFilter, setPluginFilter] = useState('all')
-  const [page, setPage] = useState(0)
-  const [pageSize, setPageSize] = useState(50)
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [storageFilter, setStorageFilter] = useState("all");
+  const [originFilter, setOriginFilter] = useState("all");
+  const [pluginFilter, setPluginFilter] = useState("all");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
 
   // Debounce search
-  const debouncedSearchTerm = useDebounce(searchTerm, 300)
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   useEffect(() => {
-    setPage(0)
-  }, [
-    debouncedSearchTerm,
-    typeFilter,
-    storageFilter,
-    originFilter,
-    pluginFilter,
-  ])
+    setPage(0);
+  }, [debouncedSearchTerm, typeFilter, storageFilter, originFilter, pluginFilter]);
 
   const {
     data: artifactsData,
     isLoading: isLoadingList,
     refetch,
   } = useQuery<PaginatedResponse<Artifact>>({
-    queryKey: [
-      'artifacts',
-      'artifacts',
-      page,
-      pageSize,
-      debouncedSearchTerm,
-      typeFilter,
-    ],
+    queryKey: ["artifacts", "artifacts", page, pageSize, debouncedSearchTerm, typeFilter],
     queryFn: async (): Promise<PaginatedResponse<Artifact>> => {
       if (debouncedSearchTerm) {
-        return (await embeddrApi.artifacts.search(
+        return await embeddrApi.artifacts.search(
           debouncedSearchTerm,
           pageSize,
           page * pageSize,
-          typeFilter === 'all' ? undefined : typeFilter,
-        )) as PaginatedResponse<Artifact>
+          typeFilter === "all" ? undefined : typeFilter,
+        );
       }
-      return (await embeddrApi.artifacts.list({
+      return await embeddrApi.artifacts.list({
         limit: pageSize,
         offset: page * pageSize,
-        type_name: typeFilter === 'all' ? undefined : typeFilter,
-      })) as PaginatedResponse<Artifact>
+        type_name: typeFilter === "all" ? undefined : typeFilter,
+      });
     },
     placeholderData: (previousData) => previousData,
-  })
+  });
 
   // Pagination info
-  const artifacts = artifactsData?.items || []
-  const totalItems = artifactsData?.total || 0
-  const totalPages = Math.ceil(totalItems / pageSize)
+  const artifacts = artifactsData?.items || [];
+  const totalItems = artifactsData?.total || 0;
+  const totalPages = Math.ceil(totalItems / pageSize);
 
-  const handlePrevPage = () => setPage((p) => Math.max(0, p - 1))
-  const handleNextPage = () => setPage((p) => (p < totalPages - 1 ? p + 1 : p))
+  const handlePrevPage = () => setPage((p) => Math.max(0, p - 1));
+  const handleNextPage = () => setPage((p) => (p < totalPages - 1 ? p + 1 : p));
 
   // Unified hook for selected artifact
-  const artifactQuery = useArtifact(selectedId)
+  const artifactQuery = useArtifact(selectedId);
   const {
     details,
     embeddings,
@@ -110,29 +93,29 @@ export const ApiExplorer = () => {
     contentUrl,
     capabilities,
     isLoading: isLoadingArtifactData,
-  } = artifactQuery
+  } = artifactQuery;
 
-  const isLoading = isLoadingList
+  const isLoading = isLoadingList;
 
   const getStorageKind = (uri?: string) => {
-    if (!uri) return 'unknown'
-    if (uri.startsWith('s3://')) return 's3'
-    if (uri.startsWith('http')) return 'http'
-    if (uri.startsWith('file://')) return 'file'
-    if (uri.startsWith('internal://')) return 'internal'
-    if (uri.startsWith('virtual://')) return 'virtual'
-    if (uri.startsWith('/')) return 'filesystem'
-    return 'custom'
-  }
+    if (!uri) return "unknown";
+    if (uri.startsWith("s3://")) return "s3";
+    if (uri.startsWith("http")) return "http";
+    if (uri.startsWith("file://")) return "file";
+    if (uri.startsWith("internal://")) return "internal";
+    if (uri.startsWith("virtual://")) return "virtual";
+    if (uri.startsWith("/")) return "filesystem";
+    return "custom";
+  };
 
   const getOriginKind = (uri?: string) => {
-    if (!uri) return 'unknown'
-    if (uri.startsWith('http') || uri.startsWith('s3://')) return 'external'
-    if (uri.startsWith('virtual://')) return 'virtual'
-    if (uri.startsWith('internal://')) return 'managed'
-    if (uri.startsWith('file://') || uri.startsWith('/')) return 'managed'
-    return 'custom'
-  }
+    if (!uri) return "unknown";
+    if (uri.startsWith("http") || uri.startsWith("s3://")) return "external";
+    if (uri.startsWith("virtual://")) return "virtual";
+    if (uri.startsWith("internal://")) return "managed";
+    if (uri.startsWith("file://") || uri.startsWith("/")) return "managed";
+    return "custom";
+  };
 
   const getArtifactPlugin = (item: any) => {
     return (
@@ -140,60 +123,53 @@ export const ApiExplorer = () => {
       item?.metadata_json?.plugin ||
       item?.metadata_json?.source_plugin ||
       item?.metadata_json?.ingest_plugin ||
-      'unknown'
-    )
-  }
+      "unknown"
+    );
+  };
 
   const storageOptions = useMemo(() => {
-    const items = new Set<string>(['all'])
-    artifacts.forEach((a: Artifact) => items.add(getStorageKind(a.uri)))
-    return Array.from(items)
-  }, [artifacts])
+    const items = new Set<string>(["all"]);
+    artifacts.forEach((a: Artifact) => items.add(getStorageKind(a.uri)));
+    return Array.from(items);
+  }, [artifacts]);
 
   const originOptions = useMemo(() => {
-    return ['all', 'managed', 'external', 'virtual', 'custom', 'unknown']
-  }, [])
+    return ["all", "managed", "external", "virtual", "custom", "unknown"];
+  }, []);
 
   const pluginOptions = useMemo(() => {
-    const items = new Set<string>(['all'])
-    artifacts.forEach((a: Artifact) => items.add(getArtifactPlugin(a)))
-    return Array.from(items)
-  }, [artifacts])
+    const items = new Set<string>(["all"]);
+    artifacts.forEach((a: Artifact) => items.add(getArtifactPlugin(a)));
+    return Array.from(items);
+  }, [artifacts]);
 
   const filteredArtifacts = artifacts.filter((a: Artifact) => {
-    const storageKind = getStorageKind(a.uri)
-    const originKind = getOriginKind(a.uri)
-    const pluginName = getArtifactPlugin(a)
+    const storageKind = getStorageKind(a.uri);
+    const originKind = getOriginKind(a.uri);
+    const pluginName = getArtifactPlugin(a);
 
-    if (storageFilter !== 'all' && storageKind !== storageFilter) return false
-    if (originFilter !== 'all' && originKind !== originFilter) return false
-    if (pluginFilter !== 'all' && pluginName !== pluginFilter) return false
-    return true
-  })
+    if (storageFilter !== "all" && storageKind !== storageFilter) return false;
+    if (originFilter !== "all" && originKind !== originFilter) return false;
+    if (pluginFilter !== "all" && pluginName !== pluginFilter) return false;
+    return true;
+  });
 
   // Hardcoded types/common types
-  const docTypes = [
-    'image',
-    'text',
-    'video',
-    'audio',
-    'collection',
-    'document',
-  ].sort()
+  const docTypes = ["image", "text", "video", "audio", "collection", "document"].sort();
 
-  const featureCount = (embeddings?.length || 0) + (annotations?.length || 0)
+  const featureCount = (embeddings?.length || 0) + (annotations?.length || 0);
 
-  const storageLabel = getStorageKind(details?.uri)
+  const storageLabel = getStorageKind(details?.uri);
 
   const blobRegistryQuery = useQuery({
-    queryKey: ['system', 'blob-registry', 'features-explorer'],
+    queryKey: ["system", "blob-registry", "features-explorer"],
     queryFn: () => embeddrApi.system.getBlobRegistry(),
-  })
+  });
 
   const resourceAdaptersQuery = useQuery({
-    queryKey: ['resources', 'adapters', 'features-explorer'],
+    queryKey: ["resources", "adapters", "features-explorer"],
     queryFn: () => embeddrApi.resources.listAdapters(),
-  })
+  });
 
   return (
     <div className="flex w-full h-full border min-h-0 rounded">
@@ -303,28 +279,20 @@ export const ApiExplorer = () => {
           </div>
         </div>
         <div className="flex-1 overflow-hidden">
-          <ScrollArea
-            className="h-full w-full pr-2"
-            variant="left-border"
-            type="always"
-          >
+          <ScrollArea className="h-full w-full pr-2" variant="left-border" type="always">
             <div className="flex flex-col">
               {isLoading && <div className="p-4 text-xs">Loading...</div>}
               {filteredArtifacts?.map((a: Artifact) => {
-                const isImage =
-                  a.type_name === 'image' || a.base_type_name === 'image'
-                const previewUrl = embeddrApi.artifacts.getPreviewUrl(
-                  a.id,
-                  'thumbnail',
-                )
+                const isImage = a.type_name === "image" || a.base_type_name === "image";
+                const previewUrl = embeddrApi.artifacts.getPreviewUrl(a.id, "thumbnail");
 
                 return (
                   <div
                     key={a.id}
                     className={`p-2 text-xs border-b cursor-pointer hover:bg-muted/50 flex gap-2 transition-colors  ${
                       selectedId === a.id
-                        ? 'bg-primary/10 border-l-2 border-l-primary'
-                        : 'border-l-2 border-l-transparent'
+                        ? "bg-primary/10 border-l-2 border-l-primary"
+                        : "border-l-2 border-l-transparent"
                     }`}
                     onClick={() => setSelectedId(a.id)}
                   >
@@ -344,9 +312,7 @@ export const ApiExplorer = () => {
                     </div>
                     <div className="flex flex-col flex-1 min-w-0 gap-0.5">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium truncate flex-1">
-                          {a.base_type_name}
-                        </span>
+                        <span className="font-medium truncate flex-1">{a.base_type_name}</span>
                         <div className="flex items-center gap-1">
                           <Badge variant="outline" className="text-[9px]">
                             {getStorageKind(a.uri)}
@@ -357,12 +323,11 @@ export const ApiExplorer = () => {
                         </div>
                       </div>
                       <div className="truncate text-muted-foreground text-[10px] break-all whitespace-pre-wrap">
-                        {a.metadata_json?.label ||
-                          (a.uri ? a.uri.split('/').pop() : 'No Label')}
+                        {a.metadata_json?.label || (a.uri ? a.uri.split("/").pop() : "No Label")}
                       </div>
                     </div>
                   </div>
-                )
+                );
               })}
               {filteredArtifacts?.length === 0 && !isLoading && (
                 <div className="p-4 text-xs text-muted-foreground text-center">
@@ -421,27 +386,19 @@ export const ApiExplorer = () => {
             </div>
 
             <TabsContent value="info" className="flex-1 overflow-auto p-4 m-0">
-              <Accordion
-                type="multiple"
-                defaultValue={['summary', 'capabilities', 'metadata']}
-              >
+              <Accordion type="multiple" defaultValue={["summary", "capabilities", "metadata"]}>
                 <AccordionItem value="summary">
-                  <AccordionTrigger className="text-sm py-2">
-                    Summary
-                  </AccordionTrigger>
+                  <AccordionTrigger className="text-sm py-2">Summary</AccordionTrigger>
                   <AccordionContent>
                     <div className="grid gap-2 text-xs">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">{details?.type_name}</Badge>
                         {details?.base_type_name && (
-                          <Badge variant="secondary">
-                            {details.base_type_name}
-                          </Badge>
+                          <Badge variant="secondary">{details.base_type_name}</Badge>
                         )}
                       </div>
                       <div className="text-[11px] text-muted-foreground">
-                        Storage:{' '}
-                        <span className="font-mono">{storageLabel}</span>
+                        Storage: <span className="font-mono">{storageLabel}</span>
                       </div>
                       {details?.uri && (
                         <div className="text-[11px] text-muted-foreground break-all">
@@ -452,66 +409,45 @@ export const ApiExplorer = () => {
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="capabilities">
-                  <AccordionTrigger className="text-sm py-2">
-                    Capabilities
-                  </AccordionTrigger>
+                  <AccordionTrigger className="text-sm py-2">Capabilities</AccordionTrigger>
                   <AccordionContent>
                     <div className="flex gap-2 flex-wrap text-xs">
-                      {(details?.type_name === 'image' ||
-                        details?.type_name?.startsWith('image')) && (
-                        <Badge>Viewable</Badge>
-                      )}
-                      {(details?.type_name === 'text' ||
-                        details?.type_name?.startsWith('text')) && (
-                        <Badge>Readable</Badge>
-                      )}
-                      {(details?.type_name === 'document' ||
-                        details?.type_name?.startsWith('document')) && (
-                        <Badge>Viewable</Badge>
-                      )}
-                      {(details?.type_name === 'document' ||
-                        details?.type_name?.startsWith('document')) && (
-                        <Badge>Readable</Badge>
-                      )}
-                      {(details?.type_name === 'audio' ||
-                        details?.base_type_name === 'audio' ||
-                        details?.type_name?.startsWith('audio')) && (
-                        <Badge>Playable</Badge>
-                      )}
-                      {(details as any)?.override_capabilities?.map(
-                        (c: string) => (
-                          <Badge key={c} variant="secondary">
-                            {c}
-                          </Badge>
-                        ),
-                      )}
+                      {(details?.type_name === "image" ||
+                        details?.type_name?.startsWith("image")) && <Badge>Viewable</Badge>}
+                      {(details?.type_name === "text" ||
+                        details?.type_name?.startsWith("text")) && <Badge>Readable</Badge>}
+                      {(details?.type_name === "document" ||
+                        details?.type_name?.startsWith("document")) && <Badge>Viewable</Badge>}
+                      {(details?.type_name === "document" ||
+                        details?.type_name?.startsWith("document")) && <Badge>Readable</Badge>}
+                      {(details?.type_name === "audio" ||
+                        details?.base_type_name === "audio" ||
+                        details?.type_name?.startsWith("audio")) && <Badge>Playable</Badge>}
+                      {(details as any)?.override_capabilities?.map((c: string) => (
+                        <Badge key={c} variant="secondary">
+                          {c}
+                        </Badge>
+                      ))}
                       <span className="text-muted-foreground ml-2 italic">
-                        {details?.type_name === 'image' ||
-                        details?.type_name === 'document' ||
-                        details?.type_name === 'audio' ||
-                        details?.base_type_name === 'audio'
-                          ? 'Can be previewed/streamed via API'
-                          : ''}
+                        {details?.type_name === "image" ||
+                        details?.type_name === "document" ||
+                        details?.type_name === "audio" ||
+                        details?.base_type_name === "audio"
+                          ? "Can be previewed/streamed via API"
+                          : ""}
                       </span>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="providers">
-                  <AccordionTrigger className="text-sm py-2">
-                    Providers
-                  </AccordionTrigger>
+                  <AccordionTrigger className="text-sm py-2">Providers</AccordionTrigger>
                   <AccordionContent>
                     <div className="flex flex-col gap-2 text-xs">
                       <div>
-                        <span className="text-[10px] text-muted-foreground">
-                          Blob providers
-                        </span>
+                        <span className="text-[10px] text-muted-foreground">Blob providers</span>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {(blobRegistryQuery.data?.providers || []).length ===
-                          0 ? (
-                            <span className="text-[10px] text-muted-foreground">
-                              None detected
-                            </span>
+                          {(blobRegistryQuery.data?.providers || []).length === 0 ? (
+                            <span className="text-[10px] text-muted-foreground">None detected</span>
                           ) : (
                             blobRegistryQuery.data?.providers?.map((p) => (
                               <Badge key={p} variant="secondary">
@@ -522,15 +458,10 @@ export const ApiExplorer = () => {
                         </div>
                       </div>
                       <div>
-                        <span className="text-[10px] text-muted-foreground">
-                          Resolvers
-                        </span>
+                        <span className="text-[10px] text-muted-foreground">Resolvers</span>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {(blobRegistryQuery.data?.resolvers || []).length ===
-                          0 ? (
-                            <span className="text-[10px] text-muted-foreground">
-                              None detected
-                            </span>
+                          {(blobRegistryQuery.data?.resolvers || []).length === 0 ? (
+                            <span className="text-[10px] text-muted-foreground">None detected</span>
                           ) : (
                             blobRegistryQuery.data?.resolvers?.map((r) => (
                               <Badge key={r} variant="outline">
@@ -541,34 +472,22 @@ export const ApiExplorer = () => {
                         </div>
                       </div>
                       <div>
-                        <span className="text-[10px] text-muted-foreground">
-                          Resource adapters
-                        </span>
+                        <span className="text-[10px] text-muted-foreground">Resource adapters</span>
                         <div className="flex flex-col gap-1 mt-1">
-                          {(resourceAdaptersQuery.data?.adapters || [])
-                            .length === 0 ? (
-                            <span className="text-[10px] text-muted-foreground">
-                              None detected
-                            </span>
+                          {(resourceAdaptersQuery.data?.adapters || []).length === 0 ? (
+                            <span className="text-[10px] text-muted-foreground">None detected</span>
                           ) : (
-                            resourceAdaptersQuery.data?.adapters
-                              ?.slice(0, 6)
-                              .map((adapter) => (
-                                <div
-                                  key={adapter.id}
-                                  className="flex items-center justify-between gap-2"
-                                >
-                                  <span className="text-[10px] font-mono">
-                                    {adapter.id}
-                                  </span>
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[9px]"
-                                  >
-                                    {adapter.plugin || 'core'}
-                                  </Badge>
-                                </div>
-                              ))
+                            resourceAdaptersQuery.data?.adapters?.slice(0, 6).map((adapter) => (
+                              <div
+                                key={adapter.id}
+                                className="flex items-center justify-between gap-2"
+                              >
+                                <span className="text-[10px] font-mono">{adapter.id}</span>
+                                <Badge variant="outline" className="text-[9px]">
+                                  {adapter.plugin || "core"}
+                                </Badge>
+                              </div>
+                            ))
                           )}
                         </div>
                       </div>
@@ -576,9 +495,7 @@ export const ApiExplorer = () => {
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="metadata">
-                  <AccordionTrigger className="text-sm py-2">
-                    Metadata JSON
-                  </AccordionTrigger>
+                  <AccordionTrigger className="text-sm py-2">Metadata JSON</AccordionTrigger>
                   <AccordionContent>
                     <pre className="text-[10px] font-mono whitespace-pre-wrap bg-secondary/50 border p-2 rounded">
                       {JSON.stringify(details?.metadata_json, null, 2)}
@@ -586,9 +503,7 @@ export const ApiExplorer = () => {
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="raw">
-                  <AccordionTrigger className="text-sm py-2">
-                    Raw JSON
-                  </AccordionTrigger>
+                  <AccordionTrigger className="text-sm py-2">Raw JSON</AccordionTrigger>
                   <AccordionContent>
                     <pre className="text-[10px] font-mono whitespace-pre-wrap">
                       {JSON.stringify(details, null, 2)}
@@ -613,18 +528,17 @@ export const ApiExplorer = () => {
                 )}
               </div>
 
-              {capabilities.includes('viewable') &&
-                details?.type_name === 'image' && (
-                  <div className="border border-border/50 shadow-sm rounded-lg overflow-hidden max-w-full max-h-full">
-                    <img
-                      src={contentUrl}
-                      className="max-w-full max-h-150 object-contain"
-                      alt="preview"
-                    />
-                  </div>
-                )}
-              {capabilities.includes('viewable') &&
-                details?.type_name === 'document' &&
+              {capabilities.includes("viewable") && details?.type_name === "image" && (
+                <div className="border border-border/50 shadow-sm rounded-lg overflow-hidden max-w-full max-h-full">
+                  <img
+                    src={contentUrl}
+                    className="max-w-full max-h-150 object-contain"
+                    alt="preview"
+                  />
+                </div>
+              )}
+              {capabilities.includes("viewable") &&
+                details?.type_name === "document" &&
                 contentUrl && (
                   <iframe
                     src={contentUrl}
@@ -632,9 +546,9 @@ export const ApiExplorer = () => {
                     title="PDF Preview"
                   ></iframe>
                 )}
-              {capabilities.includes('readable') &&
-                capabilities.includes('viewable') &&
-                details?.type_name === 'text' &&
+              {capabilities.includes("readable") &&
+                capabilities.includes("viewable") &&
+                details?.type_name === "text" &&
                 contentUrl && (
                   <div className="w-full max-w-3xl bg-background border p-1 rounded shadow-sm h-full flex flex-col">
                     <div className="bg-muted px-3 py-1 text-xs border-b">
@@ -647,40 +561,30 @@ export const ApiExplorer = () => {
                     ></iframe>
                   </div>
                 )}
-              {(details?.type_name === 'audio' ||
-                details?.base_type_name === 'audio' ||
-                details?.type_name?.startsWith('audio')) &&
+              {(details?.type_name === "audio" ||
+                details?.base_type_name === "audio" ||
+                details?.type_name?.startsWith("audio")) &&
                 contentUrl && (
                   <div className="w-full max-w-3xl bg-background border p-3 rounded shadow-sm">
-                    <audio
-                      src={contentUrl}
-                      controls
-                      preload="metadata"
-                      className="w-full"
-                    />
+                    <audio src={contentUrl} controls preload="metadata" className="w-full" />
                   </div>
                 )}
-              {!capabilities.includes('viewable') &&
-                details?.type_name !== 'audio' &&
-                details?.base_type_name !== 'audio' &&
-                !details?.type_name?.startsWith('audio') && (
-                <div className="text-muted-foreground mt-10">
-                  Artifact of type <strong>{details?.type_name}</strong> is not
-                  marked as viewable.
-                </div>
-              )}
+              {!capabilities.includes("viewable") &&
+                details?.type_name !== "audio" &&
+                details?.base_type_name !== "audio" &&
+                !details?.type_name?.startsWith("audio") && (
+                  <div className="text-muted-foreground mt-10">
+                    Artifact of type <strong>{details?.type_name}</strong> is not marked as
+                    viewable.
+                  </div>
+                )}
             </TabsContent>
 
-            <TabsContent
-              value="features"
-              className="flex-1 overflow-auto p-4 m-0"
-            >
+            <TabsContent value="features" className="flex-1 overflow-auto p-4 m-0">
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-2 text-xs">
                   <Badge variant="outline">Embeddings</Badge>
-                  <span className="text-muted-foreground">
-                    {embeddings?.length || 0} vectors
-                  </span>
+                  <span className="text-muted-foreground">{embeddings?.length || 0} vectors</span>
                 </div>
                 {embeddings && embeddings.length > 0 ? (
                   embeddings.map((emb, idx) => (
@@ -691,9 +595,7 @@ export const ApiExplorer = () => {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <Microscope className="w-4 h-4 text-primary" />
-                          <span className="text-xs font-bold">
-                            {emb.model_name}
-                          </span>
+                          <span className="text-xs font-bold">{emb.model_name}</span>
                         </div>
                         <Badge variant="outline" className="text-[10px]">
                           {emb.space}
@@ -705,17 +607,13 @@ export const ApiExplorer = () => {
                           <span className="text-[10px] text-muted-foreground uppercase font-bold">
                             Dimensions
                           </span>
-                          <span className="text-sm font-mono">
-                            {emb.vector_dim}
-                          </span>
+                          <span className="text-sm font-mono">{emb.vector_dim}</span>
                         </div>
                         <div className="bg-muted/30 p-2 rounded flex flex-col">
                           <span className="text-[10px] text-muted-foreground uppercase font-bold">
                             Plugin
                           </span>
-                          <span className="text-xs">
-                            {emb.plugin_name || 'core'}
-                          </span>
+                          <span className="text-xs">{emb.plugin_name || "core"}</span>
                         </div>
                       </div>
 
@@ -760,17 +658,13 @@ export const ApiExplorer = () => {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-10 text-muted-foreground opacity-50">
                     <Hash className="w-8 h-8 mb-2" />
-                    <span className="text-xs">
-                      No embeddings found for this artifact
-                    </span>
+                    <span className="text-xs">No embeddings found for this artifact</span>
                   </div>
                 )}
 
                 <div className="flex items-center gap-2 text-xs pt-4 border-t">
                   <Badge variant="outline">Annotations</Badge>
-                  <span className="text-muted-foreground">
-                    {annotations?.length || 0} records
-                  </span>
+                  <span className="text-muted-foreground">{annotations?.length || 0} records</span>
                 </div>
                 {annotations && annotations.length > 0 ? (
                   annotations.map((ann, idx) => (
@@ -779,9 +673,7 @@ export const ApiExplorer = () => {
                         <Badge variant="secondary" className="text-[10px]">
                           {ann.annotation_type}
                         </Badge>
-                        <span className="text-[9px] text-muted-foreground">
-                          {ann.plugin_name}
-                        </span>
+                        <span className="text-[9px] text-muted-foreground">{ann.plugin_name}</span>
                       </div>
                       <div className="text-xs font-serif italic text-foreground leading-relaxed">
                         "{ann.text}"
@@ -807,17 +699,13 @@ export const ApiExplorer = () => {
                   <h4 className="text-xs font-semibold mb-2">Lineage</h4>
                   <div className="grid grid-cols-1 gap-2">
                     <div>
-                      <div className="text-[10px] text-muted-foreground mb-1">
-                        Parents
-                      </div>
+                      <div className="text-[10px] text-muted-foreground mb-1">Parents</div>
                       <pre className="text-[10px] font-mono whitespace-pre-wrap">
                         {JSON.stringify(lineage?.parents, null, 2)}
                       </pre>
                     </div>
                     <div>
-                      <div className="text-[10px] text-muted-foreground mb-1">
-                        Children
-                      </div>
+                      <div className="text-[10px] text-muted-foreground mb-1">Children</div>
                       <pre className="text-[10px] font-mono whitespace-pre-wrap">
                         {JSON.stringify(lineage?.children, null, 2)}
                       </pre>
@@ -842,5 +730,5 @@ export const ApiExplorer = () => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};

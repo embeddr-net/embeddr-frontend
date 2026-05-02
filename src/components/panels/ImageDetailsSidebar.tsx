@@ -1,92 +1,85 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  FileText,
-  Folder,
-  Tag,
-  Calendar,
-  Layers,
-  Info,
-  ExternalLink,
-  Image as ImageIcon,
-  Video,
-  X,
-  GitFork,
+  ArrowDown,
   ArrowRight,
+  ArrowUp,
+  Calendar,
   Database,
-  Link as LinkIcon,
-  Settings,
+  ExternalLink,
   Eye,
   EyeOff,
-  ArrowUp,
-  ArrowDown,
-} from 'lucide-react'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Separator } from '@embeddr/react-ui/ui'
-import { Skeleton } from '@embeddr/react-ui/ui'
+  FileText,
+  Folder,
+  GitFork,
+  Image as ImageIcon,
+  Info,
+  Layers,
+  Link as LinkIcon,
+  Settings,
+  Tag,
+  Video,
+  X,
+} from "lucide-react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@embeddr/react-ui/ui'
-import { embeddrApi } from '@/lib/api/client'
-import type { PromptImage } from '@/lib/api'
-import type { LineageResponse } from '@/lib/api/types'
-import { ProvenanceTimeline } from '@/components/provenance/ProvenanceTimeline'
-import { cn } from '@/lib/utils'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
+  Badge,
+  Button,
+  ScrollArea,
+  Separator,
+  Skeleton,
+} from "@embeddr/react-ui/ui";
+import type { PromptImage } from "@/lib/api";
+import type { LineageResponse } from "@/lib/api/types";
+import { embeddrApi } from "@/lib/api/client";
+import { ProvenanceTimeline } from "@/components/provenance/ProvenanceTimeline";
+import { cn } from "@/lib/utils";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 interface ImageDetailsSidebarProps {
-  image: PromptImage
-  onClose: () => void
-  onToggleLike?: (args: { id: number; liked_by_me: boolean }) => void
-  onSelectImage?: (image: PromptImage) => void
+  image: PromptImage;
+  onClose: () => void;
+  onToggleLike?: (args: { id: number; liked_by_me: boolean }) => void;
+  onSelectImage?: (image: PromptImage) => void;
 }
 
 function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
 
 interface ArtifactDetail {
-  id: string
-  type_name: string
-  base_type_name?: string
-  uri: string
-  metadata_json: Record<string, any>
-  collections: Array<{ id: string; name: string }>
-  tags: Array<{ id: string; name: string }>
-  created_at: string
-  storage_backend?: string
-  content_type?: string
-  blob_size?: number
+  id: string;
+  type_name: string;
+  base_type_name?: string;
+  uri: string;
+  metadata_json: Record<string, any>;
+  collections: Array<{ id: string; name: string }>;
+  tags: Array<{ id: string; name: string }>;
+  created_at: string;
+  storage_backend?: string;
+  content_type?: string;
+  blob_size?: number;
 }
 
-const DEFAULT_SECTIONS = [
-  'prompt',
-  'info',
-  'provenance',
-  'metadata',
-  'collections',
-  'tags',
-]
+const DEFAULT_SECTIONS = ["prompt", "info", "provenance", "metadata", "collections", "tags"];
 
 const SECTION_LABELS: Record<string, string> = {
-  prompt: 'Prompt',
-  info: 'Info',
-  provenance: 'Provenance',
-  metadata: 'Metadata',
-  collections: 'Collections',
-  tags: 'Tags',
+  prompt: "Prompt",
+  info: "Info",
+  provenance: "Provenance",
+  metadata: "Metadata",
+  collections: "Collections",
+  tags: "Tags",
   // Legacy — kept for backward compat with stored preferences
-  parents: 'Parents',
-  children: 'Children',
-}
+  parents: "Parents",
+  children: "Children",
+};
 
 const SECTION_ICONS: Record<string, React.ElementType> = {
   prompt: FileText,
@@ -97,48 +90,42 @@ const SECTION_ICONS: Record<string, React.ElementType> = {
   tags: Tag,
   parents: GitFork,
   children: GitFork,
-}
+};
 
 const MetadataViewer = ({ data }: { data: Record<string, any> }) => {
-  if (!data || Object.keys(data).length === 0) return null
+  if (!data || Object.keys(data).length === 0) return null;
 
   // Filter out keys we display elsewhere or that are internal
   const ignoredKeys = [
-    'width',
-    'height',
-    'format',
-    'filename',
-    'source_url',
-    'parent_uri',
-    'post_title',
-    'tags', // usually handled by specific tags UI
-  ]
+    "width",
+    "height",
+    "format",
+    "filename",
+    "source_url",
+    "parent_uri",
+    "post_title",
+    "tags", // usually handled by specific tags UI
+  ];
 
-  const entries = Object.entries(data).filter(
-    ([key]) => !ignoredKeys.includes(key),
-  )
+  const entries = Object.entries(data).filter(([key]) => !ignoredKeys.includes(key));
 
-  if (entries.length === 0) return null
+  if (entries.length === 0) return null;
 
   return (
     <div className="space-y-2">
       <div className="text-xs border  divide-y">
         {entries.map(([key, value]) => (
           <div key={key} className="grid grid-cols-3 p-2 gap-2">
-            <span className="font-medium text-muted-foreground break-all">
-              {key}
-            </span>
+            <span className="font-medium text-muted-foreground break-all">{key}</span>
             <span className="col-span-2 font-mono break-all whitespace-pre-wrap">
-              {typeof value === 'object'
-                ? JSON.stringify(value, null, 2)
-                : String(value)}
+              {typeof value === "object" ? JSON.stringify(value, null, 2) : String(value)}
             </span>
           </div>
         ))}
       </div>
     </div>
-  )
-}
+  );
+};
 
 export function ImageDetailsSidebar({
   image,
@@ -147,86 +134,80 @@ export function ImageDetailsSidebar({
   onToggleLike,
   onSelectImage,
 }: ImageDetailsSidebarProps) {
-  const [artifact, setArtifact] = useState<ArtifactDetail | null>(null)
-  const [lineage, setLineage] = useState<LineageResponse | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [artifact, setArtifact] = useState<ArtifactDetail | null>(null);
+  const [lineage, setLineage] = useState<LineageResponse | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Persistent State
-  const [sectionOrder, setSectionOrder] = useLocalStorage<string[]>(
-    'image-details-order',
+  const [sectionOrder, setSectionOrder] = useLocalStorage<Array<string>>(
+    "image-details-order",
     DEFAULT_SECTIONS,
-  )
-  const [hiddenSections, setHiddenSections] = useLocalStorage<string[]>(
-    'image-details-hidden',
+  );
+  const [hiddenSections, setHiddenSections] = useLocalStorage<Array<string>>(
+    "image-details-hidden",
     [],
-  )
-  const [expandedSections, setExpandedSections] = useLocalStorage<string[]>(
-    'image-details-expanded',
-    ['prompt', 'info'],
-  )
+  );
+  const [expandedSections, setExpandedSections] = useLocalStorage<Array<string>>(
+    "image-details-expanded",
+    ["prompt", "info"],
+  );
 
-  const [editMode, setEditMode] = useState(false)
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
-    if (!image.id) return
+    if (!image.id) return;
 
-    setLoading(true)
+    setLoading(true);
     Promise.all([
       embeddrApi.artifacts.get(String(image.id)),
       embeddrApi.artifacts.getLineage(image.id.toString()).catch(() => null),
     ])
       .then(([data, lineageData]) => {
-        setArtifact(data as any)
-        setLineage(lineageData)
+        setArtifact(data as any);
+        setLineage(lineageData);
       })
-      .catch((e) => console.error('Failed to fetch details', e))
-      .finally(() => setLoading(false))
-  }, [image.id])
+      .catch((e) => console.error("Failed to fetch details", e))
+      .finally(() => setLoading(false));
+  }, [image.id]);
 
   // Ensure all sections are present in order
   const activeSections = useMemo(() => {
-    const current = new Set(sectionOrder)
-    const missing = DEFAULT_SECTIONS.filter((s) => !current.has(s))
-    return [...sectionOrder, ...missing]
-  }, [sectionOrder])
+    const current = new Set(sectionOrder);
+    const missing = DEFAULT_SECTIONS.filter((s) => !current.has(s));
+    return [...sectionOrder, ...missing];
+  }, [sectionOrder]);
 
-  if (!image) return null
+  if (!image) return null;
 
   const getPromptText = () => {
-    const text = image.prompt
-    if (
-      artifact?.metadata_json?.filename &&
-      text === artifact.metadata_json.filename
-    ) {
-      return null
+    const text = image.prompt;
+    if (artifact?.metadata_json?.filename && text === artifact.metadata_json.filename) {
+      return null;
     }
     if (text && text.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
-      return null
+      return null;
     }
-    return text
-  }
+    return text;
+  };
 
-  const promptText = getPromptText()
+  const promptText = getPromptText();
 
-  const moveSection = (index: number, direction: 'up' | 'down') => {
-    const newOrder = [...activeSections]
-    const swapIndex = direction === 'up' ? index - 1 : index + 1
+  const moveSection = (index: number, direction: "up" | "down") => {
+    const newOrder = [...activeSections];
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
     if (swapIndex >= 0 && swapIndex < newOrder.length) {
-      ;[newOrder[index], newOrder[swapIndex]] = [
-        newOrder[swapIndex],
-        newOrder[index],
-      ]
-      setSectionOrder(newOrder)
+      [newOrder[index], newOrder[swapIndex]] = [newOrder[swapIndex], newOrder[index]];
+      setSectionOrder(newOrder);
     }
-  }
+  };
 
   const toggleHidden = (id: string, e?: React.MouseEvent) => {
-    e?.stopPropagation()
+    e?.stopPropagation();
     setHiddenSections((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id)
-      return [...prev, id]
-    })
-  }
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      return [...prev, id];
+    });
+  };
 
   const renderSectionContent = (id: string) => {
     if (loading) {
@@ -235,26 +216,22 @@ export function ImageDetailsSidebar({
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-4 w-1/2" />
         </div>
-      )
+      );
     }
 
-    if (!artifact && id !== 'prompt') return null
+    if (!artifact && id !== "prompt") return null;
 
     switch (id) {
-      case 'prompt':
+      case "prompt":
         if (!promptText)
-          return (
-            <div className="text-xs text-muted-foreground italic">
-              No prompt available
-            </div>
-          )
+          return <div className="text-xs text-muted-foreground italic">No prompt available</div>;
         return (
           <div className="text-xs text-muted-foreground bg-muted/50 border p-3  whitespace-pre-wrap font-mono max-h-60 overflow-y-auto select-text break-all">
             {promptText}
           </div>
-        )
+        );
 
-      case 'info':
+      case "info":
         return (
           <div className="grid grid-cols-2 gap-4 text-xs border  p-3">
             <div className="flex flex-col gap-1">
@@ -262,7 +239,7 @@ export function ImageDetailsSidebar({
               <span className="font-mono">
                 {artifact?.metadata_json?.width || image.width
                   ? `${artifact?.metadata_json?.width || image.width} x ${artifact?.metadata_json?.height || image.height}`
-                  : 'Unknown'}
+                  : "Unknown"}
               </span>
             </div>
             <div className="flex flex-col gap-1">
@@ -270,8 +247,8 @@ export function ImageDetailsSidebar({
               <span className="uppercase font-mono break-all whitespace-pre-wrap">
                 {artifact?.metadata_json?.format ||
                   (artifact?.metadata_json?.filename
-                    ? artifact.metadata_json.filename.split('.').pop()
-                    : 'UNK')}
+                    ? artifact.metadata_json.filename.split(".").pop()
+                    : "UNK")}
               </span>
             </div>
             {artifact?.blob_size ? (
@@ -288,19 +265,16 @@ export function ImageDetailsSidebar({
             ) : null}
             <div className="flex flex-col gap-1">
               <span className="text-muted-foreground">Type</span>
-              <span className="font-mono">{artifact?.type_name || 'unknown'}</span>
+              <span className="font-mono">{artifact?.type_name || "unknown"}</span>
             </div>
             <div className="flex flex-col gap-1 col-span-2">
               <span className="text-muted-foreground flex items-center gap-1">
                 <Calendar className="w-3 h-3" /> Created
               </span>
-              <span className="font-mono">
-                {new Date(image.created_at).toLocaleString()}
-              </span>
+              <span className="font-mono">{new Date(image.created_at).toLocaleString()}</span>
             </div>
 
-            {(artifact?.metadata_json?.source_url ||
-              artifact?.metadata_json?.parent_uri) && (
+            {(artifact?.metadata_json?.source_url || artifact?.metadata_json?.parent_uri) && (
               <div className="flex flex-col gap-1 col-span-2 pt-2 border-t mt-1">
                 <span className="text-muted-foreground flex items-center gap-1">
                   <LinkIcon className="w-3 h-3" /> Source
@@ -333,28 +307,19 @@ export function ImageDetailsSidebar({
               </div>
             )}
           </div>
-        )
+        );
 
-      case 'metadata':
-        return artifact?.metadata_json ? (
-          <MetadataViewer data={artifact.metadata_json} />
-        ) : null
+      case "metadata":
+        return artifact?.metadata_json ? <MetadataViewer data={artifact.metadata_json} /> : null;
 
-      case 'provenance':
+      case "provenance":
         return (
-          <ProvenanceTimeline
-            artifactId={String(image.id)}
-            onSelectArtifact={onSelectImage}
-          />
-        )
+          <ProvenanceTimeline artifactId={String(image.id)} onSelectArtifact={onSelectImage} />
+        );
 
-      case 'parents':
+      case "parents":
         if (!lineage?.parents?.length)
-          return (
-            <div className="text-xs text-muted-foreground italic">
-              No parents
-            </div>
-          )
+          return <div className="text-xs text-muted-foreground italic">No parents</div>;
         return (
           <div className="space-y-2 pl-4 border-l-2 border-muted ml-2">
             {lineage.parents.map((link) => (
@@ -366,49 +331,38 @@ export function ImageDetailsSidebar({
                   onSelectImage({
                     id: link.parent_id,
                     url: embeddrApi.artifacts.getContentUrl(link.parent_id),
-                    image_url: embeddrApi.artifacts.getContentUrl(
-                      link.parent_id,
-                    ),
+                    image_url: embeddrApi.artifacts.getContentUrl(link.parent_id),
                     width: 0,
                     height: 0,
-                    prompt: '',
+                    prompt: "",
                     created_at: link.created_at,
                   })
                 }
               >
                 <div className="w-12 h-12  border">
                   <img
-                    src={embeddrApi.artifacts.getPreviewUrl(
-                      link.parent_id,
-                      'thumbnail',
-                    )}
+                    src={embeddrApi.artifacts.getPreviewUrl(link.parent_id, "thumbnail")}
                     alt=""
                     className="w-full h-full object-contain"
                   />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate">
-                    {link.parent_id.split('-').pop()}
+                    {link.parent_id.split("-").pop()}
                   </div>
                   <div className="text-[10px] text-muted-foreground truncate flex items-center gap-1">
-                    <span>
-                      {new Date(link.created_at).toLocaleDateString()}
-                    </span>
+                    <span>{new Date(link.created_at).toLocaleDateString()}</span>
                     <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        )
+        );
 
-      case 'children':
+      case "children":
         if (!lineage?.children?.length)
-          return (
-            <div className="text-xs text-muted-foreground italic">
-              No children
-            </div>
-          )
+          return <div className="text-xs text-muted-foreground italic">No children</div>;
         return (
           <div className="space-y-2 pl-4 border-l-2 border-muted ml-2">
             {lineage.children.map((link) => (
@@ -420,65 +374,50 @@ export function ImageDetailsSidebar({
                   onSelectImage({
                     id: link.child_id,
                     url: embeddrApi.artifacts.getContentUrl(link.child_id),
-                    image_url: embeddrApi.artifacts.getContentUrl(
-                      link.child_id,
-                    ),
+                    image_url: embeddrApi.artifacts.getContentUrl(link.child_id),
                     width: 0,
                     height: 0,
-                    prompt: '',
+                    prompt: "",
                     created_at: link.created_at,
                   })
                 }
               >
                 <div className="w-12 h-12  border">
                   <img
-                    src={embeddrApi.artifacts.getPreviewUrl(
-                      link.child_id,
-                      'thumbnail',
-                    )}
+                    src={embeddrApi.artifacts.getPreviewUrl(link.child_id, "thumbnail")}
                     alt=""
                     className="w-full h-full object-contain"
                   />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate">
-                    {link.child_id.split('-').pop()}
+                    {link.child_id.split("-").pop()}
                   </div>
                   <div className="text-[10px] text-muted-foreground truncate flex items-center gap-1">
-                    <span>
-                      {new Date(link.created_at).toLocaleDateString()}
-                    </span>
+                    <span>{new Date(link.created_at).toLocaleDateString()}</span>
                     <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        )
+        );
 
-      case 'collections':
+      case "collections":
         if (!artifact?.collections?.length)
-          return (
-            <div className="text-xs text-muted-foreground italic">
-              No collections
-            </div>
-          )
+          return <div className="text-xs text-muted-foreground italic">No collections</div>;
         return (
           <div className="flex flex-wrap gap-1">
             {artifact.collections.map((c: any) => (
-              <Badge
-                key={c.id}
-                variant="outline"
-                className="text-[10px] font-normal"
-              >
+              <Badge key={c.id} variant="outline" className="text-[10px] font-normal">
                 <Layers className="w-3 h-3 mr-1" />
                 {c.name}
               </Badge>
             ))}
           </div>
-        )
+        );
 
-      case 'tags':
+      case "tags": {
         const tags = [
           ...(artifact?.tags || []),
           ...((!artifact?.tags || artifact.tags.length === 0) &&
@@ -489,31 +428,26 @@ export function ImageDetailsSidebar({
                 name: t,
               }))
             : []),
-        ]
+        ];
 
         if (tags.length === 0)
-          return (
-            <div className="text-xs text-muted-foreground italic">No tags</div>
-          )
+          return <div className="text-xs text-muted-foreground italic">No tags</div>;
 
         return (
           <div className="flex flex-wrap gap-1">
             {tags.map((t: any) => (
-              <Badge
-                key={t.id}
-                variant="secondary"
-                className="text-[10px] font-normal"
-              >
+              <Badge key={t.id} variant="secondary" className="text-[10px] font-normal">
                 #{t.name}
               </Badge>
             ))}
           </div>
-        )
+        );
+      }
 
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <div className="flex flex-col h-full bg-background min-h-0">
@@ -525,7 +459,7 @@ export function ImageDetailsSidebar({
         </span>
         <div className="flex items-center gap-1">
           <Button
-            variant={editMode ? 'secondary' : 'ghost'}
+            variant={editMode ? "secondary" : "ghost"}
             size="icon"
             className="h-6 w-6"
             onClick={() => setEditMode(!editMode)}
@@ -533,12 +467,7 @@ export function ImageDetailsSidebar({
           >
             <Settings className="w-3 h-3" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={onClose}
-          >
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>
         </div>
@@ -557,7 +486,7 @@ export function ImageDetailsSidebar({
               variant="secondary"
               size="sm"
               className="pointer-events-auto"
-              onClick={() => window.open(image.image_url, '_blank')}
+              onClick={() => window.open(image.image_url, "_blank")}
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               Open Original
@@ -576,36 +505,30 @@ export function ImageDetailsSidebar({
             className="w-full space-y-2"
           >
             {activeSections.map((id, index) => {
-              const isHidden = hiddenSections.includes(id)
-              if (isHidden && !editMode) return null
+              const isHidden = hiddenSections.includes(id);
+              if (isHidden && !editMode) return null;
 
-              const Icon = SECTION_ICONS[id] || FileText
+              const Icon = SECTION_ICONS[id] || FileText;
 
               return (
                 <AccordionItem
                   key={id}
                   value={id}
                   className={cn(
-                    'border border-b! rounded-md px-3',
-                    editMode && 'border-dashed border-primary/50',
+                    "border border-b! rounded-md px-3",
+                    editMode && "border-dashed border-primary/50",
                   )}
                 >
                   <AccordionTrigger className="hover:no-underline py-3 text-sm">
                     <div className="flex items-center gap-2 flex-1">
                       <Icon className="w-4 h-4 text-muted-foreground" />
                       <span
-                        className={cn(
-                          isHidden &&
-                            'opacity-50 strike-through decoration-slate-500',
-                        )}
+                        className={cn(isHidden && "opacity-50 strike-through decoration-slate-500")}
                       >
                         {SECTION_LABELS[id] || id}
                       </span>
                       {isHidden && editMode && (
-                        <Badge
-                          variant="outline"
-                          className="ml-2 text-[10px] h-4"
-                        >
+                        <Badge variant="outline" className="ml-2 text-[10px] h-4">
                           Hidden
                         </Badge>
                       )}
@@ -621,8 +544,8 @@ export function ImageDetailsSidebar({
                           className="h-6 w-6"
                           disabled={index === 0}
                           onClick={(e) => {
-                            e.stopPropagation()
-                            moveSection(index, 'up')
+                            e.stopPropagation();
+                            moveSection(index, "up");
                           }}
                         >
                           <ArrowUp className="w-3 h-3" />
@@ -633,8 +556,8 @@ export function ImageDetailsSidebar({
                           className="h-6 w-6"
                           disabled={index === activeSections.length - 1}
                           onClick={(e) => {
-                            e.stopPropagation()
-                            moveSection(index, 'down')
+                            e.stopPropagation();
+                            moveSection(index, "down");
                           }}
                         >
                           <ArrowDown className="w-3 h-3" />
@@ -658,7 +581,7 @@ export function ImageDetailsSidebar({
                     {renderSectionContent(id)}
                   </AccordionContent>
                 </AccordionItem>
-              )
+              );
             })}
           </Accordion>
 
@@ -670,5 +593,5 @@ export function ImageDetailsSidebar({
         </div>
       </ScrollArea>
     </div>
-  )
+  );
 }

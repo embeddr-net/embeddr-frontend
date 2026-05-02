@@ -1,65 +1,57 @@
-import { useCallback, useMemo, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { Button } from '@embeddr/react-ui/ui'
-import { Card } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { Separator } from '@embeddr/react-ui/ui'
+import { useCallback, useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Button, Card, Input, Separator } from "@embeddr/react-ui/ui";
 import {
-  Check,
-  Upload,
-  Key,
-  Sparkles,
-  ArrowRight,
   ArrowLeft,
-  Loader2,
+  ArrowRight,
+  Check,
   FileImage,
+  Key,
+  Loader2,
+  Sparkles,
+  Upload,
   X,
-} from 'lucide-react'
-import { embeddrApi } from '@/lib/api/client'
-import type { Artifact, PublicSystemInfo } from '@/lib/api/types'
+} from "lucide-react";
+import type { Artifact, PublicSystemInfo } from "@/lib/api/types";
+import { embeddrApi } from "@/lib/api/client";
 
 interface CloudOnboardingProps {
-  publicInfo: PublicSystemInfo
-  onComplete: () => void
+  publicInfo: PublicSystemInfo;
+  onComplete: () => void;
 }
 
 const STEPS = [
-  { id: 'welcome', label: 'Welcome', icon: Sparkles },
-  { id: 'upload', label: 'Upload', icon: Upload },
-  { id: 'keys', label: 'API Keys', icon: Key },
-  { id: 'lotus', label: 'Try Lotus', icon: Sparkles },
-  { id: 'done', label: 'Explore', icon: Check },
-] as const
+  { id: "welcome", label: "Welcome", icon: Sparkles },
+  { id: "upload", label: "Upload", icon: Upload },
+  { id: "keys", label: "API Keys", icon: Key },
+  { id: "lotus", label: "Try Lotus", icon: Sparkles },
+  { id: "done", label: "Explore", icon: Check },
+] as const;
 
-type StepId = (typeof STEPS)[number]['id']
+type StepId = (typeof STEPS)[number]["id"];
 
-export function CloudOnboarding({
-  publicInfo,
-  onComplete,
-}: CloudOnboardingProps) {
-  const navigate = useNavigate()
-  const [currentStep, setCurrentStep] = useState<StepId>('welcome')
-  const [uploadedArtifact, setUploadedArtifact] = useState<Artifact | null>(
-    null,
-  )
-  const [claudeKey, setClaudeKey] = useState('')
-  const [openrouterKey, setOpenrouterKey] = useState('')
-  const [lotusResult, setLotusResult] = useState<string | null>(null)
+export function CloudOnboarding({ publicInfo, onComplete }: CloudOnboardingProps) {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState<StepId>("welcome");
+  const [uploadedArtifact, setUploadedArtifact] = useState<Artifact | null>(null);
+  const [claudeKey, setClaudeKey] = useState("");
+  const [openrouterKey, setOpenrouterKey] = useState("");
+  const [lotusResult, setLotusResult] = useState<string | null>(null);
 
-  const currentIndex = STEPS.findIndex((s) => s.id === currentStep)
+  const currentIndex = STEPS.findIndex((s) => s.id === currentStep);
 
   const goNext = () => {
     if (currentIndex < STEPS.length - 1) {
-      setCurrentStep(STEPS[currentIndex + 1].id)
+      setCurrentStep(STEPS[currentIndex + 1].id);
     }
-  }
+  };
 
   const goBack = () => {
     if (currentIndex > 0) {
-      setCurrentStep(STEPS[currentIndex - 1].id)
+      setCurrentStep(STEPS[currentIndex - 1].id);
     }
-  }
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
@@ -67,60 +59,50 @@ export function CloudOnboarding({
         {/* Step indicator */}
         <div className="flex items-center justify-between gap-1">
           {STEPS.map((step, i) => {
-            const Icon = step.icon
-            const isActive = step.id === currentStep
-            const isDone = i < currentIndex
+            const Icon = step.icon;
+            const isActive = step.id === currentStep;
+            const isDone = i < currentIndex;
             return (
               <div key={step.id} className="flex items-center gap-1 flex-1">
                 <button
                   onClick={() => i <= currentIndex && setCurrentStep(step.id)}
                   className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
                     isActive
-                      ? 'bg-primary text-primary-foreground'
+                      ? "bg-primary text-primary-foreground"
                       : isDone
-                        ? 'bg-primary/20 text-primary cursor-pointer'
-                        : 'bg-muted text-muted-foreground'
+                        ? "bg-primary/20 text-primary cursor-pointer"
+                        : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {isDone ? (
-                    <Check className="h-3 w-3" />
-                  ) : (
-                    <Icon className="h-3 w-3" />
-                  )}
+                  {isDone ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
                   <span className="hidden sm:inline">{step.label}</span>
                 </button>
                 {i < STEPS.length - 1 && (
-                  <div
-                    className={`h-px flex-1 ${isDone ? 'bg-primary/40' : 'bg-border'}`}
-                  />
+                  <div className={`h-px flex-1 ${isDone ? "bg-primary/40" : "bg-border"}`} />
                 )}
               </div>
-            )
+            );
           })}
         </div>
 
         <Separator />
 
         {/* Step content */}
-        {currentStep === 'welcome' && (
-          <WelcomeStep
-            publicInfo={publicInfo}
-            onNext={goNext}
-            onSkip={onComplete}
-          />
+        {currentStep === "welcome" && (
+          <WelcomeStep publicInfo={publicInfo} onNext={goNext} onSkip={onComplete} />
         )}
-        {currentStep === 'upload' && (
+        {currentStep === "upload" && (
           <UploadStep
             onUploaded={(artifact) => {
-              setUploadedArtifact(artifact)
-              goNext()
+              setUploadedArtifact(artifact);
+              goNext();
             }}
             onNext={goNext}
             onBack={goBack}
             uploadedArtifact={uploadedArtifact}
           />
         )}
-        {currentStep === 'keys' && (
+        {currentStep === "keys" && (
           <KeysStep
             claudeKey={claudeKey}
             setClaudeKey={setClaudeKey}
@@ -130,7 +112,7 @@ export function CloudOnboarding({
             onBack={goBack}
           />
         )}
-        {currentStep === 'lotus' && (
+        {currentStep === "lotus" && (
           <LotusStep
             artifact={uploadedArtifact}
             lotusResult={lotusResult}
@@ -139,12 +121,10 @@ export function CloudOnboarding({
             onBack={goBack}
           />
         )}
-        {currentStep === 'done' && (
-          <DoneStep onComplete={onComplete} navigate={navigate} />
-        )}
+        {currentStep === "done" && <DoneStep onComplete={onComplete} navigate={navigate} />}
       </Card>
     </div>
-  )
+  );
 }
 
 /* ─── Step 1: Welcome ───────────────────────────────────────────────── */
@@ -154,19 +134,19 @@ function WelcomeStep({
   onNext,
   onSkip,
 }: {
-  publicInfo: PublicSystemInfo
-  onNext: () => void
-  onSkip: () => void
+  publicInfo: PublicSystemInfo;
+  onNext: () => void;
+  onSkip: () => void;
 }) {
-  const instanceName = publicInfo.instance?.name || 'Embeddr'
+  const instanceName = publicInfo.instance?.name || "Embeddr";
 
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Your workspace is ready</h2>
         <p className="text-sm text-muted-foreground">
-          Welcome to {instanceName}. Let's walk through a few steps to make sure
-          everything is working.
+          Welcome to {instanceName}. Let's walk through a few steps to make sure everything is
+          working.
         </p>
       </div>
 
@@ -186,9 +166,7 @@ function WelcomeStep({
           <div>
             <div className="font-medium">{instanceName}</div>
             {publicInfo.instance?.description && (
-              <div className="text-xs text-muted-foreground">
-                {publicInfo.instance.description}
-              </div>
+              <div className="text-xs text-muted-foreground">{publicInfo.instance.description}</div>
             )}
           </div>
         </div>
@@ -212,7 +190,7 @@ function WelcomeStep({
         </Button>
       </div>
     </div>
-  )
+  );
 }
 
 /* ─── Step 2: Upload ────────────────────────────────────────────────── */
@@ -223,87 +201,87 @@ function UploadStep({
   onBack,
   uploadedArtifact,
 }: {
-  onUploaded: (artifact: Artifact) => void
-  onNext: () => void
-  onBack: () => void
-  uploadedArtifact: Artifact | null
+  onUploaded: (artifact: Artifact) => void;
+  onNext: () => void;
+  onBack: () => void;
+  uploadedArtifact: Artifact | null;
 }) {
-  const [isDragging, setIsDragging] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const upload = useMutation({
     mutationFn: async (file: File) => {
       // 1. Create artifact record
       const artifact = await embeddrApi.artifacts.create({
-        type_name: file.type.startsWith('image/') ? 'image' : 'file',
-        base_type_name: 'artifact',
+        type_name: file.type.startsWith("image/") ? "image" : "file",
+        base_type_name: "artifact",
         metadata_json: {
           original_filename: file.name,
           size_bytes: file.size,
           mime_type: file.type,
         },
-      })
+      });
 
       // 2. Init upload — gets upload_id (ingest record) and optional upload_path
       const init = await embeddrApi.lotus.invoke<{
-        upload_id?: string
-        upload_path?: string
-      }>('embeddr-core.artifact.upload.init', {
+        upload_id?: string;
+        upload_path?: string;
+      }>("embeddr-core.artifact.upload.init", {
         artifact_id: artifact.id,
         filename: file.name,
         content_type: file.type || undefined,
         size: file.size,
         confirm: true,
-      })
+      });
 
-      const uploadId = init?.upload_id
-      const uploadPath = init?.upload_path
-      if (!uploadId) throw new Error('Upload init failed — no upload_id returned')
+      const uploadId = init?.upload_id;
+      const uploadPath = init?.upload_path;
+      if (!uploadId) throw new Error("Upload init failed — no upload_id returned");
 
       // 3. Upload bytes (cloud storage plugin provides upload_path for direct R2 upload)
       if (uploadPath) {
-        await embeddrApi.artifacts.uploadToPath(uploadPath, file)
+        await embeddrApi.artifacts.uploadToPath(uploadPath, file);
       } else {
-        await embeddrApi.artifacts.uploadFile(uploadId, file)
+        await embeddrApi.artifacts.uploadFile(uploadId, file);
       }
 
       // 4. Complete
-      await embeddrApi.lotus.invoke('embeddr-core.artifact.upload.complete', {
+      await embeddrApi.lotus.invoke("embeddr-core.artifact.upload.complete", {
         upload_id: uploadId,
         confirm: true,
-      })
+      });
 
-      return artifact
+      return artifact;
     },
     onSuccess: (artifact) => {
-      setError(null)
-      onUploaded(artifact)
+      setError(null);
+      onUploaded(artifact);
     },
     onError: (err: Error) => {
-      setError(err.message || 'Upload failed')
+      setError(err.message || "Upload failed");
     },
-  })
+  });
 
   const handleFiles = useCallback(
-    (files: FileList | File[]) => {
-      const file = files[0]
+    (files: FileList | Array<File>) => {
+      const file = files[0];
       if (file) {
-        upload.mutate(file)
+        upload.mutate(file);
       }
     },
     [upload],
-  )
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault()
-      setIsDragging(false)
+      e.preventDefault();
+      setIsDragging(false);
       if (e.dataTransfer?.files?.length) {
-        handleFiles(e.dataTransfer.files)
+        handleFiles(e.dataTransfer.files);
       }
     },
     [handleFiles],
-  )
+  );
 
   if (uploadedArtifact) {
     return (
@@ -320,12 +298,9 @@ function UploadStep({
             <Check className="h-5 w-5 text-emerald-500" />
             <div>
               <div className="text-sm font-medium">
-                {(uploadedArtifact.metadata_json as any)?.original_filename ||
-                  uploadedArtifact.id}
+                {(uploadedArtifact.metadata_json as any)?.original_filename || uploadedArtifact.id}
               </div>
-              <div className="text-xs text-muted-foreground">
-                Cloud storage verified
-              </div>
+              <div className="text-xs text-muted-foreground">Cloud storage verified</div>
             </div>
           </div>
         </Card>
@@ -339,7 +314,7 @@ function UploadStep({
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -347,22 +322,20 @@ function UploadStep({
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Upload your first artifact</h2>
         <p className="text-sm text-muted-foreground">
-          Drop a file here to verify that cloud storage is working. Images work
-          best for testing Lotus later.
+          Drop a file here to verify that cloud storage is working. Images work best for testing
+          Lotus later.
         </p>
       </div>
 
       <div
         onDragOver={(e) => {
-          e.preventDefault()
-          setIsDragging(true)
+          e.preventDefault();
+          setIsDragging(true);
         }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-          isDragging
-            ? 'border-primary bg-primary/5'
-            : 'border-border hover:border-primary/50'
+          isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
         }`}
       >
         {upload.isPending ? (
@@ -373,21 +346,19 @@ function UploadStep({
         ) : (
           <div className="flex flex-col items-center gap-2">
             <FileImage className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Drag & drop a file here
-            </p>
+            <p className="text-sm text-muted-foreground">Drag & drop a file here</p>
             <span className="text-xs text-muted-foreground">or</span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                const input = document.createElement('input')
-                input.type = 'file'
+                const input = document.createElement("input");
+                input.type = "file";
                 input.onchange = (e) => {
-                  const files = (e.target as HTMLInputElement).files
-                  if (files?.length) handleFiles(files)
-                }
-                input.click()
+                  const files = (e.target as HTMLInputElement).files;
+                  if (files?.length) handleFiles(files);
+                };
+                input.click();
               }}
             >
               Browse files
@@ -412,7 +383,7 @@ function UploadStep({
         </Button>
       </div>
     </div>
-  )
+  );
 }
 
 /* ─── Step 3: API Keys ──────────────────────────────────────────────── */
@@ -425,50 +396,50 @@ function KeysStep({
   onNext,
   onBack,
 }: {
-  claudeKey: string
-  setClaudeKey: (v: string) => void
-  openrouterKey: string
-  setOpenrouterKey: (v: string) => void
-  onNext: () => void
-  onBack: () => void
+  claudeKey: string;
+  setClaudeKey: (v: string) => void;
+  openrouterKey: string;
+  setOpenrouterKey: (v: string) => void;
+  onNext: () => void;
+  onBack: () => void;
 }) {
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSave = async () => {
     if (!claudeKey && !openrouterKey) {
-      onNext()
-      return
+      onNext();
+      return;
     }
 
-    setSaving(true)
-    setError(null)
+    setSaving(true);
+    setError(null);
     try {
-      const value: Record<string, string> = {}
-      if (claudeKey) value.anthropic_api_key = claudeKey
-      if (openrouterKey) value.openrouter_api_key = openrouterKey
+      const value: Record<string, string> = {};
+      if (claudeKey) value.anthropic_api_key = claudeKey;
+      if (openrouterKey) value.openrouter_api_key = openrouterKey;
 
-      await embeddrApi.config.put('embeddr-cloud-inference', {
+      await embeddrApi.config.put("embeddr-cloud-inference", {
         value,
-        scope: 'global',
-      })
-      setSaved(true)
-      setTimeout(() => onNext(), 500)
+        scope: "global",
+      });
+      setSaved(true);
+      setTimeout(() => onNext(), 500);
     } catch (err: any) {
-      setError(err.message || 'Failed to save keys')
+      setError(err.message || "Failed to save keys");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Set up inference</h2>
         <p className="text-sm text-muted-foreground">
-          Add API keys so Lotus can run AI actions on your artifacts. This is
-          optional — you can add keys later in settings.
+          Add API keys so Lotus can run AI actions on your artifacts. This is optional — you can add
+          keys later in settings.
         </p>
       </div>
 
@@ -486,9 +457,7 @@ function KeysStep({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium uppercase tracking-wide">
-            OpenRouter API key
-          </label>
+          <label className="text-xs font-medium uppercase tracking-wide">OpenRouter API key</label>
           <Input
             type="password"
             value={openrouterKey}
@@ -538,7 +507,7 @@ function KeysStep({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /* ─── Step 4: Try Lotus ─────────────────────────────────────────────── */
@@ -550,42 +519,38 @@ function LotusStep({
   onNext,
   onBack,
 }: {
-  artifact: Artifact | null
-  lotusResult: string | null
-  setLotusResult: (v: string | null) => void
-  onNext: () => void
-  onBack: () => void
+  artifact: Artifact | null;
+  lotusResult: string | null;
+  setLotusResult: (v: string | null) => void;
+  onNext: () => void;
+  onBack: () => void;
 }) {
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null);
 
   // Find describe-like actions
   const { data: capsData } = useQuery({
-    queryKey: ['lotus', 'capabilities', 'cloud-onboarding'],
-    queryFn: () => embeddrApi.lotus.list({ kind: 'action', limit: 200 }),
+    queryKey: ["lotus", "capabilities", "cloud-onboarding"],
+    queryFn: () => embeddrApi.lotus.list({ kind: "action", limit: 200 }),
     staleTime: 30_000,
-  })
+  });
 
   const describeAction = useMemo(() => {
-    const caps = capsData?.items || []
+    const caps = capsData?.items || [];
     return caps.find((cap: any) => {
-      const title = String(cap.title || cap.id || '').toLowerCase()
-      return (
-        title.includes('describe') ||
-        title.includes('caption') ||
-        title.includes('analyze')
-      )
-    })
-  }, [capsData])
+      const title = String(cap.title || cap.id || "").toLowerCase();
+      return title.includes("describe") || title.includes("caption") || title.includes("analyze");
+    });
+  }, [capsData]);
 
   const invoke = useMutation({
     mutationFn: async () => {
       if (!describeAction || !artifact) {
-        throw new Error('No describe action or artifact available')
+        throw new Error("No describe action or artifact available");
       }
       const result = await embeddrApi.lotus.invoke<any>(describeAction.id, {
         artifact_id: artifact.id,
-      })
-      return result
+      });
+      return result;
     },
     onSuccess: (data: any) => {
       const text =
@@ -593,16 +558,16 @@ function LotusStep({
         data?.result?.description ||
         data?.text ||
         data?.description ||
-        JSON.stringify(data?.result || data, null, 2)
-      setLotusResult(text)
-      setError(null)
+        JSON.stringify(data?.result || data, null, 2);
+      setLotusResult(text);
+      setError(null);
     },
     onError: (err: Error) => {
-      setError(err.message || 'Lotus action failed')
+      setError(err.message || "Lotus action failed");
     },
-  })
+  });
 
-  const canRun = artifact && describeAction
+  const canRun = artifact && describeAction;
 
   return (
     <div className="space-y-4">
@@ -621,20 +586,19 @@ function LotusStep({
             <FileImage className="h-5 w-5 text-muted-foreground" />
             <div className="text-sm">
               <span className="font-medium">
-                {(artifact.metadata_json as any)?.original_filename ||
-                  artifact.id}
+                {(artifact.metadata_json as any)?.original_filename || artifact.id}
               </span>
               {describeAction ? (
                 <span className="text-muted-foreground">
-                  {' '}
-                  — using{' '}
+                  {" "}
+                  — using{" "}
                   <span className="font-medium">
                     {(describeAction as any).title || (describeAction as any).id}
                   </span>
                 </span>
               ) : (
                 <span className="text-muted-foreground">
-                  {' '}
+                  {" "}
                   — no describe action found (add API keys first)
                 </span>
               )}
@@ -644,11 +608,7 @@ function LotusStep({
       )}
 
       {canRun && !lotusResult && (
-        <Button
-          onClick={() => invoke.mutate()}
-          disabled={invoke.isPending}
-          className="w-full"
-        >
+        <Button onClick={() => invoke.mutate()} disabled={invoke.isPending} className="w-full">
           {invoke.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running...
@@ -665,9 +625,7 @@ function LotusStep({
         <Card className="bg-emerald-500/10 border-emerald-500/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
             <Check className="h-4 w-4 text-emerald-500" />
-            <span className="text-sm font-medium text-emerald-500">
-              Lotus is working
-            </span>
+            <span className="text-sm font-medium text-emerald-500">Lotus is working</span>
           </div>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-6">
             {lotusResult}
@@ -682,8 +640,7 @@ function LotusStep({
             {error}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            This usually means no API keys are configured or the inference
-            plugin isn't loaded.
+            This usually means no API keys are configured or the inference plugin isn't loaded.
           </p>
         </Card>
       )}
@@ -693,12 +650,11 @@ function LotusStep({
           <ArrowLeft className="mr-1 h-4 w-4" /> Back
         </Button>
         <Button onClick={onNext}>
-          {lotusResult ? 'Continue' : 'Skip'}{' '}
-          <ArrowRight className="ml-1 h-4 w-4" />
+          {lotusResult ? "Continue" : "Skip"} <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
       </div>
     </div>
-  )
+  );
 }
 
 /* ─── Step 5: Done ──────────────────────────────────────────────────── */
@@ -707,8 +663,8 @@ function DoneStep({
   onComplete,
   navigate,
 }: {
-  onComplete: () => void
-  navigate: ReturnType<typeof useNavigate>
+  onComplete: () => void;
+  navigate: ReturnType<typeof useNavigate>;
 }) {
   return (
     <div className="space-y-4">
@@ -726,32 +682,26 @@ function DoneStep({
         <Button
           variant="outline"
           className="h-auto flex-col gap-1 py-3"
-          onClick={() => navigate({ to: '/search' })}
+          onClick={() => navigate({ to: "/search" })}
         >
           <span className="text-sm font-medium">Search</span>
-          <span className="text-[10px] text-muted-foreground">
-            Find artifacts
-          </span>
+          <span className="text-[10px] text-muted-foreground">Find artifacts</span>
         </Button>
         <Button
           variant="outline"
           className="h-auto flex-col gap-1 py-3"
-          onClick={() => navigate({ to: '/lotus' })}
+          onClick={() => navigate({ to: "/lotus" })}
         >
           <span className="text-sm font-medium">Lotus</span>
-          <span className="text-[10px] text-muted-foreground">
-            AI actions
-          </span>
+          <span className="text-[10px] text-muted-foreground">AI actions</span>
         </Button>
         <Button
           variant="outline"
           className="h-auto flex-col gap-1 py-3"
-          onClick={() => navigate({ to: '/settings', search: { tab: 'profile' } })}
+          onClick={() => navigate({ to: "/settings", search: { tab: "profile" } })}
         >
           <span className="text-sm font-medium">Settings</span>
-          <span className="text-[10px] text-muted-foreground">
-            Configure more
-          </span>
+          <span className="text-[10px] text-muted-foreground">Configure more</span>
         </Button>
       </div>
 
@@ -761,5 +711,5 @@ function DoneStep({
         </Button>
       </div>
     </div>
-  )
+  );
 }

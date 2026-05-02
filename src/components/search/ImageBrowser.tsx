@@ -1,24 +1,22 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { Input } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Slider } from '@embeddr/react-ui/ui'
-import { Label } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@embeddr/react-ui/ui'
-import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@embeddr/react-ui/ui'
+  Input,
+  Label,
+  ScrollArea,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Slider,
+} from "@embeddr/react-ui/ui";
 import {
   Archive,
   Filter,
@@ -31,17 +29,13 @@ import {
   SlidersHorizontal,
   Video,
   X,
-} from 'lucide-react'
-import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
-import { useMemo } from 'react'
-import { BACKEND_URL } from '@/lib/api/config'
-import { ImageLightbox } from './ImageLightbox'
-import type { PromptImage } from '@/lib/api/types'
+} from "lucide-react";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ImageLightbox } from "./ImageLightbox";
+import type { PromptImage } from "@/lib/api/types";
 // Legacy imports commented out
+import type { LibraryPath } from "@/lib/api/endpoints/library";
+import { BACKEND_URL } from "@/lib/api/config";
 import {
   // fetchCollectionItems,
   fetchCollections,
@@ -49,78 +43,68 @@ import {
   fetchLibraryPaths,
   // searchItems,
   // searchItemsByImageId,
-} from '@/lib/api'
-import type { LibraryPath } from '@/lib/api/endpoints/library'
-import { useArtifacts } from '@/lib/api/client'
-import PostsScrollArea from '@/components/search/PostsScrollArea'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
-import { cn } from '@/lib/utils'
-import { globalEventBus } from '@/lib/eventBus'
+} from "@/lib/api";
+import { useArtifacts } from "@/lib/api/client";
+import PostsScrollArea from "@/components/search/PostsScrollArea";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { cn } from "@/lib/utils";
+import { globalEventBus } from "@/lib/eventBus";
 
 interface ImageBrowserProps {
-  onSelect: (image: PromptImage) => void
-  defaultGridCols?: number
-  storageKey?: string
-  multiSelectMode?: boolean
-  onMultiSelect?: (images: PromptImage[]) => void
-  useArtifactsApi?: boolean
+  onSelect: (image: PromptImage) => void;
+  defaultGridCols?: number;
+  storageKey?: string;
+  multiSelectMode?: boolean;
+  onMultiSelect?: (images: Array<PromptImage>) => void;
+  useArtifactsApi?: boolean;
 }
 
 export function ImageBrowser({
   onSelect,
   defaultGridCols = 5,
-  storageKey = 'explore-grid-cols',
+  storageKey = "explore-grid-cols",
   multiSelectMode = false,
   onMultiSelect,
   useArtifactsApi = false,
 }: ImageBrowserProps) {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [activeSearchQuery, setActiveSearchQuery] = useState('')
-  const [searchImageId, setSearchImageId] = useState<number | string | null>(
-    null,
-  )
-  const [selectedCollectionId, setSelectedCollectionId] = useState<
-    number | null
-  >(null)
-  const [selectedLibraryId, setSelectedLibraryId] = useState<number | null>(
-    null,
-  )
-  const [gridCols, setGridCols] = useLocalStorage(storageKey, defaultGridCols)
-  const [imageFit] = useLocalStorage<'cover' | 'contain'>(
-    'explore-image-fit',
-    'cover',
-  )
-  const [lightboxImage, setLightboxImage] = useState<PromptImage | null>(null)
-  const [showArchived, setShowArchived] = useState<boolean | null>(false)
-  const [mediaType, setMediaType] = useState<'image' | 'video' | 'all'>('all')
-  const [selectedImages, setSelectedImages] = useState<PromptImage[]>([])
-  const queryClient = useQueryClient()
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeSearchQuery, setActiveSearchQuery] = useState("");
+  const [searchImageId, setSearchImageId] = useState<number | string | null>(null);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<number | null>(null);
+  const [selectedLibraryId, setSelectedLibraryId] = useState<number | null>(null);
+  const [gridCols, setGridCols] = useLocalStorage(storageKey, defaultGridCols);
+  const [imageFit] = useLocalStorage<"cover" | "contain">("explore-image-fit", "cover");
+  const [lightboxImage, setLightboxImage] = useState<PromptImage | null>(null);
+  const [showArchived, setShowArchived] = useState<boolean | null>(false);
+  const [mediaType, setMediaType] = useState<"image" | "video" | "all">("all");
+  const [selectedImages, setSelectedImages] = useState<Array<PromptImage>>([]);
+  const queryClient = useQueryClient();
 
   // Listen for new generations and uploads to refresh the list
   useEffect(() => {
     const handleRefresh = () => {
-      console.log('[ImageBrowser] Refreshing images query')
-      queryClient.invalidateQueries({ queryKey: ['images'] })
-      queryClient.refetchQueries({ queryKey: ['images'] })
-    }
+      console.log("[ImageBrowser] Refreshing images query");
+      queryClient.invalidateQueries({ queryKey: ["images"] });
+      queryClient.refetchQueries({ queryKey: ["images"] });
+    };
 
-    const unsubGen = globalEventBus.on('generation:complete', handleRefresh)
-    const unsubUpload = globalEventBus.on('image:uploaded', handleRefresh)
+    const unsubGen = globalEventBus.on("generation:complete", handleRefresh);
+    const unsubUpload = globalEventBus.on("image:uploaded", handleRefresh);
 
     return () => {
-      unsubGen()
-      unsubUpload()
-    }
-  }, [queryClient])
+      unsubGen();
+      unsubUpload();
+    };
+  }, [queryClient]);
 
   // Fetch collections
   const { data: collections } = useQuery({
-    queryKey: ['collections'],
+    queryKey: ["collections"],
     queryFn: fetchCollections,
-  })
+  });
 
   // Fetch libraries
-  const libraries: any = []
+  const libraries: any = [];
   // const { data: libraries } = useQuery({
   //   queryKey: ['libraries'],
   //   queryFn: fetchLibraryPaths,
@@ -132,34 +116,33 @@ export function ImageBrowser({
       ? {
           q: activeSearchQuery || undefined,
           limit: 100,
-          type_name: 'image,document', // Added document support
+          type_name: "image,document", // Added document support
         }
       : undefined,
-  )
+  );
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useInfiniteQuery({
-      queryKey: [
-        useArtifactsApi ? 'artifacts' : 'images', // Toggle key
-        activeSearchQuery,
-        searchImageId,
-        selectedCollectionId,
-        selectedLibraryId,
-        showArchived,
-        mediaType,
-        useArtifactsApi,
-      ],
-      queryFn: async ({ pageParam: _pageParam = 0 }) => {
-        if (useArtifactsApi) {
-          // When using artifact results, return empty array for infinite query structure
-          // Real data comes from useArtifacts hook above currently
-          return []
-        }
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
+    queryKey: [
+      useArtifactsApi ? "artifacts" : "images", // Toggle key
+      activeSearchQuery,
+      searchImageId,
+      selectedCollectionId,
+      selectedLibraryId,
+      showArchived,
+      mediaType,
+      useArtifactsApi,
+    ],
+    queryFn: async ({ pageParam: _pageParam = 0 }) => {
+      if (useArtifactsApi) {
+        // When using artifact results, return empty array for infinite query structure
+        // Real data comes from useArtifacts hook above currently
+        return [];
+      }
 
-        if (searchImageId) {
-          // Legacy path disabled
-          return []
-          /*
+      if (searchImageId) {
+        // Legacy path disabled
+        return [];
+        /*
           return searchItemsByImageId(
             searchImageId as number, // Cast back as legacy expects number
             50,
@@ -167,11 +150,11 @@ export function ImageBrowser({
             selectedLibraryId,
           )
           */
-        }
-        if (activeSearchQuery) {
-          // Legacy path disabled
-          return []
-          /*
+      }
+      if (activeSearchQuery) {
+        // Legacy path disabled
+        return [];
+        /*
           return searchItems(
             activeSearchQuery,
             50,
@@ -183,15 +166,15 @@ export function ImageBrowser({
             mediaType === 'all' ? undefined : mediaType,
           )
           */
-        }
-        if (selectedCollectionId) {
-          // Legacy path disabled
-          return []
-          // return fetchCollectionItems(selectedCollectionId, pageParam, 50)
-        }
+      }
+      if (selectedCollectionId) {
         // Legacy path disabled
-        return []
-        /*
+        return [];
+        // return fetchCollectionItems(selectedCollectionId, pageParam, 50)
+      }
+      // Legacy path disabled
+      return [];
+      /*
         return fetchItems({
           offset: pageParam,
           limit: 50,
@@ -200,11 +183,11 @@ export function ImageBrowser({
           mediaType: mediaType === 'all' ? undefined : mediaType,
         })
         */
-      },
-      initialPageParam: 0,
-      getNextPageParam: (lastPage, allPages) =>
-        lastPage.length === 50 ? allPages.length * 50 : undefined,
-    })
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length === 50 ? allPages.length * 50 : undefined,
+  });
 
   const posts = useMemo(() => {
     if (useArtifactsApi && artifactResults) {
@@ -214,34 +197,33 @@ export function ImageBrowser({
         image_url: `${BACKEND_URL}/artifacts/${a.id}/content`,
         width: a.metadata_json?.width || 0,
         height: a.metadata_json?.height || 0,
-        prompt:
-          a.metadata_json?.prompt || a.metadata_json?.filename || 'Artifact',
-        media_type: a.type_name === 'document' ? 'document' : 'image', // Add media_type map
+        prompt: a.metadata_json?.prompt || a.metadata_json?.filename || "Artifact",
+        media_type: a.type_name === "document" ? "document" : "image", // Add media_type map
         created_at: a.created_at,
         // Mock properties to satisfy PromptImage
-        model: 'artifacts',
+        model: "artifacts",
         steps: 0,
         cfg_scale: 0,
-        sampler_name: 'unknown',
+        sampler_name: "unknown",
         seed: 0,
-      })) as PromptImage[]
+      }));
     }
-    return data?.pages.flatMap((page) => page) || []
-  }, [data, artifactResults, useArtifactsApi])
+    return data?.pages.flatMap((page) => page) || [];
+  }, [data, artifactResults, useArtifactsApi]);
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    setActiveSearchQuery(searchQuery)
-    setSearchImageId(null)
-    setSelectedCollectionId(null)
-  }
+    e.preventDefault();
+    setActiveSearchQuery(searchQuery);
+    setSearchImageId(null);
+    setSelectedCollectionId(null);
+  };
 
   const handleSearchByImage = (image: PromptImage) => {
-    setSearchImageId(image.id)
-    setSearchQuery('')
-    setActiveSearchQuery('')
-    setSelectedCollectionId(null)
-  }
+    setSearchImageId(image.id);
+    setSearchQuery("");
+    setActiveSearchQuery("");
+    setSelectedCollectionId(null);
+  };
 
   return (
     <div className="flex h-full flex-col relative overflow-hidden">
@@ -254,19 +236,19 @@ export function ImageBrowser({
             placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch(e)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch(e)}
             className="pl-8 h-9"
           />
         </div>
 
         {/* Library Select */}
         <Select
-          value={selectedLibraryId?.toString() || 'all'}
+          value={selectedLibraryId?.toString() || "all"}
           onValueChange={(val) => {
-            if (val === 'all') {
-              setSelectedLibraryId(null)
+            if (val === "all") {
+              setSelectedLibraryId(null);
             } else {
-              setSelectedLibraryId(parseInt(val))
+              setSelectedLibraryId(parseInt(val));
             }
           }}
         >
@@ -284,9 +266,7 @@ export function ImageBrowser({
               <SelectItem key={library.id} value={library.id.toString()}>
                 <div className="flex items-center w-full">
                   <Library className="mr-2 h-4 w-4" />
-                  <span className="truncate">
-                    {library.name || library.path}
-                  </span>
+                  <span className="truncate">{library.name || library.path}</span>
                   {library.image_count !== undefined && (
                     <span className="ml-auto text-xs text-muted-foreground pl-2">
                       {library.image_count}
@@ -300,15 +280,15 @@ export function ImageBrowser({
 
         {/* Collection Select */}
         <Select
-          value={selectedCollectionId?.toString() || 'all'}
+          value={selectedCollectionId?.toString() || "all"}
           onValueChange={(val) => {
-            if (val === 'all') {
-              setSelectedCollectionId(null)
+            if (val === "all") {
+              setSelectedCollectionId(null);
             } else {
-              setSelectedCollectionId(parseInt(val))
-              setSearchImageId(null)
-              setActiveSearchQuery('')
-              setSearchQuery('')
+              setSelectedCollectionId(parseInt(val));
+              setSearchImageId(null);
+              setActiveSearchQuery("");
+              setSearchQuery("");
             }
           }}
         >
@@ -344,12 +324,12 @@ export function ImageBrowser({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              variant={mediaType !== 'all' ? 'secondary' : 'ghost'}
+              variant={mediaType !== "all" ? "secondary" : "ghost"}
               size="icon"
               className="h-9 w-9"
               title="Media Type"
             >
-              {mediaType === 'video' ? (
+              {mediaType === "video" ? (
                 <Video className="h-4 w-4" />
               ) : (
                 <ImageIcon className="h-4 w-4" />
@@ -357,13 +337,13 @@ export function ImageBrowser({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setMediaType('all')}>
+            <DropdownMenuItem onClick={() => setMediaType("all")}>
               <Filter className="mr-2 h-4 w-4" /> All Media
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setMediaType('image')}>
+            <DropdownMenuItem onClick={() => setMediaType("image")}>
               <ImageIcon className="mr-2 h-4 w-4" /> Images Only
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setMediaType('video')}>
+            <DropdownMenuItem onClick={() => setMediaType("video")}>
               <Video className="mr-2 h-4 w-4" /> Videos Only
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -373,7 +353,7 @@ export function ImageBrowser({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              variant={showArchived !== null ? 'secondary' : 'ghost'}
+              variant={showArchived !== null ? "secondary" : "ghost"}
               size="icon"
               className="h-9 w-9"
               title="Archive Status"
@@ -419,12 +399,7 @@ export function ImageBrowser({
         {/* Zoom / View Settings */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9"
-              title="View Settings"
-            >
+            <Button variant="ghost" size="icon" className="h-9 w-9" title="View Settings">
               <SlidersHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -476,15 +451,12 @@ export function ImageBrowser({
           gridCols={gridCols}
           imageFit={imageFit}
           onArchive={() => {
-            queryClient.invalidateQueries({ queryKey: ['images'] })
+            queryClient.invalidateQueries({ queryKey: ["images"] });
           }}
         />
       </div>
 
-      <ImageLightbox
-        image={lightboxImage}
-        onClose={() => setLightboxImage(null)}
-      />
+      <ImageLightbox image={lightboxImage} onClose={() => setLightboxImage(null)} />
     </div>
-  )
+  );
 }

@@ -1,149 +1,143 @@
-import React from 'react'
-import { Button } from '@embeddr/react-ui/ui'
-import { Card } from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
+import React from "react";
 import {
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
-import { Checkbox } from '@embeddr/react-ui/ui'
-import { Separator } from '@embeddr/react-ui/ui'
-import { RefreshCcw, Database, AlertTriangle } from 'lucide-react'
-import { embeddrApi } from '@/lib/api/client'
+  Separator,
+} from "@embeddr/react-ui/ui";
+import { AlertTriangle, Database, RefreshCcw } from "lucide-react";
+import { embeddrApi } from "@/lib/api/client";
 
 const DEFAULT_CONFIG = {
-  backend: 'db',
-  chroma_mode: 'http',
-  chroma_host: 'localhost',
+  backend: "db",
+  chroma_mode: "http",
+  chroma_host: "localhost",
   chroma_port: 8000,
-  chroma_path: './chroma',
-  chroma_collection_prefix: 'embeddr_',
+  chroma_path: "./chroma",
+  chroma_collection_prefix: "embeddr_",
   log_search: false,
-}
+};
 
-type VectorIndexConfig = typeof DEFAULT_CONFIG
+type VectorIndexConfig = typeof DEFAULT_CONFIG;
 
 type StatusResponse = {
-  ok: boolean
-  active?: string
-  available?: string[]
+  ok: boolean;
+  active?: string;
+  available?: Array<string>;
   embeddings?: {
-    total?: number
-    embedding_table?: number
-    feature_ref?: number
-  }
-}
+    total?: number;
+    embedding_table?: number;
+    feature_ref?: number;
+  };
+};
 
 type StatsResponse = {
-  ok: boolean
-  source?: string
-  total?: number
+  ok: boolean;
+  source?: string;
+  total?: number;
   sources?: {
-    embedding_table?: number
-    feature_ref?: number
-  }
-}
+    embedding_table?: number;
+    feature_ref?: number;
+  };
+};
 
 export const VectorIndexDebug = () => {
-  const [config, setConfig] = React.useState<VectorIndexConfig>(DEFAULT_CONFIG)
-  const [status, setStatus] = React.useState<StatusResponse | null>(null)
-  const [stats, setStats] = React.useState<StatsResponse | null>(null)
-  const [error, setError] = React.useState<string | null>(null)
-  const [loading, setLoading] = React.useState(false)
-  const [confirmReindex, setConfirmReindex] = React.useState(false)
-  const [reindexing, setReindexing] = React.useState(false)
-  const [reindexResult, setReindexResult] = React.useState<any>(null)
+  const [config, setConfig] = React.useState<VectorIndexConfig>(DEFAULT_CONFIG);
+  const [status, setStatus] = React.useState<StatusResponse | null>(null);
+  const [stats, setStats] = React.useState<StatsResponse | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [confirmReindex, setConfirmReindex] = React.useState(false);
+  const [reindexing, setReindexing] = React.useState(false);
+  const [reindexResult, setReindexResult] = React.useState<any>(null);
 
   const loadConfig = React.useCallback(async () => {
-    const data = await embeddrApi.lotus.invoke('embeddr-core.config.get', {
-      plugin_name: 'embeddr-vector-index',
-      config_id: 'embeddr-vector-index.config',
-      scope: 'global',
-    })
-    const value = (data as any)?.value ?? {}
-    setConfig({ ...DEFAULT_CONFIG, ...value })
-  }, [])
+    const data = await embeddrApi.lotus.invoke("embeddr-core.config.get", {
+      plugin_name: "embeddr-vector-index",
+      config_id: "embeddr-vector-index.config",
+      scope: "global",
+    });
+    const value = (data as any)?.value ?? {};
+    setConfig({ ...DEFAULT_CONFIG, ...value });
+  }, []);
 
   const loadStatus = React.useCallback(async () => {
-    const data = await embeddrApi.lotus.invoke(
-      'embeddr-vector-index.status',
-      {},
-    )
-    setStatus(data as StatusResponse)
-  }, [])
+    const data = await embeddrApi.lotus.invoke("embeddr-vector-index.status", {});
+    setStatus(data as StatusResponse);
+  }, []);
 
   const loadStats = React.useCallback(async () => {
-    const data = await embeddrApi.lotus.invoke('embeddr-vector-index.stats', {
-      source: 'auto',
-      group_by: ['model', 'space'],
-    })
-    setStats(data as StatsResponse)
-  }, [])
+    const data = await embeddrApi.lotus.invoke("embeddr-vector-index.stats", {
+      source: "auto",
+      group_by: ["model", "space"],
+    });
+    setStats(data as StatsResponse);
+  }, []);
 
   const refreshAll = React.useCallback(async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      await Promise.all([loadConfig(), loadStatus(), loadStats()])
+      await Promise.all([loadConfig(), loadStatus(), loadStats()]);
     } catch (err: any) {
-      setError(err?.message || 'Failed to load vector index state')
+      setError(err?.message || "Failed to load vector index state");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [loadConfig, loadStatus, loadStats])
+  }, [loadConfig, loadStatus, loadStats]);
 
   React.useEffect(() => {
-    refreshAll()
-  }, [refreshAll])
+    refreshAll();
+  }, [refreshAll]);
 
   const saveConfig = async () => {
-    setError(null)
+    setError(null);
     try {
-      await embeddrApi.lotus.invoke('embeddr-core.config.set', {
-        plugin_name: 'embeddr-vector-index',
-        config_id: 'embeddr-vector-index.config',
-        scope: 'global',
+      await embeddrApi.lotus.invoke("embeddr-core.config.set", {
+        plugin_name: "embeddr-vector-index",
+        config_id: "embeddr-vector-index.config",
+        scope: "global",
         value: config,
-      })
-      await loadStatus()
+      });
+      await loadStatus();
     } catch (err: any) {
-      setError(err?.message || 'Failed to save config')
+      setError(err?.message || "Failed to save config");
     }
-  }
+  };
 
   const runReindex = async () => {
     if (!confirmReindex) {
-      setError('Confirm reindex before running.')
-      return
+      setError("Confirm reindex before running.");
+      return;
     }
-    setReindexing(true)
-    setError(null)
+    setReindexing(true);
+    setError(null);
     try {
-      const result = await embeddrApi.lotus.invoke(
-        'embeddr-vector-index.reindex',
-        {
-          confirm: true,
-        },
-      )
-      setReindexResult(result)
+      const result = await embeddrApi.lotus.invoke("embeddr-vector-index.reindex", {
+        confirm: true,
+      });
+      setReindexResult(result);
       if ((result as any)?.ok === false) {
-        setError((result as any)?.error || 'Reindex failed')
+        setError((result as any)?.error || "Reindex failed");
       }
-      await loadStatus()
-      await loadStats()
+      await loadStatus();
+      await loadStats();
     } catch (err: any) {
-      setError(err?.message || 'Reindex failed')
+      setError(err?.message || "Reindex failed");
     } finally {
-      setReindexing(false)
+      setReindexing(false);
     }
-  }
+  };
 
-  const availableBackends = status?.available ?? []
-  const backendAvailable = availableBackends.includes(config.backend)
+  const availableBackends = status?.available ?? [];
+  const backendAvailable = availableBackends.includes(config.backend);
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -214,9 +208,7 @@ export const VectorIndexDebug = () => {
           <div className="grid gap-2 text-xs">
             <Select
               value={config.backend}
-              onValueChange={(value) =>
-                setConfig((prev) => ({ ...prev, backend: value }))
-              }
+              onValueChange={(value) => setConfig((prev) => ({ ...prev, backend: value }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select backend" />
@@ -227,13 +219,11 @@ export const VectorIndexDebug = () => {
                 <SelectItem value="chroma">Chroma</SelectItem>
               </SelectContent>
             </Select>
-            {config.backend === 'chroma' && (
+            {config.backend === "chroma" && (
               <>
                 <Select
                   value={config.chroma_mode}
-                  onValueChange={(value) =>
-                    setConfig((prev) => ({ ...prev, chroma_mode: value }))
-                  }
+                  onValueChange={(value) => setConfig((prev) => ({ ...prev, chroma_mode: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Chroma mode" />
@@ -243,7 +233,7 @@ export const VectorIndexDebug = () => {
                     <SelectItem value="local">Local</SelectItem>
                   </SelectContent>
                 </Select>
-                {config.chroma_mode === 'http' ? (
+                {config.chroma_mode === "http" ? (
                   <div className="grid grid-cols-2 gap-2">
                     <Input
                       value={config.chroma_host}
@@ -330,13 +320,8 @@ export const VectorIndexDebug = () => {
             />
             Confirm reindex
           </label>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={runReindex}
-            disabled={reindexing}
-          >
-            {reindexing ? 'Reindexing…' : 'Run reindex'}
+          <Button size="sm" variant="destructive" onClick={runReindex} disabled={reindexing}>
+            {reindexing ? "Reindexing…" : "Run reindex"}
           </Button>
         </div>
         {reindexResult && (
@@ -346,5 +331,5 @@ export const VectorIndexDebug = () => {
         )}
       </Card>
     </div>
-  )
-}
+  );
+};

@@ -1,122 +1,109 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  createWorkflow,
-  duplicateWorkflow,
   composeWorkflows,
+  createWorkflow,
+  deleteWorkflow,
+  duplicateWorkflow,
   fetchWorkflows,
   getWorkflow,
+  getWorkflowTemplates,
   runWorkflow,
   updateWorkflowMetadata,
-  deleteWorkflow,
-  getWorkflowTemplates,
-  type WorkflowArtifactMetadata,
-} from '../lib/api/endpoints/workflows'
-import type { WorkflowArtifact } from '../lib/api/endpoints/workflows'
+} from "../lib/api/endpoints/workflows";
+import type {
+  WorkflowArtifact,
+  WorkflowArtifactMetadata,
+} from "../lib/api/endpoints/workflows";
 
 export function useWorkflowTemplates() {
   return useQuery({
-    queryKey: ['workflow-templates'],
+    queryKey: ["workflow-templates"],
     queryFn: getWorkflowTemplates,
-  })
+  });
 }
 
 export function useWorkflows() {
   return useQuery({
-    queryKey: ['workflows'],
+    queryKey: ["workflows"],
     queryFn: fetchWorkflows,
-  })
+  });
 }
 
 export function useWorkflow(id: string | number | null) {
   return useQuery({
-    queryKey: ['workflow', id],
+    queryKey: ["workflow", id],
     queryFn: () => (id ? getWorkflow(id) : Promise.resolve(null)),
     enabled: !!id,
-  })
+  });
 }
 
 export function useCreateWorkflow() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: {
-      name: string
-      description?: string
-      graph?: any
-      template?: string
-    }) => createWorkflow(data),
+    mutationFn: (data: { name: string; description?: string; graph?: any; template?: string }) =>
+      createWorkflow(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workflows'] })
+      queryClient.invalidateQueries({ queryKey: ["workflows"] });
     },
-  })
+  });
 }
 
 export function useDuplicateWorkflow() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: duplicateWorkflow,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workflows'] }),
-  })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["workflows"] }),
+  });
 }
 
 export function useComposeWorkflows() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ ids, name }: { ids: string[]; name: string }) =>
+    mutationFn: ({ ids, name }: { ids: Array<string>; name: string }) =>
       composeWorkflows(ids, name),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workflows'] }),
-  })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["workflows"] }),
+  });
 }
 
 // Deprecated name, kept for compatibility
 export function useRunWorkflow() {
   return useMutation({
-    mutationFn: async ({
-      id,
-      inputs,
-    }: {
-      id: string | number
-      inputs: any
-    }) => {
-      return runWorkflow(id, inputs)
+    mutationFn: async ({ id, inputs }: { id: string | number; inputs: any }) => {
+      return runWorkflow(id, inputs);
     },
-  })
+  });
 }
 
 export function useSyncWorkflows() {
   return useMutation({
-    mutationFn: async () => ({ status: 'ok' }),
-  })
+    mutationFn: async () => ({ status: "ok" }),
+  });
 }
 
 export function useDeleteWorkflow() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string | number) => deleteWorkflow(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workflows'] })
+      queryClient.invalidateQueries({ queryKey: ["workflows"] });
     },
-  })
+  });
 }
 
 export function useUpdateWorkflow() {
   // Stub
   return useMutation({
     mutationFn: async (args: any) => {
-      console.log('update', args)
+      console.log("update", args);
     },
-  })
+  });
 }
 
 export function useUpdateWorkflowMetadata() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      metadata,
-    }: {
-      id: string | number
-      metadata: Record<string, any>
-    }) => updateWorkflowMetadata(id, metadata),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['workflow'] }),
-  })
+    mutationFn: ({ id, metadata }: { id: string | number; metadata: Record<string, any> }) =>
+      updateWorkflowMetadata(id, metadata),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["workflow"] }),
+  });
 }

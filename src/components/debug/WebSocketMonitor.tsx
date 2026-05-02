@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from "react";
 import {
   Badge,
   Button,
@@ -7,28 +7,20 @@ import {
   CardHeader,
   CardTitle,
   ScrollArea,
-} from '@embeddr/react-ui'
-import {
-  Activity,
-  ArrowDown,
-  ArrowUp,
-  Filter,
-  Terminal,
-  Trash2,
-  Zap,
-} from 'lucide-react'
-import type { EmbeddrMessage } from '@embeddr/react-ui/types'
-import { globalEventBus } from '@/lib/eventBus'
+} from "@embeddr/react-ui";
+import { Activity, ArrowDown, ArrowUp, Filter, Terminal, Trash2, Zap } from "lucide-react";
+import type { EmbeddrMessage } from "@embeddr/react-ui/types";
+import { globalEventBus } from "@/lib/eventBus";
 
 interface LogMessage {
-  id: string
-  timestamp: Date
-  payload: EmbeddrMessage
+  id: string;
+  timestamp: Date;
+  payload: EmbeddrMessage;
 }
 
 const MessageItem = ({ msg }: { msg: LogMessage }) => {
-  const [expanded, setExpanded] = useState(false)
-  const isComfy = msg.payload.source === 'comfyui'
+  const [expanded, setExpanded] = useState(false);
+  const isComfy = msg.payload.source === "comfyui";
 
   return (
     <div className="border bg-card text-xs font-mono group hover:border-primary/20 transition-colors rounded-md">
@@ -37,37 +29,27 @@ const MessageItem = ({ msg }: { msg: LogMessage }) => {
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex flex-col items-center justify-center min-w-10 text-[10px] text-muted-foreground/70 leading-tight">
-          <span>{msg.timestamp.toLocaleTimeString().split(' ')[0]}</span>
-          <span>
-            .{msg.timestamp.getMilliseconds().toString().padStart(3, '0')}
-          </span>
+          <span>{msg.timestamp.toLocaleTimeString().split(" ")[0]}</span>
+          <span>.{msg.timestamp.getMilliseconds().toString().padStart(3, "0")}</span>
         </div>
 
         <Badge
           variant="outline"
           className={`h-5 px-1.5 text-[10px] uppercase tracking-wider border-0 ${
-            isComfy
-              ? 'bg-blue-500/10 text-blue-500'
-              : 'bg-purple-500/10 text-purple-500'
+            isComfy ? "bg-blue-500/10 text-blue-500" : "bg-purple-500/10 text-purple-500"
           }`}
         >
           {msg.payload.source}
         </Badge>
 
-        <span className="font-semibold text-foreground/90 flex-1 truncate">
-          {msg.payload.type}
-        </span>
+        <span className="font-semibold text-foreground/90 flex-1 truncate">{msg.payload.type}</span>
 
         <Button
           variant="ghost"
           size="sm"
           className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
         >
-          {expanded ? (
-            <ArrowUp className="w-3 h-3" />
-          ) : (
-            <ArrowDown className="w-3 h-3" />
-          )}
+          {expanded ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
         </Button>
       </div>
 
@@ -79,29 +61,27 @@ const MessageItem = ({ msg }: { msg: LogMessage }) => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 export const WebSocketMonitor = () => {
-  const [messages, setMessages] = useState<LogMessage[]>([])
-  const [filterSource, setFilterSource] = useState<
-    'all' | 'embeddr' | 'comfyui'
-  >('all')
-  const [paused, setPaused] = useState(false)
+  const [messages, setMessages] = useState<Array<LogMessage>>([]);
+  const [filterSource, setFilterSource] = useState<"all" | "embeddr" | "comfyui">("all");
+  const [paused, setPaused] = useState(false);
 
   const sendTestEvent = () => {
-    globalEventBus.emit('websocket:message', {
-      source: 'test',
-      type: 'test_event',
-      data: { message: 'Hello from Monitor', timestamp: new Date() },
-    })
-  }
+    globalEventBus.emit("websocket:message", {
+      source: "test",
+      type: "test_event",
+      data: { message: "Hello from Monitor", timestamp: new Date() },
+    });
+  };
 
   // Use globalEventBus directly for debugging to bypass hook complexity within the UI library
   useEffect(() => {
     const handler = (msg: unknown) => {
-      if (paused) return
-      const payload = msg as EmbeddrMessage
+      if (paused) return;
+      const payload = msg as EmbeddrMessage;
       setMessages((prev) => [
         {
           id: Math.random().toString(36).substring(7),
@@ -109,27 +89,25 @@ export const WebSocketMonitor = () => {
           payload,
         },
         ...prev.slice(0, 49),
-      ])
-    }
+      ]);
+    };
 
-    return globalEventBus.on('websocket:message', handler)
-  }, [paused])
+    return globalEventBus.on("websocket:message", handler);
+  }, [paused]);
 
-  const clearMessages = () => setMessages([])
+  const clearMessages = () => setMessages([]);
 
   const filteredMessages = messages.filter((m) => {
-    if (filterSource === 'all') return true
-    return m.payload.source === filterSource
-  })
+    if (filterSource === "all") return true;
+    return m.payload.source === filterSource;
+  });
 
   return (
     <Card className="flex-1 w-full flex flex-col overflow-hidden h-full py-0!">
       <CardHeader className="py-2 pb-2! px-4 flex flex-row items-center justify-between border-b bg-muted/20">
         <div className="flex items-center gap-2">
           <Terminal className="w-4 h-4 text-muted-foreground ml-1" />
-          <CardTitle className="text-sm font-medium">
-            WebSocket Stream
-          </CardTitle>
+          <CardTitle className="text-sm font-medium">WebSocket Stream</CardTitle>
           <Badge variant="outline" className="font-mono text-xs">
             {messages.length} events
           </Badge>
@@ -140,7 +118,7 @@ export const WebSocketMonitor = () => {
             size="sm"
             className="h-7 w-7 p-0"
             onClick={() => setPaused(!paused)}
-            title={paused ? 'Resume' : 'Pause'}
+            title={paused ? "Resume" : "Pause"}
           >
             {paused ? (
               <ArrowDown className="w-4 h-4 text-orange-500" />
@@ -179,9 +157,7 @@ export const WebSocketMonitor = () => {
           <select
             className="bg-transparent text-xs border-none outline-none font-medium text-muted-foreground hover:text-foreground cursor-pointer"
             value={filterSource}
-            onChange={(e) =>
-              setFilterSource(e.target.value as 'all' | 'embeddr' | 'comfyui')
-            }
+            onChange={(e) => setFilterSource(e.target.value as "all" | "embeddr" | "comfyui")}
           >
             <option value="all">All Sources</option>
             <option value="embeddr">Embeddr</option>
@@ -198,13 +174,11 @@ export const WebSocketMonitor = () => {
                 <span className="text-xs">No events captured yet</span>
               </div>
             ) : (
-              filteredMessages.map((msg) => (
-                <MessageItem key={msg.id} msg={msg} />
-              ))
+              filteredMessages.map((msg) => <MessageItem key={msg.id} msg={msg} />)
             )}
           </div>
         </ScrollArea>
       </CardContent>
     </Card>
-  )
-}
+  );
+};

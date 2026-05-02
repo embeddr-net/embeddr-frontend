@@ -1,45 +1,43 @@
-import React from 'react'
-import { Button } from '@embeddr/react-ui/ui'
+import React from "react";
+import { Button } from "@embeddr/react-ui/ui";
 
 interface PluginErrorBoundaryProps {
-  pluginId: string
-  componentName: string
-  children: React.ReactNode
+  pluginId: string;
+  componentName: string;
+  children: React.ReactNode;
 }
 
 interface PluginErrorBoundaryState {
-  error?: Error
+  error?: Error;
 }
 
 export class PluginErrorBoundary extends React.Component<
   PluginErrorBoundaryProps,
   PluginErrorBoundaryState
 > {
-  state: PluginErrorBoundaryState = {}
+  state: PluginErrorBoundaryState = {};
 
   static getDerivedStateFromError(error: Error) {
-    return { error }
+    return { error };
   }
 
   componentDidCatch(error: Error) {
-    console.error('[PluginErrorBoundary] Plugin crashed', {
+    console.error("[PluginErrorBoundary] Plugin crashed", {
       pluginId: this.props.pluginId,
       componentName: this.props.componentName,
       error,
-    })
+    });
   }
 
   handleReset = () => {
-    this.setState({ error: undefined })
-  }
+    this.setState({ error: undefined });
+  };
 
   render() {
     if (this.state.error) {
       return (
         <div className="h-full w-full p-4 flex flex-col gap-3">
-          <div className="text-sm font-semibold text-destructive">
-            Plugin crashed
-          </div>
+          <div className="text-sm font-semibold text-destructive">Plugin crashed</div>
           <div className="text-xs text-muted-foreground">
             {this.props.pluginId} / {this.props.componentName}
           </div>
@@ -52,9 +50,9 @@ export class PluginErrorBoundary extends React.Component<
             </Button>
           </div>
         </div>
-      )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }

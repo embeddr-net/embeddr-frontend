@@ -1,90 +1,84 @@
-import React, { useState } from 'react'
+import React, { useState } from "react";
 import {
+  Badge,
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import { ScrollArea } from '@embeddr/react-ui/ui'
-import { Plus, Search, Folder } from 'lucide-react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  fetchCollections,
-  createCollection,
-} from '@/lib/api/endpoints/collections'
-import { toast } from 'sonner'
-import { Badge } from '@embeddr/react-ui/ui'
+  Input,
+  ScrollArea,
+} from "@embeddr/react-ui/ui";
+import { Folder, Plus, Search } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { createCollection, fetchCollections } from "@/lib/api/endpoints/collections";
 
 interface CollectionSelectorDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSelect: (collectionId: string) => void
-  title?: string
-  description?: string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSelect: (collectionId: string) => void;
+  title?: string;
+  description?: string;
 }
 
 export function CollectionSelectorDialog({
   open,
   onOpenChange,
   onSelect,
-  title = 'Select Collection',
-  description = 'Choose a collection to use as input.',
+  title = "Select Collection",
+  description = "Choose a collection to use as input.",
 }: CollectionSelectorDialogProps) {
-  const [search, setSearch] = useState('')
-  const [isCreating, setIsCreating] = useState(false)
-  const [newLabel, setNewLabel] = useState('')
-  const queryClient = useQueryClient()
+  const [search, setSearch] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const queryClient = useQueryClient();
 
   const { data: collections, isLoading } = useQuery({
-    queryKey: ['collections', 'list'],
+    queryKey: ["collections", "list"],
     queryFn: async () => {
       try {
-        const res = await fetchCollections()
+        const res = await fetchCollections();
         // Handle different API responses (paged vs list)
-        if (Array.isArray(res)) return res
-        if ((res as any).items && Array.isArray((res as any).items))
-          return (res as any).items
-        return []
+        if (Array.isArray(res)) return res;
+        if ((res as any).items && Array.isArray((res as any).items)) return (res as any).items;
+        return [];
       } catch (e) {
-        console.error(e)
-        return []
+        console.error(e);
+        return [];
       }
     },
     enabled: open,
-  })
+  });
 
   const createMutation = useMutation({
     mutationFn: async (label: string) => {
-      return await createCollection({ name: label })
+      return await createCollection({ name: label });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['collections'] })
-      setIsCreating(false)
-      setNewLabel('')
-      toast.success('Collection created')
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+      setIsCreating(false);
+      setNewLabel("");
+      toast.success("Collection created");
     },
     onError: () => {
-      toast.error('Failed to create collection')
+      toast.error("Failed to create collection");
     },
-  })
+  });
 
   // WorkflowList.tsx used: body: JSON.stringify({ label })
   // endpoint normally takes typed object. I will assume createCollection handles the args correctly or expects object.
 
   const filtered = (collections || []).filter((c: any) =>
-    (c.name || c.label || c.path || '')
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  )
+    (c.name || c.label || c.path || "").toLowerCase().includes(search.toLowerCase()),
+  );
 
   const handleCreate = () => {
-    if (!newLabel.trim()) return
-    createMutation.mutate(newLabel)
-  }
+    if (!newLabel.trim()) return;
+    createMutation.mutate(newLabel);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -106,7 +100,7 @@ export function CollectionSelectorDialog({
               />
             </div>
             <Button
-              variant={isCreating ? 'secondary' : 'outline'}
+              variant={isCreating ? "secondary" : "outline"}
               size="icon"
               onClick={() => setIsCreating(!isCreating)}
             >
@@ -121,10 +115,7 @@ export function CollectionSelectorDialog({
                 value={newLabel}
                 onChange={(e) => setNewLabel(e.target.value)}
               />
-              <Button
-                onClick={handleCreate}
-                disabled={createMutation.isPending}
-              >
+              <Button onClick={handleCreate} disabled={createMutation.isPending}>
                 Create
               </Button>
             </div>
@@ -133,9 +124,7 @@ export function CollectionSelectorDialog({
           <ScrollArea className="h-[300px] border rounded-md">
             <div className="flex flex-col p-1">
               {isLoading && (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  Loading...
-                </div>
+                <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
               )}
               {!isLoading && filtered.length === 0 && (
                 <div className="p-4 text-center text-sm text-muted-foreground">
@@ -148,26 +137,23 @@ export function CollectionSelectorDialog({
                   variant="ghost"
                   className="justify-start h-auto py-3 px-4"
                   onClick={() => {
-                    onSelect(c.id.toString())
-                    onOpenChange(false)
+                    onSelect(c.id.toString());
+                    onOpenChange(false);
                   }}
                 >
                   <Folder className="h-4 w-4 mr-3 text-muted-foreground" />
                   <div className="flex flex-col items-start gap-1">
-                    <span className="font-medium">
-                      {c.name || c.label || 'Untitled'}
-                    </span>
+                    <span className="font-medium">{c.name || c.label || "Untitled"}</span>
                     {c.file_count !== undefined && (
                       <Badge variant="outline" className="text-[10px] h-4">
                         {c.file_count} items
                       </Badge>
                     )}
-                    {c.image_count !== undefined &&
-                      c.file_count === undefined && (
-                        <Badge variant="outline" className="text-[10px] h-4">
-                          {c.image_count} items
-                        </Badge>
-                      )}
+                    {c.image_count !== undefined && c.file_count === undefined && (
+                      <Badge variant="outline" className="text-[10px] h-4">
+                        {c.image_count} items
+                      </Badge>
+                    )}
                   </div>
                 </Button>
               ))}
@@ -182,5 +168,5 @@ export function CollectionSelectorDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

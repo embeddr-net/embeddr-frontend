@@ -1,33 +1,33 @@
-import React, { useState } from 'react'
-import { useMutation, type UseQueryResult } from '@tanstack/react-query'
+import React, { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
+  Badge,
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@embeddr/react-ui/ui'
-import { Badge } from '@embeddr/react-ui/ui'
-import { Button } from '@embeddr/react-ui/ui'
-import { Input } from '@embeddr/react-ui/ui'
-import {
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@embeddr/react-ui/ui'
-import { toast } from 'sonner'
-import { createSecurityKey, fetchSecurityKeys } from '@/lib/api'
-import { baseScopes } from './operator-utils'
-import type { SecurityKey, SecurityUser } from './operator-types'
+} from "@embeddr/react-ui/ui";
+import { toast } from "sonner";
+import { baseScopes } from "./operator-utils";
+import type { UseQueryResult } from "@tanstack/react-query";
+import type { fetchSecurityKeys } from "@/lib/api";
+import type { SecurityKey, SecurityUser } from "./operator-types";
+import { createSecurityKey } from "@/lib/api";
 
 interface OperatorKeysSectionProps {
-  users: SecurityUser[]
-  keys: SecurityKey[]
-  keysQuery: UseQueryResult<Awaited<ReturnType<typeof fetchSecurityKeys>>>
-  capabilityScopes: string[]
-  isForbidden: boolean
+  users: Array<SecurityUser>;
+  keys: Array<SecurityKey>;
+  keysQuery: UseQueryResult<Awaited<ReturnType<typeof fetchSecurityKeys>>>;
+  capabilityScopes: Array<string>;
+  isForbidden: boolean;
 }
 
 export const OperatorKeysSection = ({
@@ -37,64 +37,64 @@ export const OperatorKeysSection = ({
   capabilityScopes,
   isForbidden,
 }: OperatorKeysSectionProps) => {
-  const [keyUserId, setKeyUserId] = useState<string>('')
-  const [keyName, setKeyName] = useState('')
-  const [keyScopes, setKeyScopes] = useState('')
-  const [keyPermissions, setKeyPermissions] = useState('')
-  const [createdKey, setCreatedKey] = useState<string | null>(null)
-  const [scopeSearch, setScopeSearch] = useState('')
+  const [keyUserId, setKeyUserId] = useState<string>("");
+  const [keyName, setKeyName] = useState("");
+  const [keyScopes, setKeyScopes] = useState("");
+  const [keyPermissions, setKeyPermissions] = useState("");
+  const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [scopeSearch, setScopeSearch] = useState("");
 
   const createKeyMutation = useMutation({
     mutationFn: createSecurityKey,
     onSuccess: (data) => {
-      setCreatedKey(data.key)
-      setKeyName('')
-      setKeyScopes('')
-      setKeyPermissions('')
-      keysQuery.refetch()
-      toast.success('Client credential created')
+      setCreatedKey(data.key);
+      setKeyName("");
+      setKeyScopes("");
+      setKeyPermissions("");
+      keysQuery.refetch();
+      toast.success("Client credential created");
     },
-    onError: () => toast.error('Failed to create client credential'),
-  })
+    onError: () => toast.error("Failed to create client credential"),
+  });
 
-  const allScopes = [...baseScopes, ...capabilityScopes]
+  const allScopes = [...baseScopes, ...capabilityScopes];
   const filteredScopes = allScopes.filter((scope) =>
     scope.toLowerCase().includes(scopeSearch.toLowerCase()),
-  )
+  );
 
   const addScope = (scope: string) => {
     const current = keyScopes
-      .split(',')
+      .split(",")
       .map((s) => s.trim())
-      .filter(Boolean)
-    if (current.includes(scope)) return
-    setKeyScopes([...current, scope].join(', '))
-  }
+      .filter(Boolean);
+    if (current.includes(scope)) return;
+    setKeyScopes([...current, scope].join(", "));
+  };
 
   const handleCreateKey = () => {
     if (!keyUserId) {
-      toast.error('Select a client')
-      return
+      toast.error("Select a client");
+      return;
     }
     if (!keyName.trim()) {
-      toast.error('Key name is required')
-      return
+      toast.error("Key name is required");
+      return;
     }
     const scopes = keyScopes
-      .split(',')
+      .split(",")
       .map((s) => s.trim())
-      .filter(Boolean)
+      .filter(Boolean);
     const permissions = keyPermissions
-      .split(',')
+      .split(",")
       .map((s) => s.trim())
-      .filter(Boolean)
+      .filter(Boolean);
     createKeyMutation.mutate({
       user_id: keyUserId,
       name: keyName.trim(),
       scopes,
       permissions,
-    })
-  }
+    });
+  };
 
   return (
     <>
@@ -118,9 +118,7 @@ export const OperatorKeysSection = ({
               <div className="text-sm font-medium">Create client credential</div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wide">
-                    Client
-                  </label>
+                  <label className="text-xs font-semibold uppercase tracking-wide">Client</label>
                   <Select value={keyUserId} onValueChange={setKeyUserId}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a client" />
@@ -176,9 +174,7 @@ export const OperatorKeysSection = ({
                 />
                 <div className="max-h-48 overflow-auto rounded border p-2 text-sm">
                   {filteredScopes.length === 0 ? (
-                    <div className="text-muted-foreground">
-                      No scopes found.
-                    </div>
+                    <div className="text-muted-foreground">No scopes found.</div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {filteredScopes.slice(0, 120).map((scope) => (
@@ -203,13 +199,8 @@ export const OperatorKeysSection = ({
                 <div className="text-xs text-muted-foreground">
                   Store the key immediately. It is shown only once.
                 </div>
-                <Button
-                  onClick={handleCreateKey}
-                  disabled={createKeyMutation.isPending}
-                >
-                  {createKeyMutation.isPending
-                    ? 'Creating…'
-                    : 'Create client credential'}
+                <Button onClick={handleCreateKey} disabled={createKeyMutation.isPending}>
+                  {createKeyMutation.isPending ? "Creating…" : "Create client credential"}
                 </Button>
               </div>
               {createdKey && (
@@ -225,29 +216,23 @@ export const OperatorKeysSection = ({
             {keysQuery.isLoading ? (
               <div className="text-sm text-muted-foreground">Loading keys…</div>
             ) : keys.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                No client keys found.
-              </div>
+              <div className="text-sm text-muted-foreground">No client keys found.</div>
             ) : (
               keys.map((key) => (
                 <div key={key.id} className="rounded border p-3">
                   <div className="flex items-center justify-between">
                     <div className="font-medium">{key.name}</div>
-                    <Badge variant={key.is_active ? 'default' : 'secondary'}>
-                      {key.is_active ? 'Active' : 'Disabled'}
+                    <Badge variant={key.is_active ? "default" : "secondary"}>
+                      {key.is_active ? "Active" : "Disabled"}
                     </Badge>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Prefix: {key.key_prefix}
-                  </div>
+                  <div className="text-xs text-muted-foreground">Prefix: {key.key_prefix}</div>
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {(key.scopes.length ? key.scopes : key.permissions).map(
-                      (scope) => (
-                        <Badge key={scope} variant="outline">
-                          {scope}
-                        </Badge>
-                      ),
-                    )}
+                    {(key.scopes.length ? key.scopes : key.permissions).map((scope) => (
+                      <Badge key={scope} variant="outline">
+                        {scope}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               ))
@@ -256,5 +241,5 @@ export const OperatorKeysSection = ({
         </Card>
       )}
     </>
-  )
-}
+  );
+};
