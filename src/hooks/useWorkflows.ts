@@ -10,10 +10,7 @@ import {
   runWorkflow,
   updateWorkflowMetadata,
 } from "../lib/api/endpoints/workflows";
-import type {
-  WorkflowArtifact,
-  WorkflowArtifactMetadata,
-} from "../lib/api/endpoints/workflows";
+import type { WorkflowArtifact, WorkflowArtifactMetadata } from "../lib/api/endpoints/workflows";
 
 export function useWorkflowTemplates() {
   return useQuery({

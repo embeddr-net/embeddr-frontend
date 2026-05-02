@@ -6,3 +6,6 @@ pnpm-lock.yaml
 .github
 .tanstack
 public
+
+# auto-generated
+src/routeTree.gen.ts

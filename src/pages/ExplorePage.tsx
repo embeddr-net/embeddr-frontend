@@ -530,7 +530,12 @@ const ExplorePage = () => {
       const lightboxPosts = currentPosts.filter(
         (p) => p.media_type === "image" || p.media_type === "video",
       );
-      const galleryImages = lightboxPosts.map((p) => ({
+      const galleryImages: Array<{
+        src: string;
+        title: string;
+        metadata: any;
+        media_type: "video" | "image";
+      }> = lightboxPosts.map((p) => ({
         src: embeddrApi.artifacts.getContentUrl(String(p.id)),
         title: p.prompt,
         metadata: p as any,

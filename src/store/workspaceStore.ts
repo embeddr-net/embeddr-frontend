@@ -249,7 +249,7 @@ export const useWorkspaceStore = create<WorkspaceStoreState>()(
       migrate: (persisted: any, version: number) => {
         if (version < 2) {
           // v1 → v2: add tileTree and tilingEnabled to existing workspace layouts
-          const state = persisted;
+          const state = persisted as { workspaces?: Record<string, any> };
           if (state?.workspaces) {
             for (const ws of Object.values(state.workspaces)) {
               if (ws?.layout) {

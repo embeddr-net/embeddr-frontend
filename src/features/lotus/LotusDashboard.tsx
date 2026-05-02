@@ -40,9 +40,11 @@ type ConfigSetResponse = {
   };
 };
 
-type FinderDefaultsConfig = {
-  enable_search?: boolean;
+type FinderDefaultsValue = {
+  text_provider?: string;
+  similar_provider?: string;
   shebangs?: Record<string, any>;
+  enable_search?: boolean;
 };
 
 type BlobRegistryResponse = {
@@ -133,7 +135,7 @@ export function LotusDashboard() {
         scope: "global",
         include_capability: true,
       });
-      return data as ConfigGetResponse;
+      return data as Omit<ConfigGetResponse, "value"> & { value: FinderDefaultsValue };
     },
   });
 

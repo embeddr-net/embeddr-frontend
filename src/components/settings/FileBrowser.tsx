@@ -39,9 +39,16 @@ export function FileBrowser({ initialPath, onSelect, className }: FileBrowserPro
       const caps = ["embeddr-fs-scanner.fs.list", "embeddr-core.fs.list"];
 
       let lastError: unknown;
+      type FsListResponse = {
+        ok: boolean;
+        error?: unknown;
+        path?: string;
+        parent?: string;
+        items?: Array<FileEntry>;
+      };
       for (const cap of caps) {
         try {
-          const res = await embeddrApi.lotus.invoke(cap, {
+          const res: FsListResponse = await embeddrApi.lotus.invoke(cap, {
             path: currentPath || undefined,
           });
           if (res.ok) {

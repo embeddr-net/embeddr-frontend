@@ -191,22 +191,24 @@ export function ImageBrowser({
 
   const posts = useMemo(() => {
     if (useArtifactsApi && artifactResults) {
-      return artifactResults.items.map((a: any) => ({
-        id: a.id, // UUID
-        url: `${BACKEND_URL}/artifacts/${a.id}/content`,
-        image_url: `${BACKEND_URL}/artifacts/${a.id}/content`,
-        width: a.metadata_json?.width || 0,
-        height: a.metadata_json?.height || 0,
-        prompt: a.metadata_json?.prompt || a.metadata_json?.filename || "Artifact",
-        media_type: a.type_name === "document" ? "document" : "image", // Add media_type map
-        created_at: a.created_at,
-        // Mock properties to satisfy PromptImage
-        model: "artifacts",
-        steps: 0,
-        cfg_scale: 0,
-        sampler_name: "unknown",
-        seed: 0,
-      }));
+      return artifactResults.items.map(
+        (a: any): PromptImage => ({
+          id: a.id, // UUID
+          url: `${BACKEND_URL}/artifacts/${a.id}/content`,
+          image_url: `${BACKEND_URL}/artifacts/${a.id}/content`,
+          width: a.metadata_json?.width || 0,
+          height: a.metadata_json?.height || 0,
+          prompt: a.metadata_json?.prompt || a.metadata_json?.filename || "Artifact",
+          media_type: a.type_name === "document" ? "document" : "image",
+          created_at: a.created_at,
+          // Mock properties to satisfy PromptImage
+          model: "artifacts",
+          steps: 0,
+          cfg_scale: 0,
+          sampler_name: "unknown",
+          seed: 0,
+        }),
+      );
     }
     return data?.pages.flatMap((page) => page) || [];
   }, [data, artifactResults, useArtifactsApi]);

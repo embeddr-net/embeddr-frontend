@@ -97,7 +97,7 @@ export function UploadDialog({ open, onOpenChange, files }: UploadDialogProps) {
       const data = await res.json();
 
       setFileStatuses((prev) => {
-        const newStatuses = prev.map((s) => {
+        const newStatuses = prev.map((s): FileStatus => {
           if (s.file !== file) return s;
           return {
             ...s,
